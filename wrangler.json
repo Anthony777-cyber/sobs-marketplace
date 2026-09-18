@@ -2,7 +2,7 @@
   "name": "sobs-marketplace",
   "compatibility_date": "2024-04-01",
   "assets": {
-    "binding": "ASSETS"
+    "directory": "./dist"
   },
   "kv_namespaces": [
     {

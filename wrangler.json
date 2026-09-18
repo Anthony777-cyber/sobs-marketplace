@@ -1,0 +1,17 @@
+{
+  "name": "sobs-marketplace",
+  "compatibility_date": "2024-04-01",
+  "assets": {
+    "binding": "ASSETS"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "SOBS_CHATS",
+      "id": "51e49c4d9dc44e73955048bbd28b7a98"
+    },
+    {
+      "binding": "SOBS_LISTINGS",
+      "id": "844486796dad4137a0d4270682c49a30"
+    }
+  ]
+}

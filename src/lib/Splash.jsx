@@ -78,7 +78,7 @@ export default function Splash() {
             <div key={s.heading} className="rounded-2xl border border-white/10 bg-neutral-900 p-5">
               <s.icon className="h-6 w-6 text-white" />
               <h3 className="mt-3 font-display text-xl tracking-tight">{s.heading}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-white">{s.text}</p>
+              <p className="mt-2 text-sm leading-relaxed text-white/70">{s.text}</p>
             </div>
           ))}
         </div>

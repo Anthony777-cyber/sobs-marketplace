@@ -8,7 +8,7 @@ import PaylinkGateway from '@/components/PaylinkGateway';
 import { generateKeyToken } from '@/lib/token';
 import { CURRENCIES, fetchRates, getCurrency, formatAmount } from '@/lib/currency';
 import { getSessionId } from '@/lib/user';
-import { Loader2, Plus, X } from 'lucide-react';
+import { Image as ImageIcon, Loader2, Plus, X } from 'lucide-react';
 
 const MAX_PHOTOS = 3;
 const DRAFT_KEY = 'sobs_create_draft';
@@ -33,6 +33,8 @@ export default function CreateListing() {
       .catch(() => setRates(null));
   }, []);
 
+  // Anti-blit persistent form state cache: hydrate the draft on mount so a
+  // failed submission, payment loop, or accidental navigation never wipes input.
   useEffect(() => {
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
@@ -48,6 +50,7 @@ export default function CreateListing() {
     } catch {}
   }, []);
 
+  // Freeze every input into the cache until the submission is confirmed server-side.
   useEffect(() => {
     try {
       localStorage.setItem(
@@ -70,7 +73,6 @@ export default function CreateListing() {
     reader.readAsDataURL(file);
     e.target.value = '';
   };
-
   const removePhoto = (i) => setPhotos(photos.filter((_, idx) => idx !== i));
 
   const submit = () => {
@@ -82,17 +84,30 @@ export default function CreateListing() {
     setSubmitting(true);
     setError('');
     try {
-      const normalizedPath = categoryPath.trim().replace(/^\/+|\/+\$/g, '');
+      const images = [];
+      for (const dataUrl of photos) {
+        const blob = await (await fetch(dataUrl)).blob();
+        const res = await base44.integrations.Core.UploadPublicFile({ file: blob });
+        images.push(res.file_url);
+      }
+      const normalizedPath = categoryPath.trim().replace(/^\/+|\/+$/g, '');
       const expires = new Date(Date.now() + tier.months * 30 * 24 * 60 * 60 * 1000).toISOString();
       let token = generateKeyToken();
-
+      for (let i = 0; i < 5; i++) {
+        const existing = await base44.entities.Listing.filter(
+          { key_token: token },
+          '-created_date',
+          1
+        );
+        if (!existing.length) break;
+        token = generateKeyToken();
+      }
       const created = await base44.entities.Listing.create({
-        id: 'item_' + Math.random().toString(36).slice(2) + Date.now(),
         title,
         description,
         price: Number(price),
         currency,
-        images: [...photos], // Photos are safely stored directly alongside your listing
+        images,
         categoryPath: normalizedPath,
         duration_months: tier.months,
         payment_amount: tier.amount,
@@ -103,7 +118,6 @@ export default function CreateListing() {
         seller_id: getSessionId(),
         key_token: token,
       });
-
       try {
         localStorage.removeItem(DRAFT_KEY);
       } catch {}
@@ -123,6 +137,7 @@ export default function CreateListing() {
       <div className="mx-auto max-w-2xl px-4 py-10">
         <h1 className="font-display text-3xl tracking-tight">Post your junk</h1>
         <p className="mt-1 text-muted-foreground">List it, pick how long it stays up, and you're live.</p>
+
         <div className="mt-8 space-y-6">
           <div>
             <label className="text-sm font-medium">Title</label>
@@ -133,6 +148,7 @@ export default function CreateListing() {
               className="mt-1.5 w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
+
           <div>
             <label className="text-sm font-medium">Description</label>
             <textarea
@@ -143,6 +159,7 @@ export default function CreateListing() {
               className="mt-1.5 w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium">Price</label>
@@ -170,19 +187,26 @@ export default function CreateListing() {
               >
                 {CURRENCIES.map((c) => (
                   <option key={c.code} value={c.code}>
-                    {c.code}   {c.name}
+                    {c.code} — {c.name}
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-xs text-muted-foreground">Manual   no geo-tracking.</p>
+              <p className="mt-1 text-xs text-muted-foreground">Manual — no geo-tracking.</p>
             </div>
           </div>
+
           <div>
-            <label className="text-sm font-medium">Photos (max {MAX_PHOTOS})</label>
+            <label className="text-sm font-medium">
+              Photos (max {MAX_PHOTOS})
+            </label>
             <div className="mt-1.5 flex flex-wrap gap-3">
               {photos.map((file, i) => (
                 <div key={i} className="relative">
-                  <img src={file} alt={`preview ${i + 1}`} className="h-24 w-24 rounded-lg border object-cover" />
+                  <img
+                    src={file}
+                    alt={`preview ${i + 1}`}
+                    className="h-24 w-24 rounded-lg border object-cover"
+                  />
                   <button
                     type="button"
                     onClick={() => removePhoto(i)}
@@ -201,17 +225,24 @@ export default function CreateListing() {
               )}
             </div>
           </div>
+
           <div>
             <label className="text-sm font-medium">Category path</label>
             <TagInput value={categoryPath} onChange={setCategoryPath} />
           </div>
+
           <div>
             <label className="text-sm font-medium">How long should it stay up?</label>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Pick a duration — your listing auto-deletes when it expires.
+            </p>
             <div className="mt-3">
               <PaymentTier value={tier} onChange={setTier} currency={currency} rates={rates} />
             </div>
           </div>
+
           {error && <p className="text-sm text-destructive">{error}</p>}
+
           <button
             onClick={submit}
             disabled={!canSubmit}
@@ -220,10 +251,11 @@ export default function CreateListing() {
             {submitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              `Post listing${tier ? `   \${cur.symbol}tier.amount {currency}` : ''}`
+              `Post listing${tier ? ` · ${cur.symbol}${tier.amount} ${currency}` : ''}`
             )}
           </button>
         </div>
+
         {showGateway && (
           <PaylinkGateway
             tier={tier}

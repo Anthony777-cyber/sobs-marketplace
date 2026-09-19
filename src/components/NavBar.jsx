@@ -15,12 +15,6 @@ export default function NavBar() {
         </Link>
         <div className="flex items-center gap-3">
           <Link
-            to="/listings"
-            className="rounded-full bg-orange-500 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-orange-600"
-          >
-            Browse
-          </Link>
-          <Link
             to="/categories"
             className="rounded-full bg-yellow-400 px-5 py-2 text-sm font-semibold text-black shadow-sm transition-colors hover:bg-yellow-500"
           >

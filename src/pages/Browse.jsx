@@ -56,7 +56,7 @@ export default function Browse() {
     <div className="min-h-screen bg-background">
       <NavBar />
       <div className="mx-auto max-w-5xl px-4 py-8">
-        <h1 className="font-display text-3xl tracking-tight">Listings</h1>
+        <div><h1 className="font-display text-3xl tracking-tight">Browse listings</h1><p className="mt-1 text-muted-foreground">Everything for sale right now.</p></div>
 
         {/* Listings under this path */}
         <div className="mt-8">

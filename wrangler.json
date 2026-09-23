@@ -1,19 +1,27 @@
 {
-  "name": "sobs-marketplace",
-  "main": "src/worker.ts",
-  "compatibility_date": "2026-09-18",
-  "assets": {
-    "directory": "./dist",
-    "binding": "ASSETS"
-  },
-  "kv_namespaces": [
-    {
-      "binding": "SOBS_CHATS",
-      "id": "51e49c4d9dc44e73955048bbd28b7a98"
-    },
-    {
-      "binding": "SOBS_LISTINGS",
-      "id": "844486796dad4137a0d4270682c49a30"
-    }
-  ]
+	"name": "sobs-marketplace",
+	"main": "src/worker.ts",
+	"compatibility_date": "2026-09-18",
+	"assets": {
+		"directory": "./dist",
+		"binding": "ASSETS"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "SOBS_CHATS",
+			"id": "51e49c4d9dc44e73955048bbd28b7a98"
+		},
+		{
+			"binding": "SOBS_LISTINGS",
+			"id": "844486796dad4137a0d4270682c49a30"
+		}
+	],
+	"d1_databases": [
+		{
+			"binding": "sobs_marketplace",
+			"database_name": "sobs-marketplace",
+			"database_id": "410d17b9-0868-4992-911d-9838b99c1c23",
+			"remote": true
+		}
+	]
 }

@@ -1,0 +1,43 @@
+/// <reference types="@cloudflare/workers-types" />
+export interface Env {
+  ASSETS: {
+    fetch: (request: Request | string | URL, init?: RequestInit) => Promise<Response>;
+  };
+  sobs_marketplace: D1Database;
+}
+
+function json(data: unknown, status = 200): Response {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  });
+}
+
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url);
+
+    if (url.pathname === '/api/listings') {
+      const nowIso = new Date().toISOString();
+      const graceUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+      await env.sobs_marketplace
+        .prepare('DELETE FROM listings WHERE grey_zone = 1 AND grey_zone_until < ?')
+        .bind(nowIso)
+        .run();
+
+      await env.sobs_marketplace
+        .prepare('UPDATE listings SET grey_zone = 1, grey_zone_until = ? WHERE expires_date < ? AND grey_zone = 0')
+        .bind(graceUntil, nowIso)
+        .run();
+
+      const { results } = await env.sobs_marketplace
+        .prepare('SELECT * FROM listings ORDER BY created_date DESC LIMIT 200')
+        .all();
+
+      return json(results);
+    }
+
+    return env.ASSETS.fetch(request);
+  },
+};

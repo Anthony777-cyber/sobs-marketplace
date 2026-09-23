@@ -1,0 +1,137 @@
+/// <reference types="@cloudflare/workers-types" />
+export interface Env {
+  ASSETS: {
+    fetch: (request: Request | string | URL, init?: RequestInit) => Promise<Response>;
+  };
+  sobs_marketplace: D1Database;
+}
+
+function json(data: unknown, status = 200): Response {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  });
+}
+
+async function hashTicket(ticket: string): Promise<string> {
+  const data = new TextEncoder().encode(ticket);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url);
+
+    if (url.pathname === '/api/entry-ticket' && request.method === 'POST') {
+      const ticket = crypto.randomUUID() + crypto.randomUUID();
+      const ticketHash = await hashTicket(ticket);
+      const id = crypto.randomUUID();
+      const now = new Date().toISOString();
+
+      await env.sobs_marketplace
+        .prepare(`
+          INSERT INTO entry_tickets
+            (id, ticket_hash, created_at, last_seen_at, status)
+          VALUES (?, ?, ?, ?, 'active')
+        `)
+        .bind(id, ticketHash, now, now)
+        .run();
+
+      return json({ entryTicket: ticket });
+    }
+
+    if (url.pathname === '/api/entry-ticket' && request.method === 'PATCH') {
+    const ticket = request.headers.get('X-SOBS-Entry-Ticket');
+    if (!ticket) return json({ valid: false }, 401);
+
+    const ticketHash = await hashTicket(ticket);
+    const body = await request.json().catch(() => ({} as unknown));
+    const currency = typeof body === 'object' && body !== null && 'currency' in body && typeof body.currency === 'string'
+      ? body.currency.toUpperCase()
+      : '';
+
+    if (!currency) return json({ valid: false }, 400);
+
+    const result = await env.sobs_marketplace
+      .prepare('UPDATE entry_tickets SET currency = ?, last_seen_at = ? WHERE ticket_hash = ? AND status = ?')
+      .bind(currency, new Date().toISOString(), ticketHash, 'active')
+      .run();
+
+    if (!result.meta.changes) return json({ valid: false }, 401);
+
+    return json({ valid: true, currency });
+  }
+
+  if (url.pathname === '/api/entry-ticket' && request.method === 'GET') {
+      const ticket = request.headers.get('X-SOBS-Entry-Ticket');
+
+      if (!ticket) {
+        return json({ valid: false }, 401);
+      }
+
+      const ticketHash = await hashTicket(ticket);
+
+      const row = await env.sobs_marketplace
+        .prepare(`
+          SELECT id, status, blocked_until, currency
+          FROM entry_tickets
+          WHERE ticket_hash = ?
+        `)
+        .bind(ticketHash)
+        .first<{
+          id: string;
+          status: string;
+          blocked_until: string | null;
+          currency: string | null;
+        }>();
+
+      if (!row) {
+        return json({ valid: false }, 401);
+      }
+
+      const blocked =
+        row.status === 'blocked' &&
+        (!row.blocked_until || row.blocked_until > new Date().toISOString());
+
+      if (blocked) {
+        return json({ valid: false, blocked: true }, 403);
+      }
+
+      await env.sobs_marketplace
+        .prepare('UPDATE entry_tickets SET last_seen_at = ? WHERE id = ?')
+        .bind(new Date().toISOString(), row.id)
+        .run();
+
+      return json({ valid: true, currency: row.currency || 'EUR' });
+    }
+
+    if (url.pathname === '/api/listings') {
+      const nowIso = new Date().toISOString();
+      const graceUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+      await env.sobs_marketplace
+        .prepare('DELETE FROM listings WHERE grey_zone = 1 AND grey_zone_until < ?')
+        .bind(nowIso)
+        .run();
+
+      await env.sobs_marketplace
+        .prepare('UPDATE listings SET grey_zone = 1, grey_zone_until = ? WHERE expires_date < ? AND grey_zone = 0')
+        .bind(graceUntil, nowIso)
+        .run();
+
+      const { results } = await env.sobs_marketplace
+        .prepare('SELECT * FROM listings ORDER BY created_date DESC LIMIT 200')
+        .all();
+
+      return json(results);
+    }
+
+    const assetResponse = await env.ASSETS.fetch(request);
+    if (assetResponse.status !== 404) return assetResponse;
+
+    return env.ASSETS.fetch(new Request(new URL('/index.html', request.url), request));
+  },
+};

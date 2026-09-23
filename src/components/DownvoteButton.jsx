@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { ThumbsDown } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { getSessionId } from '@/lib/user';
 import { cn } from '@/lib/utils';
+import { updateListing, deleteListing } from '@/lib/api';
 
 const THRESHOLD = 5;
 
 export default function DownvoteButton({ listing, onRemoved }) {
-  const sessionId = getSessionId();
+  const sessionId = `anonymous-${Math.random().toString(36).slice(2)}`;
   const [count, setCount] = useState(listing.downvote_count || 0);
   const [voted, setVoted] = useState((listing.downvoted_by || []).includes(sessionId));
   const [loading, setLoading] = useState(false);
@@ -18,10 +17,10 @@ export default function DownvoteButton({ listing, onRemoved }) {
     const newCount = count + 1;
     try {
       if (newCount >= THRESHOLD) {
-        await base44.entities.Listing.delete(listing.id);
+        await deleteListing(listing.id);
         onRemoved?.();
       } else {
-        await base44.entities.Listing.update(listing.id, {
+        await updateListing(listing.id, {
           downvote_count: newCount,
           downvoted_by: [...(listing.downvoted_by || []), sessionId],
         });

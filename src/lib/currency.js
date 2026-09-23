@@ -13,13 +13,26 @@ export const CURRENCIES = [
   { code: 'BRL', symbol: 'R$', name: 'Brazilian Real', decimals: 2 },
 ];
 
-const API_URL = 'https://cdn.jsdelivr.net/gh/fawazahmed0/currency-api@latest/latest/json/eur.json';
+const API_URLS = [
+  'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json',
+  'https://latest.currency-api.pages.dev/v1/currencies/eur.json',
+];
 
 // Pulls current exchange rates relative to the Euro (EUR) base.
 export async function fetchRates() {
-  const res = await fetch(API_URL);
-  if (!res.ok) throw new Error('currency fetch failed');
-  const data = await res.json();
+  let data = null;
+
+  for (const url of API_URLS) {
+    try {
+      const res = await fetch(url);
+      if (res.ok) {
+        data = await res.json();
+        break;
+      }
+    } catch {}
+  }
+
+  if (!data) throw new Error('currency fetch failed');
   const rates = data.eur || {};
   const upper = {};
   Object.keys(rates).forEach((k) => {

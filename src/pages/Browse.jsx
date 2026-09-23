@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
 import NavBar from '@/components/NavBar';
 import ListingCard from '@/components/ListingCard';
-import { runLifecycle } from '@/lib/lifecycle';
 import { setHead } from '@/lib/head';
+import { getListings } from '@/lib/api';
 import { Loader2, PackageOpen } from 'lucide-react';
 
 // Open-ended registry directory browser. Static folder URLs
@@ -19,13 +18,8 @@ export default function Browse() {
 
   useEffect(() => {
     (async () => {
-      await runLifecycle();
       const nowIso = new Date().toISOString();
-      const all = await base44.entities.Listing.filter(
-        { grey_zone: false, status: 'active', expires_date: { $gte: nowIso } },
-        '-created_date',
-        200
-      );
+      const all = await getListings();
       setListings(all);
     })();
   }, []);

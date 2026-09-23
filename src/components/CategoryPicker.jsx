@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
-
+import { getListings } from '@/lib/api';
 // Open-ended registry directory input. Sellers can pick an existing nested
 // category path or type a brand new custom one (e.g. Spares/Ford/Escort/1994/Gearbox).
 export default function CategoryPicker({ value, onChange }) {
   const [paths, setPaths] = useState([]);
 
   useEffect(() => {
-    base44.entities.Listing
-      .list('-created_date', 200)
+    getListings()
       .then((items) => {
         const set = new Set();
         items.forEach((l) => {

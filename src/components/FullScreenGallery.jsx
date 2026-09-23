@@ -48,10 +48,8 @@ export default function FullScreenGallery({ images, startIndex = 0, onClose }) {
         src={images[index]}
         alt=""
         style={{
-          maxWidth: '100vw',
-          maxHeight: '100vh',
-          width: 'auto',
-          height: 'auto',
+          width: '100vw',
+          height: '100vh',
           objectFit: 'contain',
         }}
       />

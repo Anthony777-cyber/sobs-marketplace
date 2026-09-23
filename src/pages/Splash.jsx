@@ -30,48 +30,54 @@ export default function Splash() {
     <div className="min-h-screen bg-neutral-950 text-white">
       <header className="mx-auto flex max-w-5xl items-center justify-between px-4 py-5">
         <div className="flex flex-col leading-none">
-          <span className="font-display text-5xl tracking-tight sm:text-6xl">S.O.B.S.</span>
+          <span className="font-display text-7xl tracking-tight sm:text-8xl">S<span className="font-sans font-bold">.</span>O<span className="font-sans font-bold">.</span>B<span className="font-sans font-bold">.</span>S</span>
           <span className="mt-1 text-xs font-semibold tracking-[0.25em] text-white sm:text-sm">
             SELL OLD BROKEN STUFF
           </span>
         </div>
       </header>
 
-      <section className="mx-auto max-w-5xl px-4 pb-12 pt-4 sm:pt-6">
+      <section className="mx-auto max-w-5xl px-4 pb-0 pt-4 sm:pt-6">
         <div className="max-w-3xl">
-          <h1 className="font-display text-3xl leading-tight tracking-tight sm:text-5xl">
-            Sell old broken stuff.<br />List it, chat it, sell it.
-          </h1>
-          <p className="mt-5 max-w-2xl text-lg leading-relaxed text-white sm:text-xl">
-            S.O.B.S. is an open-ended directory for junk, spares and rare parts. List anything from a
-            box of washers to a specific 1994 gearbox by maker, model, year and part number. Pay per
-            duration, chat with buyers right on the listing, and let the community keep it clean. No sign
-            up, no passwords — just like an advert in the back of a newspaper.
+          <div className="flex items-center gap-8">
+            <h1 className="font-display text-2xl leading-tight tracking-tight sm:text-4xl">
+              Sell old broken stuff.<br />List it, chat it, sell it.
+            </h1>
+            <Link to="/rules" className="inline-flex shrink-0 items-center justify-center rounded-full bg-white px-5 py-2 font-semibold text-black transition-colors hover:bg-gray-100">Rules</Link>
+          </div>
+          <p className="mt-5 max-w-2xl text-lg leading-relaxed text-white sm:text-xl text-justify">
+            S∙O∙B∙S∙ is an open-ended directory for junk, spares and rare parts.
           </p>
+          <p className="max-w-2xl text-lg leading-relaxed text-white sm:text-xl text-justify">
+            List anything from a box of washers to a specific gearbox by maker, model, year and part number. Pay per
+            duration, chat with buyers right on the listing, and lets the community keep it clean.
+          </p>
+          <p className="text-lg font-semibold text-white sm:text-xl">NO sign up, NO password, NO cookies</p>
+          <p className="text-lg leading-relaxed text-white sm:text-xl">Just like an advert in the back of a newspaper.</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               to="/create"
-              className="inline-flex items-center gap-2 rounded-full bg-red-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-red-700"
+              className="inline-flex w-32 items-center justify-center gap-2 rounded-full bg-red-600 px-5 py-2 font-semibold text-white transition-colors hover:bg-red-700"
             >
-              Post a listing <ArrowRight className="h-4 w-4" />
+              Post <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               to="/browse"
-              className="inline-flex items-center gap-2 rounded-full bg-orange-500 px-6 py-3 font-semibold text-white transition-colors hover:bg-orange-600"
+              className="inline-flex w-32 items-center justify-center gap-2 rounded-full bg-orange-500 px-5 py-2 font-semibold text-white transition-colors hover:bg-orange-600"
             >
-              Browse listings
+              Listings <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               to="/categories"
-              className="inline-flex items-center gap-2 rounded-full bg-yellow-400 px-6 py-3 font-semibold text-black transition-colors hover:bg-yellow-500"
+              className="inline-flex w-32 items-center justify-center gap-2 rounded-full bg-yellow-400 px-5 py-2 font-semibold text-black transition-colors hover:bg-yellow-500"
             >
-              Browse Index
+              Index <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-5xl px-4 py-12">
+      <section className="mx-auto max-w-5xl px-4 pt-8 pb-12">
         <h2 className="font-display text-3xl tracking-tight">The Process</h2>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {STEPS.map((s) => (

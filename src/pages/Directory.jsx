@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
 import NavBar from '@/components/NavBar';
-import { runLifecycle } from '@/lib/lifecycle';
 import { setHead } from '@/lib/head';
 import { Loader2 } from 'lucide-react';
 
@@ -81,21 +79,23 @@ export default function Directory() {
   const [query, setQuery] = useState('');
 
   useEffect(() => {
-    (async () => {
-      await runLifecycle();
-      let live = [];
-      try {
-        const nowIso = new Date().toISOString();
-        const items = await base44.entities.Listing.filter(
-          { grey_zone: false, status: 'active', expires_date: { $gte: nowIso } },
-          '-created_date',
-          300
-        );
-        live = items.map((l) => l.categoryPath).filter(Boolean);
-      } catch {}
-      const merged = [...new Set([...SEED_PATHS, ...live])].sort();
-      setPaths(merged);
-    })();
+    fetch('/api/category-paths')
+      .then((res) => {
+        if (!res.ok) throw new Error(`Category paths request failed: ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        const livePaths = Array.isArray(data?.paths)
+          ? data.paths
+              .map((entry) => entry?.path)
+              .filter(Boolean)
+          : [];
+
+        setPaths(livePaths.sort((a, b) => a.localeCompare(b)));
+      })
+      .catch(() => {
+        setPaths([]);
+      });
   }, []);
 
   useEffect(() => {

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
 import NavBar from '@/components/NavBar';
 import { formatUkDate } from '@/lib/format';
 import { tokenFileName } from '@/lib/token';
 import { setHead } from '@/lib/head';
+import { getListing } from '@/lib/api';
 import { Loader2, Download } from 'lucide-react';
 
 // Confirmation layout: renders the generated key code in prominent white,
@@ -17,7 +17,7 @@ export default function Confirmed() {
   useEffect(() => {
     (async () => {
       try {
-        const l = await base44.entities.Listing.get(id);
+        const l = await getListing(id);
         setListing(l);
       } catch (e) {
         console.error(e);

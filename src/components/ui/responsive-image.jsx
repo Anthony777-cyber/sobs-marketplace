@@ -16,8 +16,8 @@ export const ResponsiveImage = React.forwardRef(
         className={cn("inline-block relative", className)}
         style={{ aspectRatio, ...style }}
         {...wrapperProps}
-        data-base44-image=""
-        data-base44-image-src={src}
+        data-sobs-image=""
+        data-sobs-image-src={src}
       >
         {/* Internal layers must not become separate visual-edit targets. */}
         {options && !loaded && (

@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
 import NavBar from '@/components/NavBar';
 import FlagButton from '@/components/FlagButton';
 import ChatThread from '@/components/ChatThread';
 import FullScreenGallery from '@/components/FullScreenGallery';
 import { Image } from '@/components/ui/image';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Copy, Loader2 } from 'lucide-react';
 import { getCurrency, formatAmount } from '@/lib/currency';
 import { formatExpiryDate } from '@/lib/format';
 import { setHead } from '@/lib/head';
+import { getListing } from '@/lib/api';
+
+function formatPublicListingNumber(value) {
+  const digits = String(value ?? '').padStart(16, '0');
+  return digits.match(/.{1,4}/g)?.join(' ') ?? digits;
+}
 
 export default function ListingDetail() {
   const { id } = useParams();
@@ -17,11 +22,12 @@ export default function ListingDetail() {
   const [loading, setLoading] = useState(true);
   const [removed, setRemoved] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
-        const l = await base44.entities.Listing.get(id);
+        const l = await getListing(id);
         if (l.grey_zone || new Date(l.expires_date).getTime() <= Date.now()) {
           setRemoved(true);
         }
@@ -52,7 +58,7 @@ export default function ListingDetail() {
     <div className="min-h-screen bg-background">
       <NavBar />
       <div className="mx-auto max-w-3xl px-4 py-8">
-        <Link to="/listings" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <Link to="/browse" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Back to listings
         </Link>
 
@@ -63,7 +69,7 @@ export default function ListingDetail() {
         ) : !listing ? (
           <div className="py-20 text-center">
             <p className="text-lg font-medium">This listing is no longer available.</p>
-            <Link to="/listings" className="mt-4 inline-block rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white">
+            <Link to="/browse" className="mt-4 inline-block rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white">
               Browse listings
             </Link>
           </div>
@@ -73,7 +79,7 @@ export default function ListingDetail() {
             <p className="mt-1 text-sm text-muted-foreground">
               It has expired and is in the recovery window, or was removed by the community.
             </p>
-            <Link to="/listings" className="mt-4 inline-block rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white">
+            <Link to="/browse" className="mt-4 inline-block rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white">
               Browse listings
             </Link>
           </div>
@@ -95,23 +101,26 @@ export default function ListingDetail() {
                 </div>
               )}
               <div className="p-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h1 className="font-display text-2xl tracking-tight">{listing.title}</h1>
-                    <p className="mt-2 text-3xl font-semibold">{formatAmount(listing.price, cur)}</p>
-                  </div>
-                  <span className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">
-                    {formatExpiryDate(listing.expires_date)}
-                  </span>
-                </div>
-                {listing.categoryPath && (
-                  <Link
-                    to={`/browse/${listing.categoryPath}`}
-                    className="mt-3 inline-block text-sm text-muted-foreground hover:text-foreground hover:underline"
+                <h1 className="font-display text-2xl tracking-tight">{listing.title}</h1>
+
+                <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>Listing {formatPublicListingNumber(listing.listing_alias)}</span>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(String(listing.listing_alias).padStart(16, '0'));
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 1200);
+                      } catch {}
+                    }}
+                    className="inline-flex items-center gap-1 rounded border px-2 py-1 hover:text-foreground"
+                    title="Copy listing number"
                   >
-                    {listing.categoryPath}
-                  </Link>
-                )}
+                    <Copy className="h-3.5 w-3.5" />
+                    {copied ? 'Copied' : 'Copy'}
+                  </button>
+                </div>
                 {listing.description && (
                   <p className="mt-4 whitespace-pre-wrap text-muted-foreground">{listing.description}</p>
                 )}

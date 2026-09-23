@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
 import NavBar from '@/components/NavBar';
 import PaymentTier from '@/components/PaymentTier';
 import { CURRENCIES, fetchRates, getCurrency, formatAmount } from '@/lib/currency';
 import { formatUkDate } from '@/lib/format';
+import { useCurrency } from '@/lib/CurrencyContext';
 import { setHead } from '@/lib/head';
 import { Loader2, Lock } from 'lucide-react';
 
@@ -18,7 +18,7 @@ export default function Manage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
-  const [currency, setCurrency] = useState('EUR');
+  const { currency, setCurrency } = useCurrency();
   const [tier, setTier] = useState(null);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
@@ -36,68 +36,26 @@ export default function Manage() {
     if (!code) return;
     setStatus('searching');
     setListing(null);
-    try {
-      const matches = await base44.entities.Listing.filter({ key_token: code }, '-created_date', 1);
-      if (!matches.length) {
-        setStatus('notfound');
-        return;
-      }
-      const l = matches[0];
-      setListing(l);
-      setTitle(l.title || '');
-      setDescription(l.description || '');
-      setPrice(l.price != null ? String(l.price) : '');
-      setCurrency(l.currency || 'EUR');
-      setTier(null);
-      setStatus('found');
-    } catch (e) {
-      console.error(e);
-      setStatus('notfound');
-    }
+    // Cloudflare listing lookup will be connected here.
+    setTimeout(() => setStatus('notfound'), 0);
   };
 
   const saveEdits = async () => {
     if (!listing) return;
     setSaving(true);
     setMsg('');
-    try {
-      await base44.entities.Listing.update(listing.id, {
-        title,
-        description,
-        price: Number(price),
-        currency,
-      });
-      setMsg('Listing updated.');
-    } catch (e) {
-      console.error(e);
-      setMsg('Update failed.');
-    } finally {
-      setSaving(false);
-    }
+    // Cloudflare listing update will be connected here.
+    setMsg('Listing backend is being connected.');
+    setSaving(false);
   };
 
   const renew = async () => {
     if (!listing || !tier) return;
     setSaving(true);
     setMsg('');
-    try {
-      const base = Math.max(Date.now(), new Date(listing.expires_date).getTime());
-      const expires = new Date(base + tier.months * 30 * 24 * 60 * 60 * 1000).toISOString();
-      await base44.entities.Listing.update(listing.id, {
-        duration_months: tier.months,
-        payment_amount: tier.amount,
-        expires_date: expires,
-        grey_zone: false,
-        status: 'active',
-      });
-      setListing({ ...listing, expires_date: expires, duration_months: tier.months, payment_amount: tier.amount });
-      setMsg('Listing renewed.');
-    } catch (e) {
-      console.error(e);
-      setMsg('Renewal failed.');
-    } finally {
-      setSaving(false);
-    }
+    // Cloudflare payment/renewal backend will be connected here.
+    setMsg('Renewal backend is being connected.');
+    setSaving(false);
   };
 
   const cur = getCurrency(currency);

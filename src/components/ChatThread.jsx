@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { base44 } from '@/api/base44Client';
-import { getUserName, getSessionId } from '@/lib/user';
 import { Send } from 'lucide-react';
 
 export default function ChatThread({ listingId }) {
@@ -11,14 +9,8 @@ export default function ChatThread({ listingId }) {
   const endRef = useRef(null);
 
   useEffect(() => {
-    getUserName().then(setUserName);
-    base44.entities.ChatMessage.filter({ listing_id: listingId }, 'created_date', 200).then(setMessages);
-    const unsubscribe = base44.entities.ChatMessage.subscribe((event) => {
-      if (event.data?.listing_id === listingId) {
-        setMessages((prev) => [...prev, event.data]);
-      }
-    });
-    return unsubscribe;
+    setMessages([]);
+    setUserName('Guest');
   }, [listingId]);
 
   useEffect(() => {
@@ -29,12 +21,16 @@ export default function ChatThread({ listingId }) {
     if (!input.trim() || sending) return;
     setSending(true);
     try {
-      await base44.entities.ChatMessage.create({
-        listing_id: listingId,
-        sender_id: getSessionId(),
-        sender_name: userName,
-        message: input.trim(),
-      });
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}-${Math.random()}`,
+          listing_id: listingId,
+          sender_id: 'anonymous',
+          sender_name: userName,
+          message: input.trim(),
+        },
+      ]);
       setInput('');
     } catch (e) {
       console.error(e);

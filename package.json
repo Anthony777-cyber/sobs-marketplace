@@ -10,7 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@base44/sdk": "^0.8.48",
     "@radix-ui/react-toast": "^1.2.23",
     "@tanstack/react-query": "^5.103.1",
     "class-variance-authority": "^0.7.1",

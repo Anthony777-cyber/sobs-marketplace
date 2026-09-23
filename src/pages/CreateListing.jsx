@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
 import NavBar from '@/components/NavBar';
+import CategoryQuestionFlow from '@/components/CategoryQuestionFlow';
 import PaymentTier from '@/components/PaymentTier';
-import TagInput from '@/components/TagInput';
 import PaylinkGateway from '@/components/PaylinkGateway';
 import { generateKeyToken } from '@/lib/token';
-import { CURRENCIES, fetchRates, getCurrency, formatAmount } from '@/lib/currency';
-import { getSessionId } from '@/lib/user';
+import { CURRENCIES, fetchRates, getCurrency, formatAmount, roundUp } from '@/lib/currency';
+import { getEntryTicket, saveEntryCurrency } from '@/lib/entryTicket';
+import { useCurrency } from '@/lib/CurrencyContext';
 import { Image as ImageIcon, Loader2, Plus, X } from 'lucide-react';
 
 const MAX_PHOTOS = 3;
@@ -18,7 +18,7 @@ export default function CreateListing() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
-  const [currency, setCurrency] = useState('EUR');
+  const { currency, setCurrency } = useCurrency();
   const [rates, setRates] = useState(null);
   const [categoryPath, setCategoryPath] = useState('');
   const [photos, setPhotos] = useState([]);
@@ -26,12 +26,35 @@ export default function CreateListing() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [showGateway, setShowGateway] = useState(false);
+  const [showCategoryFlow, setShowCategoryFlow] = useState(false);
+  const [categoryFlow, setCategoryFlow] = useState({
+    step: 0,
+    complete: false,
+    answers: {
+      type: '',
+      maker: '',
+      model: '',
+      year: '',
+      part: '',
+    },
+    extra: '',
+  });
 
   useEffect(() => {
     fetchRates()
       .then(setRates)
       .catch(() => setRates(null));
+
+    getEntryTicket()
+      .then(({ currency: savedCurrency }) => {
+        if (savedCurrency) setCurrency(savedCurrency);
+      })
+      .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    saveEntryCurrency(currency).catch(() => {});
+  }, [currency]);
 
   // Anti-blit persistent form state cache: hydrate the draft on mount so a
   // failed submission, payment loop, or accidental navigation never wipes input.
@@ -43,8 +66,12 @@ export default function CreateListing() {
       if (typeof d.title === 'string') setTitle(d.title);
       if (typeof d.description === 'string') setDescription(d.description);
       if (d.price != null) setPrice(String(d.price));
-      if (d.currency) setCurrency(d.currency);
-      if (typeof d.categoryPath === 'string') setCategoryPath(d.categoryPath);
+        if (typeof d.categoryPath === 'string') {
+        setCategoryPath(d.categoryPath);
+      }
+      if (d.categoryFlow && typeof d.categoryFlow === 'object') {
+        setCategoryFlow(d.categoryFlow);
+      }
       if (Array.isArray(d.photos)) setPhotos(d.photos);
       if (d.tier) setTier(d.tier);
     } catch {}
@@ -55,81 +82,129 @@ export default function CreateListing() {
     try {
       localStorage.setItem(
         DRAFT_KEY,
-        JSON.stringify({ title, description, price, currency, categoryPath, photos, tier })
+        JSON.stringify({
+          title,
+          description,
+          price,
+          currency,
+          categoryPath,
+          photos,
+          tier,
+          categoryFlow,
+        })
       );
     } catch {}
-  }, [title, description, price, currency, categoryPath, photos, tier]);
+  }, [title, description, price, currency, categoryPath, photos, tier, categoryFlow]);
 
   const cur = getCurrency(currency);
+  const selectedTierAmount = tier && rates
+    ? roundUp(
+        tier.amount * (currency === 'EUR' ? 1 : Number(rates?.[currency] || 0)),
+        cur.decimals
+      )
+    : null;
+
+  const finishCategoryFlow = (flow) => {
+    const clean = (value) => String(value || '').trim().replace(/\s+/g, ' ');
+    const firstCap = (value) => {
+      const text = clean(value);
+      return text ? text.charAt(0).toUpperCase() + text.slice(1) : '';
+    };
+
+    const parts = [
+      firstCap(flow.answers?.type),
+      firstCap(flow.answers?.maker),
+      firstCap(flow.answers?.model),
+      clean(flow.answers?.year),
+      firstCap(flow.answers?.part),
+      clean(flow.extra),
+    ].filter(Boolean);
+
+    setCategoryFlow(flow);
+    setCategoryPath(parts.join('/'));
+    setShowCategoryFlow(false);
+  };
+
 
   const onAddPhoto = (e) => {
-    const file = e.target.files?.[0];
-    if (!file || photos.length >= MAX_PHOTOS) {
+    const files = Array.from(e.target.files || []);
+    if (!files.length || photos.length >= MAX_PHOTOS) {
       e.target.value = '';
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => setPhotos((prev) => [...prev, reader.result]);
-    reader.readAsDataURL(file);
+
+    const remaining = MAX_PHOTOS - photos.length;
+    const selected = files.slice(0, remaining);
+
+    selected.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPhotos((prev) => {
+          if (prev.length >= MAX_PHOTOS) return prev;
+          return [...prev, reader.result];
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+
     e.target.value = '';
   };
   const removePhoto = (i) => setPhotos(photos.filter((_, idx) => idx !== i));
 
   const submit = () => {
     if (!canSubmit) return;
-    setShowGateway(true);
+    confirmAndCreate();
   };
 
   const confirmAndCreate = async () => {
     setSubmitting(true);
     setError('');
     try {
-      const images = [];
-      for (const dataUrl of photos) {
-        const blob = await (await fetch(dataUrl)).blob();
-        const res = await base44.integrations.Core.UploadPublicFile({ file: blob });
-        images.push(res.file_url);
-      }
-      const normalizedPath = categoryPath.trim().replace(/^\/+|\/+$/g, '');
-      const expires = new Date(Date.now() + tier.months * 30 * 24 * 60 * 60 * 1000).toISOString();
-      let token = generateKeyToken();
-      for (let i = 0; i < 5; i++) {
-        const existing = await base44.entities.Listing.filter(
-          { key_token: token },
-          '-created_date',
-          1
-        );
-        if (!existing.length) break;
-        token = generateKeyToken();
-      }
-      const created = await base44.entities.Listing.create({
-        title,
-        description,
-        price: Number(price),
-        currency,
-        images,
-        categoryPath: normalizedPath,
-        duration_months: tier.months,
-        payment_amount: tier.amount,
-        expires_date: expires,
-        flags: 0,
-        status: 'active',
-        grey_zone: false,
-        seller_id: getSessionId(),
-        key_token: token,
+      const res = await fetch('/api/listings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          description,
+          price: Number(price),
+          currency,
+          categoryPath,
+          images: photos,
+          months: tier.months,
+          paymentAmount: tier.amount,
+        }),
       });
-      try {
-        localStorage.removeItem(DRAFT_KEY);
-      } catch {}
-      navigate(`/confirmed/${created.id}`);
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || `Listing creation failed: ${res.status}`);
+      }
+
+      localStorage.removeItem(DRAFT_KEY);
+      navigate('/browse');
     } catch (e) {
       console.error(e);
-      setError('Something went wrong. Please try again.');
+      setError(e instanceof Error ? e.message : 'Listing creation failed.');
       setSubmitting(false);
     }
   };
 
   const canSubmit = title && price && tier && categoryPath.trim() && !submitting;
+
+  const gbpEquivalent = (() => {
+    const amount = Number(price);
+    if (!Number.isFinite(amount) || amount <= 0 || !rates?.GBP) return null;
+
+    if (currency === 'GBP') return amount;
+
+    if (currency === 'EUR') return amount * Number(rates.GBP);
+
+    const sourceRate = Number(rates[currency]);
+    if (!sourceRate) return null;
+
+    return (amount / sourceRate) * Number(rates.GBP);
+  })();
 
   return (
     <div className="min-h-screen bg-background">
@@ -139,26 +214,51 @@ export default function CreateListing() {
         <p className="mt-1 text-muted-foreground">List it, pick how long it stays up, and you're live.</p>
 
         <div className="mt-8 space-y-6">
-          <div>
-            <label className="text-sm font-medium">Title</label>
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Ford Escort 1994 gearbox"
-              className="mt-1.5 w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
+          {!categoryFlow.complete ? (
+            <div className="rounded-xl border p-5">
+              <h2 className="text-lg font-semibold">Let’s get started</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                A few quick questions help buyers find your listing.
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowCategoryFlow(true)}
+                className="mt-4 rounded-full bg-red-600 px-6 py-2.5 font-semibold text-white"
+              >
+                {categoryFlow.step > 0 ? 'Continue' : 'Let’s get started'}
+              </button>
+            </div>
+          ) : (
+            <>
+              <div>
+                <label className="text-sm font-medium">Title <span className="ml-1 text-xs font-normal text-muted-foreground">Keep it brief, Brevity is the soul of wit.</span></label>
+                <input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Your listing title"
+                  className="mt-1.5 w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCategoryFlow(true)}
+                  className="mt-2 text-xs text-muted-foreground underline underline-offset-4"
+                >
+                  Review questions
+                </button>
+              </div>
 
-          <div>
-            <label className="text-sm font-medium">Description</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-              placeholder="Maker, model, year, part no, condition..."
-              className="mt-1.5 w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
+              <div>
+                <label className="text-sm font-medium">Description</label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={4}
+                  placeholder="Tell buyers anything useful about it..."
+                  className="mt-1.5 w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            </>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -175,6 +275,9 @@ export default function CreateListing() {
               {price && (
                 <p className="mt-1 text-xs text-muted-foreground">
                   Displayed as {formatAmount(Number(price), cur)} {currency}
+                  {gbpEquivalent != null && currency !== 'GBP' && (
+                    <> · ≈ {formatAmount(gbpEquivalent, getCurrency('GBP'))} GBP</>
+                  )}
                 </p>
               )}
             </div>
@@ -197,7 +300,7 @@ export default function CreateListing() {
 
           <div>
             <label className="text-sm font-medium">
-              Photos (max {MAX_PHOTOS})
+              Photos (max {MAX_PHOTOS}) <span className="ml-1 text-xs font-normal text-muted-foreground">Press ctrl, to select all three at once.</span>
             </label>
             <div className="mt-1.5 flex flex-wrap gap-3">
               {photos.map((file, i) => (
@@ -220,15 +323,16 @@ export default function CreateListing() {
                 <label className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed text-muted-foreground hover:bg-muted/50">
                   <Plus className="h-5 w-5" />
                   <span className="mt-1 text-xs">Add photo</span>
-                  <input type="file" accept="image/*" className="hidden" onChange={onAddPhoto} />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={onAddPhoto}
+                  />
                 </label>
               )}
             </div>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium">Category path</label>
-            <TagInput value={categoryPath} onChange={setCategoryPath} />
           </div>
 
           <div>
@@ -251,10 +355,19 @@ export default function CreateListing() {
             {submitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              `Post listing${tier ? ` · ${cur.symbol}${tier.amount} ${currency}` : ''}`
+              `Post listing${tier && selectedTierAmount != null ? ` · ${cur.symbol}${selectedTierAmount.toFixed(cur.decimals)} ${currency}` : ''}`
             )}
           </button>
         </div>
+
+        {showCategoryFlow && (
+          <CategoryQuestionFlow
+            value={categoryFlow}
+            onChange={setCategoryFlow}
+            onFinish={finishCategoryFlow}
+            onClose={() => setShowCategoryFlow(false)}
+          />
+        )}
 
         {showGateway && (
           <PaylinkGateway

@@ -1,28 +1,50 @@
-import React, { useState } from 'react';
-import { Flag } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import React, { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { flagListing } from '@/lib/api';
+import { getEntryTicket } from '@/lib/entryTicket';
 
 // Madame Guillotine flag button. Triggers an atomic backend increment of the
 // listing's flag count. Shows a confirmation popup. Never displays the count.
 export default function FlagButton({ listing, onRemoved }) {
-  const storageKey = 'sobs_flagged_' + listing.id;
+  const [storageKey, setStorageKey] = useState('');
   const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(() => {
-    try {
-      return localStorage.getItem(storageKey) === '1';
-    } catch {
-      return false;
-    }
-  });
+  const [done, setDone] = useState(false);
+  const [ticketReady, setTicketReady] = useState(false);
   const [showToast, setShowToast] = useState(false);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    getEntryTicket()
+      .then(({ ticket }) => {
+        if (cancelled) return;
+
+        const key = 'sobs_downvoted_' + ticket + '_' + listing.id;
+        setStorageKey(key);
+
+        try {
+          setDone(localStorage.getItem(key) === '1');
+        } catch {
+          setDone(false);
+        }
+
+        setTicketReady(true);
+      })
+      .catch(() => {
+        if (!cancelled) setTicketReady(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [listing.id]);
+
   const handle = async () => {
-    if (loading || done) return;
+    if (loading || done || !ticketReady) return;
     setLoading(true);
     try {
-      const res = await base44.functions.invoke('flagListing', { listingId: listing.id });
-      const data = res.data || {};
+      const data = await flagListing(listing.id);
       setDone(true);
       try {
         localStorage.setItem(storageKey, '1');
@@ -43,16 +65,14 @@ export default function FlagButton({ listing, onRemoved }) {
     <>
       <button
         onClick={handle}
-        disabled={loading || done}
+        disabled={loading || done || !ticketReady}
         className={cn(
-          'inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs transition-colors',
-          done
-            ? 'border-destructive/30 bg-destructive/10 text-destructive'
-            : 'border-border hover:bg-muted'
+          'inline-flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700',
+          done ? 'bg-red-600 text-black hover:bg-red-600' : ''
         )}
       >
-        <Flag className="h-3.5 w-3.5" />
-        {done ? 'Flagged' : 'Flag / Downvote'}
+        {!done && <X className="h-4 w-4" />}
+        {done ? 'downvoted' : 'Downvote'}
       </button>
       {showToast && (
         <div className="fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-lg bg-foreground px-5 py-3 text-center text-sm font-medium text-background shadow-xl">

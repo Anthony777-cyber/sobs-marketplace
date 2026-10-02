@@ -151,6 +151,11 @@ export default function CreateListing() {
   };
   const removePhoto = (i) => setPhotos(photos.filter((_, idx) => idx !== i));
 
+  const resetListing = () => {
+    localStorage.removeItem(DRAFT_KEY);
+    window.location.reload();
+  };
+
   const submit = () => {
     if (!canSubmit) return;
     confirmAndCreate();
@@ -359,6 +364,14 @@ export default function CreateListing() {
             ) : (
               `Post listing${tier && selectedTierAmount != null ? ` · ${cur.symbol}${selectedTierAmount.toFixed(cur.decimals)} ${currency}` : ''}`
             )}
+          </button>
+
+          <button
+            type="button"
+            onClick={resetListing}
+            className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-red-600 px-5 py-3 font-semibold text-black hover:bg-red-700"
+          >
+            Reset
           </button>
         </div>
 

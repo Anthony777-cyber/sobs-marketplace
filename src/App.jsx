@@ -9,12 +9,16 @@ import ScrollToTop from './components/ScrollToTop';
 import Splash from '@/pages/Splash';
 import Rules from '@/pages/Rules';
 import CreateListing from '@/pages/CreateListing';
+import Signup from '@/pages/Signup';
 import Listings from '@/pages/Listings';
 import ListingDetail from '@/pages/ListingDetail';
 import Browse from '@/pages/Browse';
 import Directory from '@/pages/Directory';
 import Confirmed from '@/pages/Confirmed';
 import Manage from '@/pages/Manage';
+import ManagementConsole from '@/pages/ManagementConsole';
+import EditListing from '@/pages/EditListing';
+import RenewListing from '@/pages/RenewListing';
 import CategoryTest from '@/pages/CategoryTest';
 
 const AuthenticatedApp = () => {
@@ -23,6 +27,7 @@ const AuthenticatedApp = () => {
       {/* Add your page Route elements here */}
       <Route path="/" element={<Splash />} />
       <Route path="/create" element={<CreateListing />} />
+      <Route path="/signup" element={<Signup />} />
       <Route path="/listings" element={<Listings />} />
       <Route path="/listings/:id" element={<ListingDetail />} />
       <Route path="/rules" element={<Rules />} />
@@ -31,6 +36,9 @@ const AuthenticatedApp = () => {
       <Route path="/category-test" element={<CategoryTest />} />
       <Route path="/confirmed/:id" element={<Confirmed />} />
       <Route path="/manage" element={<Manage />} />
+      <Route path="/manage/console" element={<ManagementConsole />} />
+      <Route path="/manage/edit" element={<EditListing />} />
+      <Route path="/manage/renew" element={<RenewListing />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

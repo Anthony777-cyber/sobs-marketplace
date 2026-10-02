@@ -12,12 +12,14 @@
   "dependencies": {
     "@radix-ui/react-toast": "^1.2.23",
     "@tanstack/react-query": "^5.103.1",
+    "@tesseract.js-data/eng": "^1.0.0",
     "class-variance-authority": "^0.7.1",
     "lucide-react": "^1.47.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.4",
-    "tailwind-merge": "^3.7.0"
+    "tailwind-merge": "^3.7.0",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260918.1",
@@ -30,6 +32,7 @@
     "postcss": "^8.5.28",
     "tailwindcss": "^3.4.17",
     "typescript": "~6.0.2",
-    "vite": "^8.3.0"
+    "vite": "^8.3.0",
+    "world_countries_lists": "^3.3.0"
   }
 }

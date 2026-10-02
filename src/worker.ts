@@ -142,6 +142,397 @@ export default {
       return json({ valid: true, currency: row.currency || 'EUR' });
     }
 
+    const sellerListingsMatch = url.pathname.match(/^\/api\/manage\/sellers\/([^/]+)\/listings$/);
+    if (sellerListingsMatch && request.method === 'GET') {
+      const sellerId = decodeURIComponent(sellerListingsMatch[1]);
+
+      const seller = await env.sobs_marketplace
+        .prepare(`
+          SELECT id, anonymous_tag, verification_status
+          FROM sellers
+          WHERE id = ?
+          LIMIT 1
+        `)
+        .bind(sellerId)
+        .first();
+
+      if (!seller) {
+        return json({ error: 'Seller not found' }, 404);
+      }
+
+      const { results } = await env.sobs_marketplace
+        .prepare(`
+          SELECT
+            id,
+            listing_number,
+            listing_alias,
+            title,
+            description,
+            price,
+            currency,
+            expires_date,
+            status,
+            created_date,
+            updated_date
+          FROM listings
+          WHERE seller_id = ?
+          ORDER BY created_date DESC
+        `)
+        .bind(sellerId)
+        .all();
+
+      return json({
+        seller,
+        listings: results,
+      });
+    }
+
+    if (url.pathname === '/api/manage/global/verify' && request.method === 'POST') {
+      const globalKey = request.headers.get('X-SOBS-Global-Key')?.trim();
+
+      if (!globalKey) {
+        return json({ error: 'Global user key required' }, 401);
+      }
+
+      const seller = await env.sobs_marketplace
+        .prepare(`
+          SELECT id
+          FROM sellers
+          WHERE global_user_key = ?
+            AND verification_status = 'verified'
+          LIMIT 1
+        `)
+        .bind(globalKey)
+        .first();
+
+      if (!seller) {
+        return json({ error: 'Invalid global user key' }, 401);
+      }
+
+      return json({ verified: true });
+    }
+
+    if (url.pathname === '/api/manage/global/listings' && request.method === 'GET') {
+      const globalKey = request.headers.get('X-SOBS-Global-Key')?.trim();
+
+      if (!globalKey) {
+        return json({ error: 'Global user key required' }, 401);
+      }
+
+      const seller = await env.sobs_marketplace
+        .prepare(`
+          SELECT id
+          FROM sellers
+          WHERE global_user_key = ?
+            AND verification_status = 'verified'
+          LIMIT 1
+        `)
+        .bind(globalKey)
+        .first();
+
+      if (!seller) {
+        return json({ error: 'Invalid global user key' }, 401);
+      }
+
+      const { results } = await env.sobs_marketplace
+        .prepare(`
+          SELECT
+            id,
+            listing_number,
+            listing_alias,
+            title,
+            description,
+            price,
+            currency,
+            images,
+            expires_date,
+            status,
+            created_date,
+            updated_date
+          FROM listings
+          WHERE seller_id = ?
+          ORDER BY created_date DESC
+        `)
+        .bind(seller.id)
+        .all();
+
+      return json({
+        listings: results.map((row) => {
+          const item = row as Record<string, unknown>;
+          return {
+            ...item,
+            images: typeof item.images === 'string'
+              ? JSON.parse(item.images || '[]')
+              : (item.images || []),
+          };
+        }),
+      });
+    }
+
+    if (url.pathname === '/api/manage/global/listing-key' && request.method === 'POST') {
+      const globalKey = request.headers.get('X-SOBS-Global-Key')?.trim();
+      const listingNumber = request.headers.get('X-SOBS-Listing-Number')?.trim();
+      const listingKey = request.headers.get('X-SOBS-Listing-Key')?.trim();
+
+      if (!globalKey || !listingNumber || !listingKey) {
+        return json({ error: 'Required credentials missing' }, 401);
+      }
+
+      const seller = await env.sobs_marketplace
+        .prepare(`
+          SELECT id
+          FROM sellers
+          WHERE global_user_key = ?
+            AND verification_status = 'verified'
+          LIMIT 1
+        `)
+        .bind(globalKey)
+        .first();
+
+      if (!seller) {
+        return json({ error: 'Invalid global user key' }, 401);
+      }
+
+      const listing = await env.sobs_marketplace
+        .prepare(`
+          SELECT id, listing_number
+          FROM listings
+          WHERE seller_id = ?
+            AND listing_number = ?
+            AND key_token = ?
+          LIMIT 1
+        `)
+        .bind(seller.id, listingNumber, listingKey)
+        .first();
+
+      if (!listing) {
+        return json({ error: 'Invalid listing key' }, 401);
+      }
+
+      return json({
+        verified: true,
+        id: listing.id,
+        listing_number: listing.listing_number,
+      });
+    }
+
+    if (url.pathname === '/api/manage/global' && request.method === 'POST') {
+      const globalKey = request.headers.get('X-SOBS-Global-Key')?.trim();
+
+      if (!globalKey) {
+        return json({ error: 'Global user key required' }, 401);
+      }
+
+      const seller = await env.sobs_marketplace
+        .prepare(`
+          SELECT id
+          FROM sellers
+          WHERE global_user_key = ?
+            AND verification_status = 'verified'
+          LIMIT 1
+        `)
+        .bind(globalKey)
+        .first();
+
+      if (!seller) {
+        return json({ error: 'Invalid global user key' }, 401);
+      }
+
+      const listingNumber = request.headers.get('X-SOBS-Listing-Number')?.trim();
+
+      if (!listingNumber) {
+        return json({ error: 'Listing number required' }, 400);
+      }
+
+      const row = await env.sobs_marketplace
+        .prepare(`
+          SELECT
+            id,
+            listing_number,
+            listing_alias,
+            title,
+            description,
+            price,
+            currency,
+            images,
+            expires_date,
+            status,
+            created_date,
+            updated_date,
+            CASE WHEN status = 'active' THEN 1 ELSE 0 END AS active
+          FROM listings
+          WHERE seller_id = ?
+            AND listing_number = ?
+          LIMIT 1
+        `)
+        .bind(seller.id, listingNumber)
+        .first();
+
+      if (!row) {
+        return json({ error: 'No listing attached to this account' }, 404);
+      }
+
+      const publicRow = row as Record<string, unknown>;
+
+      return json({
+        ...publicRow,
+        images: typeof publicRow.images === 'string'
+          ? JSON.parse(publicRow.images || '[]')
+          : (publicRow.images || []),
+      });
+    }
+
+    if (url.pathname.startsWith('/api/manage/global/listings/') && request.method === 'DELETE') {
+      const globalKey = request.headers.get('X-SOBS-Global-Key')?.trim();
+
+      if (!globalKey) {
+        return json({ error: 'Global user key required' }, 401);
+      }
+
+      const seller = await env.sobs_marketplace
+        .prepare(`
+          SELECT id
+          FROM sellers
+          WHERE global_user_key = ?
+            AND verification_status = 'verified'
+          LIMIT 1
+        `)
+        .bind(globalKey)
+        .first();
+
+      if (!seller) {
+        return json({ error: 'Invalid global user key' }, 401);
+      }
+
+      const id = decodeURIComponent(url.pathname.split('/').pop() || '');
+
+      const result = await env.sobs_marketplace
+        .prepare(`
+          DELETE FROM listings
+          WHERE id = ? AND seller_id = ?
+        `)
+        .bind(id, seller.id)
+        .run();
+
+      if (!result.meta.changes) {
+        return json({ error: 'Listing not found or not owned by account' }, 404);
+      }
+
+      return json({ deleted: true });
+    }
+
+    if (url.pathname.startsWith('/api/manage/global/listings/') && request.method === 'PATCH') {
+      const globalKey = request.headers.get('X-SOBS-Global-Key')?.trim();
+
+      if (!globalKey) {
+        return json({ error: 'Global user key required' }, 401);
+      }
+
+      const seller = await env.sobs_marketplace
+        .prepare(`
+          SELECT id
+          FROM sellers
+          WHERE global_user_key = ?
+            AND verification_status = 'verified'
+          LIMIT 1
+        `)
+        .bind(globalKey)
+        .first();
+
+      if (!seller) {
+        return json({ error: 'Invalid global user key' }, 401);
+      }
+
+      const id = decodeURIComponent(url.pathname.split('/').pop() || '');
+
+      const owned = await env.sobs_marketplace
+        .prepare(`
+          SELECT id
+          FROM listings
+          WHERE id = ?
+            AND seller_id = ?
+          LIMIT 1
+        `)
+        .bind(id, seller.id)
+        .first();
+
+      if (!owned) {
+        return json({ error: 'Listing not owned by account' }, 401);
+      }
+
+      const body = await request.json().catch(() => null) as Record<string, unknown> | null;
+
+      if (!body || typeof body !== 'object') {
+        return json({ error: 'Invalid JSON' }, 400);
+      }
+
+      const title = typeof body.title === 'string' ? body.title.trim() : '';
+      const description = typeof body.description === 'string' ? body.description.trim() : '';
+      const price = Number(body.price);
+      const currency = typeof body.currency === 'string'
+        ? body.currency.toUpperCase().trim()
+        : '';
+      const images = Array.isArray(body.images) ? body.images.map(String) : [];
+
+      if (!title || !Number.isFinite(price) || price <= 0 || !currency) {
+        return json({ error: 'Invalid listing fields' }, 400);
+      }
+
+      await env.sobs_marketplace
+        .prepare(`
+          UPDATE listings
+          SET title = ?, description = ?, price = ?, currency = ?, images = ?, updated_date = ?
+          WHERE id = ? AND seller_id = ?
+        `)
+        .bind(
+          title,
+          description,
+          price,
+          currency,
+          JSON.stringify(images),
+          new Date().toISOString(),
+          id,
+          seller.id
+        )
+        .run();
+
+      const updated = await env.sobs_marketplace
+        .prepare(`
+          SELECT
+            id,
+            listing_number,
+            listing_alias,
+            title,
+            description,
+            price,
+            currency,
+            images,
+            expires_date,
+            status,
+            created_date,
+            updated_date,
+            CASE WHEN status = 'active' THEN 1 ELSE 0 END AS active
+          FROM listings
+          WHERE id = ? AND seller_id = ?
+          LIMIT 1
+        `)
+        .bind(id, seller.id)
+        .first();
+
+      if (!updated) {
+        return json({ error: 'Listing not found after update' }, 404);
+      }
+
+      const updatedRow = updated as Record<string, unknown>;
+
+      return json({
+        ...updatedRow,
+        images: typeof updatedRow.images === 'string'
+          ? JSON.parse(updatedRow.images || '[]')
+          : (updatedRow.images || []),
+      });
+    }
+
     if (url.pathname === '/api/listings' && request.method === 'POST') {
       const body = await request.json().catch(() => null) as Record<string, unknown> | null;
 

@@ -11,10 +11,33 @@ function formatPublicListingNumber(value) {
   return digits.match(/.{1,4}/g)?.join(' ') ?? digits;
 }
 
-export default function ListingCard({ listing, onRemoved }) {
+export default function ListingCard({ listing, onRemoved, backTo, useDirectImages = false }) {
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const images = listing.images || (listing.image_url ? [listing.image_url] : []);
+  const images = (() => {
+    let raw = [];
+
+    if (Array.isArray(listing.images)) {
+      raw = listing.images;
+    } else if (typeof listing.images === 'string') {
+      try {
+        const parsed = JSON.parse(listing.images);
+        if (Array.isArray(parsed)) raw = parsed;
+      } catch {}
+    }
+
+    if (raw.length === 0 && listing.image_url) {
+      raw = [listing.image_url];
+    }
+
+    return raw
+      .map((image) => {
+        if (typeof image === 'string') return image;
+        if (!image || typeof image !== 'object') return '';
+        return image.url || image.src || image.image_url || image.path || '';
+      })
+      .filter(Boolean);
+  })();
   const cur = getCurrency(listing.currency);
 
   return (
@@ -27,16 +50,26 @@ export default function ListingCard({ listing, onRemoved }) {
             className="block h-full w-full"
             aria-label="Open photo gallery"
           >
-            <Image src={images[0]} alt={listing.title} className="h-full w-full" fittingType="fill" />
+            <Image
+              src={images[0]}
+              alt={listing.title}
+              className="h-full w-full"
+              fittingType="fill"
+            />
           </button>
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-white">No image</div>
         )}
       </div>
       <div className="p-4">
-        <Link to={`/listings/${listing.id}`} className="block truncate font-medium text-white hover:text-white hover:underline">
+        <Link
+          to={`/listings/${listing.id}`}
+          state={backTo ? { backTo } : undefined}
+          className="block truncate font-medium text-white hover:text-white hover:underline"
+        >
           {listing.title}
         </Link>
+          {listing.title}
         <div className="mt-2 flex items-center gap-2 text-xs text-white">
           <span>Listing {formatPublicListingNumber(listing.listing_alias)}</span>
           <button

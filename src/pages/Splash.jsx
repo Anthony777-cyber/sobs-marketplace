@@ -36,7 +36,7 @@ export default function Splash() {
           </span>
         </div>
         <Link
-          to="/manage"
+          to="/manage-listings"
           className="inline-flex items-center justify-center rounded-full bg-red-600 px-5 py-2 font-semibold text-black transition-colors hover:bg-red-700"
         >
           Manage

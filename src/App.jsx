@@ -17,8 +17,14 @@ import Directory from '@/pages/Directory';
 import Confirmed from '@/pages/Confirmed';
 import Manage from '@/pages/Manage';
 import ManagementConsole from '@/pages/ManagementConsole';
+import GlobalManagementConsole from '@/pages/GlobalManagementConsole';
+import SelectEditListing from '@/pages/SelectEditListing';
+import EditListingKey from '@/pages/EditListingKey';
 import EditListing from '@/pages/EditListing';
 import RenewListing from '@/pages/RenewListing';
+import SelectRenewListing from '@/pages/SelectRenewListing';
+import ViewSellerListings from '@/pages/ViewSellerListings';
+import RenewListingKey from '@/pages/RenewListingKey';
 import CategoryTest from '@/pages/CategoryTest';
 
 const AuthenticatedApp = () => {
@@ -36,9 +42,15 @@ const AuthenticatedApp = () => {
       <Route path="/category-test" element={<CategoryTest />} />
       <Route path="/confirmed/:id" element={<Confirmed />} />
       <Route path="/manage" element={<Manage />} />
+      <Route path="/manage-listings" element={<GlobalManagementConsole />} />
       <Route path="/manage/console" element={<ManagementConsole />} />
+      <Route path="/manage/edit-listings" element={<SelectEditListing />} />
+      <Route path="/manage/edit-key" element={<EditListingKey />} />
       <Route path="/manage/edit" element={<EditListing />} />
-      <Route path="/manage/renew" element={<RenewListing />} />
+      <Route path="/manage/renew-listings" element={<SelectRenewListing />} />
+<Route path="/manage/view-listings" element={<ViewSellerListings />} />
+<Route path="/manage/renew-key" element={<RenewListingKey />} />
+<Route path="/manage/renew" element={<RenewListing />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

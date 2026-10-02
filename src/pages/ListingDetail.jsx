@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import NavBar from '@/components/NavBar';
 import FlagButton from '@/components/FlagButton';
 import ChatThread from '@/components/ChatThread';
@@ -17,6 +17,8 @@ function formatPublicListingNumber(value) {
 }
 
 export default function ListingDetail() {
+  const location = useLocation();
+  const backTo = location.state?.backTo || '/browse';
   const { id } = useParams();
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -58,7 +60,7 @@ export default function ListingDetail() {
     <div className="min-h-screen bg-background">
       <NavBar />
       <div className="mx-auto max-w-3xl px-4 py-8">
-        <Link to="/browse" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <Link to={backTo} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Back to listings
         </Link>
 

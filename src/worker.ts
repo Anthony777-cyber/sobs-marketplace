@@ -168,7 +168,13 @@ export default {
 
       const id = crypto.randomUUID();
       const keyToken = crypto.randomUUID();
-      const listingAlias = await generateListingAlias(id, keyToken, env.sobs_marketplace);
+      let listingAlias: string;
+    try {
+      listingAlias = await generateListingAlias(id, keyToken, env.sobs_marketplace);
+    } catch (error) {
+      console.error("ALIAS_GENERATION_FAILED", error);
+      return json({ error: "alias generation failed" }, 500);
+    }
 
       let listingNumber = null;
       const randomRange = 100000000;
@@ -183,10 +189,16 @@ export default {
         const candidate = random[0] % randomRange;
         if (candidate === 0) continue;
 
-        const taken = await env.sobs_marketplace
-          .prepare('SELECT 1 FROM listings WHERE listing_number = ? LIMIT 1')
-          .bind(candidate)
-          .first();
+        let taken;
+        try {
+          taken = await env.sobs_marketplace
+            .prepare('SELECT 1 FROM listings WHERE listing_number = ? LIMIT 1')
+            .bind(candidate)
+            .first();
+        } catch (error) {
+          console.error("LISTING_NUMBER_QUERY_FAILED", error);
+          return json({ error: "listing number query failed" }, 500);
+        }
 
         if (!taken) listingNumber = candidate;
       }
@@ -195,14 +207,15 @@ export default {
         return json({ error: 'Could not allocate listing number' }, 500);
       }
 
-      await env.sobs_marketplace
-        .prepare(`
+      try {
+        await env.sobs_marketplace
+          .prepare(`
           INSERT INTO listings
             (id, listing_number, listing_alias, title, description, price, currency, images, categoryPath,
              duration_months, payment_amount, expires_date, flags, status,
              grey_zone, grey_zone_until, seller_id, key_token,
              downvote_count, downvoted_by, created_date, updated_date)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'active',
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'active',
                   0, NULL, NULL, ?, 0, '[]', ?, ?)
         `)
         .bind(
@@ -221,8 +234,12 @@ export default {
           keyToken,
           now.toISOString(),
           now.toISOString()
-        )
-        .run();
+          )
+          .run();
+      } catch (error) {
+        console.error("LISTING_INSERT_FAILED", error);
+        return json({ error: String(error) }, 500);
+      }
 
       return json({ success: true, listing: { id, listingNumber, listingAlias, keyToken } }, 201);
     }
@@ -284,6 +301,100 @@ export default {
       return json({ success: true, count, chopped: false });
     }
     const listingMatch = url.pathname.match(/^\/api\/listings\/([^/]+)$/);
+    if (url.pathname === '/api/listings/manage' && request.method === 'POST') {
+      const keyToken = request.headers.get('X-SOBS-Listing-Key')?.trim();
+
+      if (!keyToken) {
+        return json({ error: 'Listing key required' }, 401);
+      }
+
+      const row = await env.sobs_marketplace
+        .prepare('SELECT * FROM listings WHERE key_token = ? LIMIT 1')
+        .bind(keyToken)
+        .first();
+
+      if (!row) {
+        return json({ error: 'No listing matches that key code' }, 404);
+      }
+
+      const { key_token: _keyToken, ...publicRow } = row as Record<string, unknown>;
+
+      return json({
+        ...publicRow,
+        images: typeof publicRow.images === 'string'
+          ? JSON.parse(publicRow.images || '[]')
+          : (publicRow.images || []),
+      });
+    }
+
+    if (listingMatch && request.method === 'PATCH') {
+      const id = decodeURIComponent(listingMatch[1]);
+      const keyToken = request.headers.get('X-SOBS-Listing-Key')?.trim();
+
+      if (!keyToken) {
+        return json({ error: 'Listing key required' }, 401);
+      }
+
+      const owned = await env.sobs_marketplace
+        .prepare('SELECT id FROM listings WHERE id = ? AND key_token = ? LIMIT 1')
+        .bind(id, keyToken)
+        .first();
+
+      if (!owned) {
+        return json({ error: 'Invalid listing key' }, 401);
+      }
+
+      const body = await request.json().catch(() => null) as Record<string, unknown> | null;
+
+      if (!body || typeof body !== 'object') {
+        return json({ error: 'Invalid JSON' }, 400);
+      }
+
+      const title = typeof body.title === 'string' ? body.title.trim() : '';
+      const description = typeof body.description === 'string' ? body.description.trim() : '';
+      const price = Number(body.price);
+      const currency = typeof body.currency === 'string' ? body.currency.toUpperCase().trim() : '';
+
+      if (!title || !Number.isFinite(price) || price <= 0 || !currency) {
+        return json({ error: 'Invalid listing fields' }, 400);
+      }
+
+      await env.sobs_marketplace
+        .prepare(`
+          UPDATE listings
+          SET title = ?, description = ?, price = ?, currency = ?, updated_date = ?
+          WHERE id = ? AND key_token = ?
+        `)
+        .bind(
+          title,
+          description,
+          price,
+          currency,
+          new Date().toISOString(),
+          id,
+          keyToken
+        )
+        .run();
+
+      const row = await env.sobs_marketplace
+        .prepare('SELECT * FROM listings WHERE id = ? AND key_token = ? LIMIT 1')
+        .bind(id, keyToken)
+        .first();
+
+      if (!row) {
+        return json({ error: 'Listing not found' }, 404);
+      }
+
+      const { key_token: _keyToken, ...publicRow } = row as Record<string, unknown>;
+
+      return json({
+        ...publicRow,
+        images: typeof publicRow.images === 'string'
+          ? JSON.parse(publicRow.images || '[]')
+          : (publicRow.images || []),
+      });
+    }
+
     if (listingMatch && request.method === 'GET') {
       const id = decodeURIComponent(listingMatch[1]);
 
@@ -294,11 +405,13 @@ export default {
 
       if (!row) return json({ error: 'Listing not found' }, 404);
 
+      const { key_token: _keyToken, ...publicRow } = row as Record<string, unknown>;
+
       return json({
-        ...row,
-        images: typeof row.images === 'string'
-          ? JSON.parse(row.images || '[]')
-          : (row.images || []),
+        ...publicRow,
+        images: typeof publicRow.images === 'string'
+          ? JSON.parse(publicRow.images || '[]')
+          : (publicRow.images || []),
       });
     }
 
@@ -320,17 +433,21 @@ export default {
         .prepare('SELECT * FROM listings ORDER BY created_date DESC LIMIT 200')
         .all();
 
-      return json(results.map((row) => ({
-        ...row,
-        images: typeof row.images === 'string'
-          ? JSON.parse(row.images || '[]')
-          : (row.images || []),
-      })));
+      return json(results.map((row) => {
+        const { key_token: _keyToken, ...publicRow } = row as Record<string, unknown>;
+
+        return {
+          ...publicRow,
+          images: typeof publicRow.images === 'string'
+            ? JSON.parse(publicRow.images || '[]')
+            : (publicRow.images || []),
+        };
+      }));
     }
 
     const assetResponse = await env.ASSETS.fetch(request);
-    if (assetResponse.status !== 404) return assetResponse;
+    if (assetResponse.ok) return assetResponse;
 
-    return env.ASSETS.fetch(new Request(new URL('/index.html', request.url), request));
+    return env.ASSETS.fetch(new Request(new URL('/', request.url), request));
   },
 };

@@ -11,12 +11,28 @@ export async function getListings() {
   return res.json();
 }
 
-export async function updateListing(id, data) {
+export async function getManageListing(keyToken) {
+  const res = await fetch('/api/listings/manage', {
+    method: 'POST',
+    headers: {
+      'X-SOBS-Listing-Key': keyToken,
+    },
+  });
+
+  if (!res.ok) throw new Error(`Listing lookup failed: ${res.status}`);
+  return res.json();
+}
+
+export async function updateListing(id, keyToken, data) {
   const res = await fetch(`/api/listings/${encodeURIComponent(id)}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-SOBS-Listing-Key': keyToken,
+    },
     body: JSON.stringify(data),
   });
+
   if (!res.ok) throw new Error(`Listing update failed: ${res.status}`);
   return res.json();
 }

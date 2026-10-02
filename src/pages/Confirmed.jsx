@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import NavBar from '@/components/NavBar';
 import { formatUkDate } from '@/lib/format';
 import { tokenFileName } from '@/lib/token';
@@ -11,7 +11,9 @@ import { Loader2, Download } from 'lucide-react';
 // the UK-word-format expiry date, and a "Save Key to Device" notepad download.
 export default function Confirmed() {
   const { id } = useParams();
+  const location = useLocation();
   const [listing, setListing] = useState(null);
+  const [keyToken, setKeyToken] = useState(location.state?.keyToken || '');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,17 +34,17 @@ export default function Confirmed() {
   }, []);
 
   const download = () => {
-    if (!listing?.key_token) return;
+    if (!keyToken) return;
     const content =
       `S.O.B.S. Listing Key\n\n` +
-      `Key: ${listing.key_token}\n` +
+      `Key: ${keyToken}\n` +
       `Listing expires: ${formatUkDate(listing.expires_date)}\n\n` +
       `Keep this key safe. Enter it at /manage to edit or renew your listing.\n`;
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = tokenFileName(listing.key_token);
+    a.download = tokenFileName(keyToken);
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -60,7 +62,7 @@ export default function Confirmed() {
             <h1 className="font-display text-3xl tracking-tight">Listing live</h1>
             <p className="mt-2 text-sm text-white/60">Save this key. You'll need it to edit or renew.</p>
             <p className="mt-8 font-mono text-xs uppercase tracking-[0.3em] text-white/40">Your key code</p>
-            <p className="mt-3 font-display text-5xl tracking-tight text-white">{listing.key_token}</p>
+            <p className="mt-3 font-display text-5xl tracking-tight text-white">{keyToken}</p>
             <p className="mt-4 text-sm text-white/70">
               Listing expires: {formatUkDate(listing.expires_date)}
             </p>

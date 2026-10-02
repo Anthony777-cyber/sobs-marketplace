@@ -182,7 +182,9 @@ export default function CreateListing() {
       }
 
       localStorage.removeItem(DRAFT_KEY);
-      navigate('/browse');
+      navigate(`/confirmed/${data.listing.id}`, {
+        state: { keyToken: data.listing.keyToken },
+      });
     } catch (e) {
       console.error(e);
       setError(e instanceof Error ? e.message : 'Listing creation failed.');

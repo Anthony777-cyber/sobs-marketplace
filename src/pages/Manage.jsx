@@ -5,6 +5,7 @@ import { CURRENCIES, fetchRates, getCurrency, formatAmount } from '@/lib/currenc
 import { formatUkDate } from '@/lib/format';
 import { useCurrency } from '@/lib/CurrencyContext';
 import { setHead } from '@/lib/head';
+import { getManageListing, updateListing } from '@/lib/api';
 import { Loader2, Lock } from 'lucide-react';
 
 // Account-free management view. Enter a valid key token to unlock the edit
@@ -34,19 +35,50 @@ export default function Manage() {
   const unlock = async () => {
     const code = keyInput.trim();
     if (!code) return;
+
     setStatus('searching');
     setListing(null);
-    // Cloudflare listing lookup will be connected here.
-    setTimeout(() => setStatus('notfound'), 0);
+    setMsg('');
+
+    try {
+      const data = await getManageListing(code);
+
+      setListing(data);
+      setTitle(data.title || '');
+      setDescription(data.description || '');
+      setPrice(data.price ?? '');
+
+      if (data.currency) {
+        setCurrency(data.currency);
+      }
+
+      setStatus('found');
+    } catch {
+      setStatus('notfound');
+    }
   };
 
   const saveEdits = async () => {
     if (!listing) return;
+
     setSaving(true);
     setMsg('');
-    // Cloudflare listing update will be connected here.
-    setMsg('Listing backend is being connected.');
-    setSaving(false);
+
+    try {
+      const updated = await updateListing(listing.id, keyInput.trim(), {
+        title,
+        description,
+        price,
+        currency,
+      });
+
+      setListing(updated);
+      setMsg('Listing saved.');
+    } catch {
+      setMsg('Could not save listing.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const renew = async () => {
@@ -96,8 +128,8 @@ export default function Manage() {
         {status === 'found' && listing && (
           <div className="mt-8 space-y-6">
             <div className="rounded-xl border border-white/15 p-4">
-              <p className="font-mono text-xs uppercase tracking-[0.2em] text-white/40">Key</p>
-              <p className="mt-1 font-display text-2xl">{listing.key_token}</p>
+              <p className="font-mono text-xs uppercase tracking-[0.2em] text-white/40">Listing</p>
+              <p className="mt-1 font-display text-2xl">#{listing.listing_number}</p>
               <p className="mt-1 text-sm text-white/60">Expires: {formatUkDate(listing.expires_date)}</p>
             </div>
 

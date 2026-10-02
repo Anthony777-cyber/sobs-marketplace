@@ -25,6 +25,7 @@ export default function CreateListing() {
   const [tier, setTier] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [sellerId, setSellerId] = useState('');
   const [showGateway, setShowGateway] = useState(false);
   const [showCategoryFlow, setShowCategoryFlow] = useState(false);
   const [categoryFlow, setCategoryFlow] = useState({
@@ -41,6 +42,26 @@ export default function CreateListing() {
   });
 
   useEffect(() => {
+    const globalKey = sessionStorage.getItem('sobs_global_user_key')?.trim();
+
+    if (!globalKey) {
+      setError('Verified seller authentication required.');
+      return;
+    }
+
+    fetch('/api/seller/me', {
+      headers: { 'X-SOBS-Global-Key': globalKey },
+    })
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data?.error || 'Seller authentication failed.');
+        setSellerId(String(data.sellerId || ''));
+      })
+      .catch((e) => {
+        setSellerId('');
+        setError(e instanceof Error ? e.message : 'Seller authentication failed.');
+      });
+
     fetchRates()
       .then(setRates)
       .catch(() => setRates(null));
@@ -162,12 +183,21 @@ export default function CreateListing() {
   };
 
   const confirmAndCreate = async () => {
+    const globalKey = sessionStorage.getItem('sobs_global_user_key')?.trim();
+    if (!globalKey || !sellerId) {
+      setError('Verified seller authentication required.');
+      return;
+    }
+
     setSubmitting(true);
     setError('');
     try {
       const res = await fetch('/api/listings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-SOBS-Global-Key': globalKey,
+        },
         body: JSON.stringify({
           title,
           description,
@@ -197,7 +227,7 @@ export default function CreateListing() {
     }
   };
 
-  const canSubmit = title && price && tier && categoryPath.trim() && !submitting;
+  const canSubmit = sellerId && title && price && tier && categoryPath.trim() && !submitting;
 
   const gbpEquivalent = (() => {
     const amount = Number(price);

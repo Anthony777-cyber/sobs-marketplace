@@ -35,6 +35,12 @@ export default function Splash() {
             SELL OLD BROKEN STUFF
           </span>
         </div>
+        <Link
+          to="/manage"
+          className="inline-flex items-center justify-center rounded-full bg-red-600 px-5 py-2 font-semibold text-black transition-colors hover:bg-red-700"
+        >
+          Manage
+        </Link>
       </header>
 
       <section className="mx-auto max-w-5xl px-4 pb-0 pt-4 sm:pt-6">

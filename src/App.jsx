@@ -9,7 +9,9 @@ import ScrollToTop from './components/ScrollToTop';
 import Splash from '@/pages/Splash';
 import Rules from '@/pages/Rules';
 import CreateListing from '@/pages/CreateListing';
+import SellInfo from '@/pages/SellInfo';
 import Signup from '@/pages/Signup';
+import SellerLogin from '@/pages/SellerLogin';
 import Listings from '@/pages/Listings';
 import ListingDetail from '@/pages/ListingDetail';
 import Browse from '@/pages/Browse';
@@ -24,6 +26,7 @@ import EditListing from '@/pages/EditListing';
 import RenewListing from '@/pages/RenewListing';
 import SelectRenewListing from '@/pages/SelectRenewListing';
 import ViewSellerListings from '@/pages/ViewSellerListings';
+import DeleteListing from '@/pages/DeleteListing';
 import RenewListingKey from '@/pages/RenewListingKey';
 import CategoryTest from '@/pages/CategoryTest';
 
@@ -33,7 +36,9 @@ const AuthenticatedApp = () => {
       {/* Add your page Route elements here */}
       <Route path="/" element={<Splash />} />
       <Route path="/create" element={<CreateListing />} />
+      <Route path="/sell-info" element={<SellInfo />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/seller-login" element={<SellerLogin />} />
       <Route path="/listings" element={<Listings />} />
       <Route path="/listings/:id" element={<ListingDetail />} />
       <Route path="/rules" element={<Rules />} />
@@ -49,6 +54,7 @@ const AuthenticatedApp = () => {
       <Route path="/manage/edit" element={<EditListing />} />
       <Route path="/manage/renew-listings" element={<SelectRenewListing />} />
 <Route path="/manage/view-listings" element={<ViewSellerListings />} />
+<Route path="/manage/delete-listing" element={<DeleteListing />} />
 <Route path="/manage/renew-key" element={<RenewListingKey />} />
 <Route path="/manage/renew" element={<RenewListing />} />
       <Route path="*" element={<PageNotFound />} />

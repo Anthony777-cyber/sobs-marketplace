@@ -21,6 +21,39 @@ async function hashTicket(ticket: string): Promise<string> {
     .join('');
 }
 
+async function generateSellerId(db: D1Database): Promise<string> {
+  const range = 10000000000000000n;
+  const max = 1n << 64n;
+  const limit = (max / range) * range;
+
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const bytes = crypto.getRandomValues(new Uint8Array(8));
+
+    let value = 0n;
+    for (const byte of bytes) {
+      value = (value << 8n) | BigInt(byte);
+    }
+
+    if (value >= limit) continue;
+
+    const sellerId = (value % range).toString().padStart(16, '0');
+
+    const taken = await db
+      .prepare('SELECT 1 FROM sellers WHERE global_user_key = ? LIMIT 1')
+      .bind(sellerId)
+      .first();
+
+    if (!taken) return sellerId;
+  }
+
+  throw new Error('Could not allocate seller ID');
+}
+
+function generateSellerSecret(): string {
+  const digits = crypto.getRandomValues(new Uint8Array(16));
+  return Array.from(digits, (byte) => String(byte % 10)).join('');
+}
+
 async function generateListingAlias(
   id: string,
   keyToken: string,
@@ -140,6 +173,160 @@ export default {
         .run();
 
       return json({ valid: true, currency: row.currency || 'EUR' });
+    }
+
+    if (url.pathname === '/api/seller/signup' && request.method === 'POST') {
+      const body = await request.json().catch(() => null) as Record<string, unknown> | null;
+
+      if (!body || typeof body !== 'object') {
+        return json({ error: 'Invalid signup data' }, 400);
+      }
+
+      const required = [
+        'fullName',
+        'country',
+        'street',
+        'houseNumber',
+        'town',
+        'region',
+        'postcode',
+        'phone',
+        'email',
+        'idDocumentType',
+      ];
+
+      const getString = (field: string): string => {
+        const value = body[field];
+        return typeof value === 'string' ? value.trim() : '';
+      };
+
+      for (const field of required) {
+        if (typeof body[field] !== 'string' || !body[field].trim()) {
+          return json({ error: `Missing ${field}` }, 400);
+        }
+      }
+
+      const sellerId = crypto.randomUUID();
+      const globalUserKey = await generateSellerId(env.sobs_marketplace);
+      const loginSecret = generateSellerSecret();
+      const loginSecretHash = await hashTicket(loginSecret);
+      const now = new Date().toISOString();
+
+      await env.sobs_marketplace
+        .prepare(`
+          INSERT INTO sellers
+            (
+              id,
+              anonymous_tag,
+              identity_ciphertext,
+              identity_key_version,
+              verification_status,
+              created_at,
+              updated_at,
+              global_user_key,
+              login_secret_hash
+            )
+          VALUES (?, ?, ?, 1, 'verified', ?, ?, ?, ?)
+        `)
+        .bind(
+          sellerId,
+          `SELLER-${globalUserKey}`,
+          JSON.stringify({
+            fullName: getString('fullName'),
+            country: getString('country'),
+            street: getString('street'),
+            houseNumber: getString('houseNumber'),
+            town: getString('town'),
+            region: getString('region'),
+            postcode: getString('postcode'),
+            phone: getString('phone'),
+            email: getString('email'),
+            idDocumentType: getString('idDocumentType'),
+          }),
+          now,
+          now,
+          globalUserKey,
+          loginSecretHash
+        )
+        .run();
+
+      return json({
+        success: true,
+        seller: {
+          id: globalUserKey,
+          loginSecret,
+        },
+      }, 201);
+    }
+
+    if (url.pathname === '/api/seller/login' && request.method === 'POST') {
+      const body = await request.json().catch(() => null) as Record<string, unknown> | null;
+
+      const globalUserKey =
+        typeof body?.sellerId === 'string' ? body.sellerId.trim() : '';
+      const loginSecret =
+        typeof body?.loginSecret === 'string' ? body.loginSecret.trim() : '';
+
+      if (!/^\d{16}$/.test(globalUserKey) || !/^\d{16}$/.test(loginSecret)) {
+        return json({ error: 'Invalid S.O.B.S ID or login secret' }, 401);
+      }
+
+      const seller = await env.sobs_marketplace
+        .prepare(`
+          SELECT id, global_user_key, login_secret_hash
+          FROM sellers
+          WHERE global_user_key = ?
+            AND verification_status = 'verified'
+          LIMIT 1
+        `)
+        .bind(globalUserKey)
+        .first() as {
+          id: string;
+          global_user_key: string;
+          login_secret_hash: string | null;
+        } | null;
+
+      if (!seller?.login_secret_hash) {
+        return json({ error: 'Invalid S.O.B.S ID or login secret' }, 401);
+      }
+
+      const suppliedHash = await hashTicket(loginSecret);
+
+      if (suppliedHash !== seller.login_secret_hash) {
+        return json({ error: 'Invalid S.O.B.S ID or login secret' }, 401);
+      }
+
+      const sessionTokenBytes = crypto.getRandomValues(new Uint8Array(32));
+      const sessionToken = Array.from(
+        sessionTokenBytes,
+        (byte) => byte.toString(16).padStart(2, '0')
+      ).join('');
+
+      const sessionTokenHash = await hashTicket(sessionToken);
+      const sessionId = crypto.randomUUID();
+      const createdAt = new Date();
+      const expiresAt = new Date(createdAt.getTime() + 24 * 60 * 60 * 1000);
+
+      await env.sobs_marketplace
+        .prepare(`
+          INSERT INTO seller_sessions
+            (id, seller_id, token_hash, created_at, expires_at)
+          VALUES (?, ?, ?, ?, ?)
+        `)
+        .bind(
+          sessionId,
+          seller.id,
+          sessionTokenHash,
+          createdAt.toISOString(),
+          expiresAt.toISOString()
+        )
+        .run();
+
+      return json({
+        success: true,
+        sessionToken,
+        expiresAt: expiresAt.toISOString(),
+      });
     }
 
     const sellerListingsMatch = url.pathname.match(/^\/api\/manage\/sellers\/([^/]+)\/listings$/);

@@ -188,7 +188,7 @@ export default function CreateListing() {
 
       localStorage.removeItem(DRAFT_KEY);
       navigate(`/confirmed/${data.listing.id}`, {
-        state: { keyToken: data.listing.keyToken },
+        state: { keyToken: data.listing.keyToken, listingNumber: data.listing.listingNumber },
       });
     } catch (e) {
       console.error(e);

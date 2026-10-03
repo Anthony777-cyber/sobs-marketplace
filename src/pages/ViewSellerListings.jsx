@@ -39,21 +39,16 @@ export default function ViewSellerListings() {
       .finally(() => setLoading(false));
   }, [globalKey, navigate]);
 
-  const handleDelete = async (listing) => {
-    const confirmed = window.confirm(
-      'Are you sure? This will permanently delete this listing.'
+  const handleDelete = (listing) => {
+    sessionStorage.setItem('sobs_global_delete_listing_id', String(listing.id));
+    sessionStorage.setItem(
+      'sobs_global_delete_listing_number',
+      String(listing.listing_number ?? listing.listing_alias ?? '')
     );
 
-    if (!confirmed) return;
-
-    try {
-      await deleteGlobalListing(listing.id, globalKey);
-      setListings((current) =>
-        current.filter((item) => item.id !== listing.id)
-      );
-    } catch {
-      window.alert('Could not delete listing.');
-    }
+    navigate('/manage/delete-listing', {
+      state: { listing },
+    });
   };
 
   if (loading) {

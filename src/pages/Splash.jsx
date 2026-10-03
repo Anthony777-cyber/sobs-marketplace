@@ -41,6 +41,12 @@ export default function Splash() {
         >
           Manage
         </Link>
+        <Link
+          to="/seller-login"
+          className="inline-flex items-center justify-center rounded-full bg-red-600 px-5 py-2 font-semibold text-black transition-colors hover:bg-red-700"
+        >
+          Login
+        </Link>
       </header>
 
       <section className="mx-auto max-w-5xl px-4 pb-0 pt-4 sm:pt-6">
@@ -62,7 +68,11 @@ export default function Splash() {
           <p className="text-lg leading-relaxed text-white sm:text-xl">Just like an advert in the back of a newspaper.</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
-              to="/create"
+              to={
+                sessionStorage.getItem('sobs_global_user_key')
+                  ? '/create'
+                  : '/sell-info'
+              }
               className="inline-flex w-32 items-center justify-center gap-2 rounded-full bg-red-600 px-5 py-2 font-semibold text-white transition-colors hover:bg-red-700"
             >
               Post <ArrowRight className="h-4 w-4" />

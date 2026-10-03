@@ -14,6 +14,7 @@ export default function Confirmed() {
   const location = useLocation();
   const [listing, setListing] = useState(null);
   const [keyToken, setKeyToken] = useState(location.state?.keyToken || '');
+  const [listingNumber, setListingNumber] = useState(location.state?.listingNumber || '');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,11 +36,22 @@ export default function Confirmed() {
 
   const download = () => {
     if (!keyToken) return;
+    const expiresDate = new Date(listing.expires_date);
+    const deletionDate = new Date(expiresDate);
+    deletionDate.setDate(deletionDate.getDate() + 7);
+
     const content =
-      `S.O.B.S. Listing Key\n\n` +
-      `Key: ${keyToken}\n` +
-      `Listing expires: ${formatUkDate(listing.expires_date)}\n\n` +
-      `Keep this key safe. Enter it at /manage to edit or renew your listing.\n`;
+      `S.O.B.S Listings ticket\n\n` +
+      `${listing.title} — ${listingNumber}\n\n` +
+      `Listing created:           ${formatUkDate(listing.created_date)}\n` +
+      `Listing expires:            ${formatUkDate(listing.expires_date)}\n` +
+      `Listing deletion date:  ${formatUkDate(deletionDate.toISOString())}\n\n` +
+      `INDIVIDUAL LISTING MANAGEMENT CODE\n\n` +
+      `${keyToken}\n\n` +
+      `IMPORTANT — KEEP THIS CODE SAFE.\n\n` +
+      `AS YOU WILL NEED THIS CODE TO MANAGE, EDIT AND RENEW THIS LISTING.\n\n` +
+      `LOSE IT AND YOU WILL NOT BE ABLE TO EDIT, MANAGE OR RENEW THE LISTING\n` +
+      `AS THIS TICKET WILL NOT BE REISSUED FOR SECURITY PURPOSES\n`;
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

@@ -145,6 +145,7 @@ export default function Signup() {
   const [idDocumentType, setIdDocumentType] = useState('');
   const [idFile, setIdFile] = useState(null);
   const [idStatus, setIdStatus] = useState('idle');
+  const [sellerLoginSecret, setSellerLoginSecret] = useState('');
   const idFileRef = useRef(null);
 
   const addressReady =
@@ -175,6 +176,60 @@ export default function Signup() {
       );
 
       if (accepted) {
+        const response = await fetch('/api/seller/signup', {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            fullName,
+            country,
+            street,
+            houseNumber,
+            town,
+            region,
+            postcode,
+            phone,
+            email,
+            idDocumentType,
+          }),
+        });
+
+        const data = await response.json().catch(() => null);
+
+        if (!response.ok || !data?.success || !data?.seller?.id) {
+          throw new Error(data?.error || 'Seller signup failed');
+        }
+
+        const sellerId = data.seller.id;
+        const loginSecret = data.seller.loginSecret;
+
+        if (!loginSecret) {
+          throw new Error('Seller login secret was not returned');
+        }
+
+        setSellerLoginSecret(loginSecret);
+
+        const content =
+          `S.O.B.S seller credentials\n\n` +
+          `YOUR UNIQUE INDIVIDUAL SOBS ID\n\n` +
+          `${sellerId}\n\n` +
+          `IMPORTANT — KEEP THIS CODE SAFE.\n\n` +
+          `YOU NEED THIS CODE TO LOG INTO SOBS\n` +
+          `THIS IS YOUR SOBS "USERNAME"\n` +
+          `YOU ALSO NEED THIS CODE TO ACCESS YOUR MANAGEMENT CONSOLE\n` +
+          `IT IS 1 OF 10 QUADRILLION POSSIBLE IDs\n`;
+
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `SOBS-seller-credentials-${sellerId}.txt`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(url);
+
         setStep(5);
       } else {
         setIdStatus('rejected');
@@ -471,12 +526,49 @@ export default function Signup() {
         {step === 5 && (
           <>
             <h1 className="font-display text-3xl tracking-tight">
-              Checking
+              Your S.O.B.S account
             </h1>
 
             <p className="mt-4 text-sm leading-6 text-muted-foreground">
-              Your submission is being checked.
+              Your seller account has been created.
             </p>
+
+            <div className="mt-8 rounded-lg border-2 border-white p-5">
+              <p className="text-sm font-semibold">
+                YOUR SOBS LOGIN SECRET
+              </p>
+
+              <p className="mt-3 break-all font-mono text-xl tracking-widest">
+                {sellerLoginSecret}
+              </p>
+
+              <p className="mt-4 text-sm leading-6 text-muted-foreground">
+                IMPORTANT — KEEP THIS CODE SAFE.
+                <br />
+                You need this code together with your S.O.B.S ID to log into S.O.B.S.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const blob = new Blob(
+                    [sellerLoginSecret + '\n'],
+                    { type: 'text/plain;charset=utf-8' }
+                  );
+                  const url = URL.createObjectURL(blob);
+                  const anchor = document.createElement('a');
+                  anchor.href = url;
+                  anchor.download = 'SOBS-login-secret.txt';
+                  document.body.appendChild(anchor);
+                  anchor.click();
+                  anchor.remove();
+                  URL.revokeObjectURL(url);
+                }}
+                className={`mt-5 ${BUTTON_CLASS}`}
+              >
+                Download login secret
+              </button>
+            </div>
 
             <Link
               to="/"

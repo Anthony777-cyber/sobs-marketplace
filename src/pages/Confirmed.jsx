@@ -84,9 +84,19 @@ export default function Confirmed() {
             >
               <Download className="h-4 w-4" /> Save Key to Device
             </button>
-            <div className="mt-8 flex justify-center gap-4 text-sm">
-              <Link to="/manage" className="text-white/70 hover:text-white">Manage listing →</Link>
-              <Link to="/listings" className="text-white/70 hover:text-white">Browse listings</Link>
+            <div className="mt-8 flex justify-center gap-4">
+              <Link
+                to="/manage"
+                className="inline-flex items-center justify-center rounded-full bg-white px-5 py-2.5 font-semibold text-black hover:bg-white/90"
+              >
+                Manage listing
+              </Link>
+              <Link
+                to="/browse"
+                className="inline-flex items-center justify-center rounded-full bg-white px-5 py-2.5 font-semibold text-black hover:bg-white/90"
+              >
+                View listings
+              </Link>
             </div>
           </>
         )}

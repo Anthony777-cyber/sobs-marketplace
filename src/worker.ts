@@ -1294,9 +1294,6 @@ export default {
       }));
     }
 
-    const assetResponse = await env.ASSETS.fetch(request);
-    if (assetResponse.ok) return assetResponse;
-
-    return env.ASSETS.fetch(new Request(new URL('/', request.url), request));
+    return env.ASSETS.fetch(request);
   },
 };

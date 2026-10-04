@@ -46,8 +46,8 @@ export default function SelectRenewListing() {
               className="flex items-center justify-between gap-4 rounded-xl border border-white/15 p-5"
             >
               <div>
-                <p className="font-display text-xl">#{listing.listing_number}</p>
-                <p className="text-white/70">{listing.title}</p>
+                <p className="font-display text-2xl">{listing.title}</p>
+                <p className="text-white/70">Listing #{listing.listing_number}</p>
               </div>
 
               <button

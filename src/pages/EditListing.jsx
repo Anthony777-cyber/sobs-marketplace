@@ -113,6 +113,7 @@ export default function EditListing() {
 
       setListing(updated);
       setMsg('Listing saved.');
+      navigate('/manage/console', { replace: true });
     } catch {
       setMsg('Could not save listing.');
     } finally {

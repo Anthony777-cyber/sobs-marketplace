@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import NavBar from '@/components/NavBar';
-import { deleteGlobalListing } from '@/lib/api';
+import { deleteGlobalListing, verifyGlobalListingKey } from '@/lib/api';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 
 export default function DeleteListing() {
@@ -28,15 +28,19 @@ export default function DeleteListing() {
     navigate('/manage/view-listings', { replace: true });
   };
 
-  const checkListingId = () => {
+  const checkListingId = async () => {
     setError('');
 
-    if (enteredId.trim() !== String(listingNumber)) {
-      setError('Listing ID does not match this listing.');
-      return;
+    try {
+      await verifyGlobalListingKey(
+        globalKey,
+        listingNumber,
+        enteredId.trim()
+      );
+      setStage(3);
+    } catch {
+      setError('Listing management code does not match this listing.');
     }
-
-    setStage(3);
   };
 
   const permanentlyDelete = async () => {
@@ -104,11 +108,11 @@ export default function DeleteListing() {
           {stage === 2 && (
             <div className="mt-8">
               <h2 className="text-xl font-semibold">
-                Enter the listing ID for this listing.
+                Enter the Individual Listing Management Code for this listing.
               </h2>
 
               <p className="mt-2 text-sm text-white/50">
-                The entered ID must match the selected listing.
+                The code must match the selected listing.
               </p>
 
               <input
@@ -118,7 +122,7 @@ export default function DeleteListing() {
                   setError('');
                 }}
                 className="mt-6 w-full rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-white outline-none focus:border-white/50"
-                placeholder="Listing ID"
+                placeholder="Individual Listing Management Code"
                 autoFocus
               />
 
@@ -157,8 +161,11 @@ export default function DeleteListing() {
                 </p>
 
                 <p>
-                  No pictures or listing text are retained. A record of the
-                  listing, including its dates, times and duration, will remain.
+                  The listing will no longer be publicly available. S.O.B.S.
+                  retains an internal historical record of the listing,
+                  including its contents, images, dates, times and duration,
+                  for record-keeping, security, dispute handling and lawful
+                  requests.
                 </p>
               </div>
 

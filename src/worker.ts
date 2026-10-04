@@ -4,6 +4,7 @@ export interface Env {
     fetch: (request: Request | string | URL, init?: RequestInit) => Promise<Response>;
   };
   sobs_marketplace: D1Database;
+  SOBS_LISTING_HISTORY: R2Bucket;
 }
 
 function json(data: unknown, status = 200): Response {
@@ -14,11 +15,7 @@ function json(data: unknown, status = 200): Response {
 }
 
 async function hashTicket(ticket: string): Promise<string> {
-  const data = new TextEncoder().encode(ticket);
-  const digest = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(digest))
-    .map((byte) => byte.toString(16).padStart(2, '0'))
-    .join('');
+  return hashSha256(ticket);
 }
 
 async function generateSellerId(db: D1Database): Promise<string> {
@@ -86,6 +83,131 @@ async function generateListingAlias(
   }
 
   throw new Error('Could not allocate listing alias');
+}
+
+async function hashSha256(value: string): Promise<string> {
+  const data = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function listingSnapshot(row: Record<string, unknown>) {
+  return {
+    id: row.id ?? null,
+    listing_number: row.listing_number ?? null,
+    listing_alias: row.listing_alias ?? null,
+    key_token: row.key_token ?? null,
+    title: row.title ?? '',
+    description: row.description ?? '',
+    price: row.price ?? null,
+    currency: row.currency ?? null,
+    images: row.images ?? '[]',
+    categoryPath: row.categoryPath ?? null,
+    duration_months: row.duration_months ?? null,
+    payment_amount: row.payment_amount ?? null,
+    expires_date: row.expires_date ?? null,
+    flags: row.flags ?? null,
+    status: row.status ?? null,
+    grey_zone: row.grey_zone ?? null,
+    grey_zone_until: row.grey_zone_until ?? null,
+    seller_id: row.seller_id ?? null,
+    created_date: row.created_date ?? null,
+    updated_date: row.updated_date ?? null,
+  };
+}
+
+async function prepareListingHistoryInsert(
+  env: Env,
+  row: Record<string, unknown>,
+  eventType: string,
+  eventAt: string,
+  forcedHistoryId?: string
+) {
+  const db = env.sobs_marketplace;
+  const snapshotJson = JSON.stringify(listingSnapshot(row));
+  const snapshotSha256 = await hashSha256(snapshotJson);
+  const historyId = forcedHistoryId ?? crypto.randomUUID();
+  const year = new Date(eventAt).getUTCFullYear();
+  const listingId = String(row.id ?? '');
+
+  const r2ObjectKey =
+    `${year}/listings/${listingId}/${eventType}-${historyId}.json`;
+
+  await env.SOBS_LISTING_HISTORY.put(
+    r2ObjectKey,
+    snapshotJson,
+    {
+      httpMetadata: {
+        contentType: 'application/json',
+      },
+    }
+  );
+
+  return db.prepare(`
+    INSERT OR IGNORE INTO listing_history
+      (history_id, listing_id, seller_id, listing_number, listing_alias,
+       listing_key_token, event_type, event_at, r2_object_key, snapshot_sha256)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).bind(
+    historyId,
+    listingId,
+    row.seller_id ?? null,
+    row.listing_number ?? null,
+    row.listing_alias ?? null,
+    row.key_token ?? null,
+    eventType,
+    eventAt,
+    r2ObjectKey,
+    snapshotSha256
+  );
+}
+
+async function archiveExpiredListings(env: Env, nowIso: string) {
+  const db = env.sobs_marketplace;
+
+  const { results } = await db
+    .prepare(`
+      SELECT *
+      FROM listings
+      WHERE grey_zone = 1
+        AND grey_zone_until < ?
+    `)
+    .bind(nowIso)
+    .all();
+
+  if (!results.length) return;
+
+  const historyStatements = [];
+
+  for (const row of results) {
+    const listingId = String((row as Record<string, unknown>).id ?? '');
+    const greyZoneUntil = String(
+      (row as Record<string, unknown>).grey_zone_until ?? ''
+    );
+
+    historyStatements.push(
+      await prepareListingHistoryInsert(
+        env,
+        row as Record<string, unknown>,
+        'expired',
+        nowIso,
+        `expired-${listingId}-${greyZoneUntil}`
+      )
+    );
+  }
+
+  await db.batch(historyStatements);
+
+  await db
+    .prepare(`
+      DELETE FROM listings
+      WHERE grey_zone = 1
+        AND grey_zone_until < ?
+    `)
+    .bind(nowIso)
+    .run();
 }
 
 export default {
@@ -618,17 +740,37 @@ export default {
 
       const id = decodeURIComponent(url.pathname.split('/').pop() || '');
 
-      const result = await env.sobs_marketplace
+      const owned = await env.sobs_marketplace
         .prepare(`
-          DELETE FROM listings
+          SELECT *
+          FROM listings
           WHERE id = ? AND seller_id = ?
+          LIMIT 1
         `)
         .bind(id, seller.id)
-        .run();
+        .first();
 
-      if (!result.meta.changes) {
+      if (!owned) {
         return json({ error: 'Listing not found or not owned by account' }, 404);
       }
+
+      const deletedAt = new Date().toISOString();
+      const historyInsert = await prepareListingHistoryInsert(
+        env,
+        owned as Record<string, unknown>,
+        'deleted',
+        deletedAt
+      );
+
+      await env.sobs_marketplace.batch([
+        historyInsert,
+        env.sobs_marketplace
+          .prepare(`
+            DELETE FROM listings
+            WHERE id = ? AND seller_id = ?
+          `)
+          .bind(id, seller.id),
+      ]);
 
       return json({ deleted: true });
     }
@@ -659,7 +801,7 @@ export default {
 
       const owned = await env.sobs_marketplace
         .prepare(`
-          SELECT id
+          SELECT *
           FROM listings
           WHERE id = ?
             AND seller_id = ?
@@ -690,23 +832,41 @@ export default {
         return json({ error: 'Invalid listing fields' }, 400);
       }
 
-      await env.sobs_marketplace
-        .prepare(`
-          UPDATE listings
-          SET title = ?, description = ?, price = ?, currency = ?, images = ?, updated_date = ?
-          WHERE id = ? AND seller_id = ?
-        `)
-        .bind(
-          title,
-          description,
-          price,
-          currency,
-          JSON.stringify(images),
-          new Date().toISOString(),
-          id,
-          seller.id
-        )
-        .run();
+      const updatedAt = new Date().toISOString();
+      const updatedHistoryRow = {
+        ...(owned as Record<string, unknown>),
+        title,
+        description,
+        price,
+        currency,
+        images: JSON.stringify(images),
+        updated_date: updatedAt,
+      };
+
+      await env.sobs_marketplace.batch([
+        env.sobs_marketplace
+          .prepare(`
+            UPDATE listings
+            SET title = ?, description = ?, price = ?, currency = ?, images = ?, updated_date = ?
+            WHERE id = ? AND seller_id = ?
+          `)
+          .bind(
+            title,
+            description,
+            price,
+            currency,
+            JSON.stringify(images),
+            updatedAt,
+            id,
+            seller.id
+          ),
+        await prepareListingHistoryInsert(
+          env,
+          updatedHistoryRow,
+          'edited',
+          updatedAt
+        ),
+      ]);
 
       const updated = await env.sobs_marketplace
         .prepare(`
@@ -831,35 +991,66 @@ export default {
       }
 
       try {
-        await env.sobs_marketplace
-          .prepare(`
-          INSERT INTO listings
-            (id, listing_number, listing_alias, title, description, price, currency, images, categoryPath,
-             duration_months, payment_amount, expires_date, flags, status,
-             grey_zone, grey_zone_until, seller_id, key_token,
-             downvote_count, downvoted_by, created_date, updated_date)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'active',
-                  0, NULL, ?, ?, 0, '[]', ?, ?)
-        `)
-        .bind(
+        const createdAt = now.toISOString();
+        const createdRow = {
           id,
-          listingNumber,
-          listingAlias,
+          listing_number: listingNumber,
+          listing_alias: listingAlias,
+          key_token: keyToken,
           title,
           description,
           price,
           currency,
-          JSON.stringify(images),
+          images: JSON.stringify(images),
           categoryPath,
-          months,
-          Number.isFinite(paymentAmount) ? paymentAmount : 0,
-          expiresDate.toISOString(),
-          seller.id,
-          keyToken,
-          now.toISOString(),
-          now.toISOString()
-          )
-          .run();
+          duration_months: months,
+          payment_amount: Number.isFinite(paymentAmount) ? paymentAmount : 0,
+          expires_date: expiresDate.toISOString(),
+          flags: 0,
+          status: 'active',
+          grey_zone: 0,
+          grey_zone_until: null,
+          seller_id: seller.id,
+          created_date: createdAt,
+          updated_date: createdAt,
+        };
+
+        await env.sobs_marketplace.batch([
+          env.sobs_marketplace
+            .prepare(`
+              INSERT INTO listings
+                (id, listing_number, listing_alias, title, description, price, currency, images, categoryPath,
+                 duration_months, payment_amount, expires_date, flags, status,
+                 grey_zone, grey_zone_until, seller_id, key_token,
+                 downvote_count, downvoted_by, created_date, updated_date)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'active',
+                      0, NULL, ?, ?, 0, '[]', ?, ?)
+            `)
+            .bind(
+              id,
+              listingNumber,
+              listingAlias,
+              title,
+              description,
+              price,
+              currency,
+              JSON.stringify(images),
+              categoryPath,
+              months,
+              Number.isFinite(paymentAmount) ? paymentAmount : 0,
+              expiresDate.toISOString(),
+              seller.id,
+              keyToken,
+              createdAt,
+              createdAt
+            ),
+          await prepareListingHistoryInsert(
+            env,
+            createdRow,
+            'created',
+            createdAt
+          ),
+        ]);
       } catch (error) {
         console.error("LISTING_INSERT_FAILED", error);
         return json({ error: String(error) }, 500);
@@ -872,10 +1063,7 @@ export default {
       const nowIso = new Date().toISOString();
       const graceUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
-      await env.sobs_marketplace
-        .prepare('DELETE FROM listings WHERE grey_zone = 1 AND grey_zone_until < ?')
-        .bind(nowIso)
-        .run();
+      await archiveExpiredListings(env, nowIso);
 
       await env.sobs_marketplace
         .prepare('UPDATE listings SET grey_zone = 1, grey_zone_until = ? WHERE expires_date < ? AND grey_zone = 0')
@@ -918,7 +1106,30 @@ export default {
       const row = await env.sobs_marketplace.prepare("SELECT COUNT(*) AS count FROM listing_downvotes WHERE listing_id = ?").bind(id).first();
       const count = Number(row?.count || 0);
       if (count >= 10) {
-        await env.sobs_marketplace.prepare("DELETE FROM listings WHERE id = ?").bind(id).run();
+        const owned = await env.sobs_marketplace
+          .prepare('SELECT * FROM listings WHERE id = ? LIMIT 1')
+          .bind(id)
+          .first();
+
+        if (owned) {
+          const choppedAt = new Date().toISOString();
+
+          const historyInsert = await prepareListingHistoryInsert(
+            env,
+            owned as Record<string, unknown>,
+            'downvote_deleted',
+            choppedAt,
+            `downvote_deleted-${id}`
+          );
+
+          await env.sobs_marketplace.batch([
+            historyInsert,
+            env.sobs_marketplace
+              .prepare('DELETE FROM listings WHERE id = ?')
+              .bind(id),
+          ]);
+        }
+
         return json({ success: true, count, chopped: true });
       }
       await env.sobs_marketplace.prepare("UPDATE listings SET downvote_count = ?, updated_date = ? WHERE id = ?").bind(count, new Date().toISOString(), id).run();
@@ -960,7 +1171,7 @@ export default {
       }
 
       const owned = await env.sobs_marketplace
-        .prepare('SELECT id FROM listings WHERE id = ? AND key_token = ? LIMIT 1')
+        .prepare('SELECT * FROM listings WHERE id = ? AND key_token = ? LIMIT 1')
         .bind(id, keyToken)
         .first();
 
@@ -983,22 +1194,39 @@ export default {
         return json({ error: 'Invalid listing fields' }, 400);
       }
 
-      await env.sobs_marketplace
-        .prepare(`
-          UPDATE listings
-          SET title = ?, description = ?, price = ?, currency = ?, updated_date = ?
-          WHERE id = ? AND key_token = ?
-        `)
-        .bind(
-          title,
-          description,
-          price,
-          currency,
-          new Date().toISOString(),
-          id,
-          keyToken
-        )
-        .run();
+      const updatedAt = new Date().toISOString();
+      const updatedHistoryRow = {
+        ...(owned as Record<string, unknown>),
+        title,
+        description,
+        price,
+        currency,
+        updated_date: updatedAt,
+      };
+
+      await env.sobs_marketplace.batch([
+        env.sobs_marketplace
+          .prepare(`
+            UPDATE listings
+            SET title = ?, description = ?, price = ?, currency = ?, updated_date = ?
+            WHERE id = ? AND key_token = ?
+          `)
+          .bind(
+            title,
+            description,
+            price,
+            currency,
+            updatedAt,
+            id,
+            keyToken
+          ),
+        await prepareListingHistoryInsert(
+          env,
+          updatedHistoryRow,
+          'edited',
+          updatedAt
+        ),
+      ]);
 
       const row = await env.sobs_marketplace
         .prepare('SELECT * FROM listings WHERE id = ? AND key_token = ? LIMIT 1')
@@ -1043,10 +1271,7 @@ export default {
       const nowIso = new Date().toISOString();
       const graceUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
-      await env.sobs_marketplace
-        .prepare('DELETE FROM listings WHERE grey_zone = 1 AND grey_zone_until < ?')
-        .bind(nowIso)
-        .run();
+      await archiveExpiredListings(env, nowIso);
 
       await env.sobs_marketplace
         .prepare('UPDATE listings SET grey_zone = 1, grey_zone_until = ? WHERE expires_date < ? AND grey_zone = 0')

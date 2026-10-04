@@ -23,5 +23,11 @@
 			"database_id": "410d17b9-0868-4992-911d-9838b99c1c23",
 			"remote": true
 		}
-	]
+	],
+        "r2_buckets": [
+                {
+                        "binding": "SOBS_LISTING_HISTORY",
+                        "bucket_name": "sobs-listing-history"
+                }
+        ]
 }

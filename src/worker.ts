@@ -374,6 +374,31 @@ export default {
       });
     }
 
+    if (url.pathname === '/api/seller/me' && request.method === 'GET') {
+      const globalKey = request.headers.get('X-SOBS-Global-Key')?.trim();
+
+      if (!globalKey) {
+        return json({ error: 'Global user key required' }, 401);
+      }
+
+      const seller = await env.sobs_marketplace
+        .prepare(`
+          SELECT id
+          FROM sellers
+          WHERE global_user_key = ?
+            AND verification_status = 'verified'
+          LIMIT 1
+        `)
+        .bind(globalKey)
+        .first();
+
+      if (!seller) {
+        return json({ error: 'Verified seller not found' }, 401);
+      }
+
+      return json({ sellerId: seller.id });
+    }
+
     if (url.pathname === '/api/manage/global/verify' && request.method === 'POST') {
       const globalKey = request.headers.get('X-SOBS-Global-Key')?.trim();
 
@@ -735,6 +760,26 @@ export default {
       const months = Number(body.months);
       const paymentAmount = Number(body.paymentAmount);
       const images = Array.isArray(body.images) ? body.images.map(String) : [];
+      const globalKey = request.headers.get('X-SOBS-Global-Key')?.trim();
+
+      if (!globalKey) {
+        return json({ error: 'Verified seller authentication required' }, 401);
+      }
+
+      const seller = await env.sobs_marketplace
+        .prepare(`
+          SELECT id
+          FROM sellers
+          WHERE global_user_key = ?
+            AND verification_status = 'verified'
+          LIMIT 1
+        `)
+        .bind(globalKey)
+        .first();
+
+      if (!seller) {
+        return json({ error: 'Verified seller authentication required' }, 401);
+      }
 
       if (!title || !Number.isFinite(price) || price <= 0 || !currency || !categoryPath || !Number.isFinite(months)) {
         return json({ error: 'Missing or invalid listing fields' }, 400);
@@ -794,7 +839,7 @@ export default {
              grey_zone, grey_zone_until, seller_id, key_token,
              downvote_count, downvoted_by, created_date, updated_date)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'active',
-                  0, NULL, NULL, ?, 0, '[]', ?, ?)
+                  0, NULL, ?, ?, 0, '[]', ?, ?)
         `)
         .bind(
           id,
@@ -809,6 +854,7 @@ export default {
           months,
           Number.isFinite(paymentAmount) ? paymentAmount : 0,
           expiresDate.toISOString(),
+          seller.id,
           keyToken,
           now.toISOString(),
           now.toISOString()

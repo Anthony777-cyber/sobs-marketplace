@@ -8,6 +8,11 @@ export default function NavBar() {
   const onCreate = pathname === '/create';
   const onBrowse = pathname.startsWith('/browse');
   const onCategories = pathname === '/categories';
+  const isManagementFlow =
+    pathname === '/manage' || pathname.startsWith('/manage/');
+
+  if (isManagementFlow) return null;
+
   return (
     <header className="sticky top-0 z-20 border-b border-white/10 bg-neutral-950">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">

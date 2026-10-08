@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import NavBar from '@/components/NavBar';
 import { sellerLogout } from '@/lib/api';
 
 const INPUT_CLASS =
@@ -74,8 +73,6 @@ export default function SellerLogin() {
   if (status === 'success') {
     return (
       <div className="min-h-screen bg-background">
-        <NavBar />
-
         <main className="mx-auto max-w-2xl px-4 py-10">
           <h1 className="font-display text-3xl tracking-tight">
             Seller login
@@ -117,8 +114,6 @@ export default function SellerLogin() {
 
   return (
     <div className="min-h-screen bg-background">
-      <NavBar />
-
       <main className="mx-auto max-w-2xl px-4 py-10">
         <h1 className="font-display text-3xl tracking-tight">
           Seller login

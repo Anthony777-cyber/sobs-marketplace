@@ -89,7 +89,7 @@ export async function verifyGlobalListingKey(globalUserKey, listingNumber, listi
   const res = await fetch('/api/manage/global/listing-key', {
     method: 'POST',
     headers: {
-      'X-SOBS-Global-Key': globalUserKey,
+      ...sellerAuthHeaders(globalUserKey),
       'X-SOBS-Listing-Number': String(listingNumber),
       'X-SOBS-Listing-Key': listingKey,
     },
@@ -103,7 +103,7 @@ export async function getGlobalManageListing(globalUserKey, listingNumber) {
   const res = await fetch('/api/manage/global', {
     method: 'POST',
     headers: {
-      'X-SOBS-Global-Key': globalUserKey,
+      ...sellerAuthHeaders(globalUserKey),
       ...(listingNumber ? { 'X-SOBS-Listing-Number': String(listingNumber) } : {}),
     },
   });
@@ -117,7 +117,7 @@ export async function updateGlobalListing(id, globalUserKey, data) {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
-      'X-SOBS-Global-Key': globalUserKey,
+      ...sellerAuthHeaders(globalUserKey),
     },
     body: JSON.stringify(data),
   });

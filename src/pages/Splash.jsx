@@ -12,6 +12,7 @@ const STEPS = [
       "Get 3 photos and an ultra searchable listing system.",
       "No sign-ups, no passwords and no cookies for buyers.",
       "Just like an ad in the back of a newspaper—free to access, free to read, and no hassle.",
+      "We take no commission on sales profit.",
     ],
   },
   {
@@ -26,7 +27,6 @@ Choose your tier:
 €4 for a full year.
 All shown in your own currency.` ,
       "When time is up, your post hides. You have one week to save it or renew it.",
-      "We take no commission on sales profit.",
     ],
   },
   {

@@ -103,7 +103,7 @@ async function getVerifiedSessionSeller(env: Env, request: Request) {
 
   const sessionTokenHash = await hashTicket(sessionToken);
 
-  return env.sobs_marketplace
+  const sessionSeller = await env.sobs_marketplace
     .prepare(`
       SELECT s.id
       FROM sellers s
@@ -115,7 +115,9 @@ async function getVerifiedSessionSeller(env: Env, request: Request) {
       LIMIT 1
     `)
     .bind(globalKey, sessionTokenHash, new Date().toISOString())
-    .first();
+    .first() as { id: string } | null;
+
+  return sessionSeller;
 }
 
 async function generateSellerId(db: D1Database): Promise<string> {

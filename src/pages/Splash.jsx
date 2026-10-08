@@ -42,7 +42,14 @@ All shown in your own currency.` ,
   {
     icon: Shield,
     heading: 'Control',
-    text: "And to keep out the spammers, hookers, porn merchants and the rest of the botherers, the listing has a downvote button, so if you find something inappropriate vote it down and the listing will get the guillotine after so many downvotes. But remember that abuse of this will also be punished.",
+    text: [
+      "Downvote inappropriate listings.",
+      "Enough downvotes and the listing gets the guillotine.",
+      "Abuse of the downvote will be frowned upon.",
+      "S.O.B.S does not condone criminal behaviour.",
+      "Downvoted listings are not refunded.",
+      "We will never give out your identity to anyone unless lawfully obliged to.",
+    ],
   },
 ];
 

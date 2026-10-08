@@ -6,7 +6,13 @@ const STEPS = [
   {
     icon: Tag,
     heading: 'List',
-    text: "Punt your junk, spares, or rare parts. Buyers contact you directly. Get 3 photos and an ultra searchable listing system. No sign-ups, no passwords and no cookies for browsers. Just like an ad in the back of a newspaper—free to access, free to read, and no hassle.",
+    text: [
+      "Punt your junk, spares, or rare parts.",
+      "Buyers contact you directly.",
+      "Get 3 photos and an ultra searchable listing system.",
+      "No sign-ups, no passwords and no cookies for browsers.",
+      "Just like an ad in the back of a newspaper—free to access, free to read, and no hassle.",
+    ],
   },
   {
     icon: Clock,
@@ -120,7 +126,13 @@ export default function Splash() {
             <div key={s.heading} className="rounded-2xl border border-white/10 bg-neutral-900 p-5">
               <s.icon className="h-6 w-6 text-white" />
               <h3 className="mt-3 font-display text-xl tracking-tight">{s.heading}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-white">{s.text}</p>
+              {Array.isArray(s.text) ? (
+                <ul className="mt-2 list-disc pl-5 text-sm leading-relaxed text-white">
+                  {s.text.map((item) => <li key={item}>{item}</li>)}
+                </ul>
+              ) : (
+                <p className="mt-2 text-sm leading-relaxed text-white">{s.text}</p>
+              )}
             </div>
           ))}
         </div>

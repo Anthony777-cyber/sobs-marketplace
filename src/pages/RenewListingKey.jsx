@@ -35,7 +35,7 @@ export default function RenewListingKey() {
     <div className="min-h-screen bg-black text-white">
       <NavBar />
 
-      <div className="mx-auto max-w-xl px-4 py-12">
+      <div className="mx-auto max-w-xl px-4 pt-[25vh] pb-12">
         <h1 className="font-display text-3xl tracking-tight">Renew Listing</h1>
 
         <form onSubmit={handleSubmit} className="mt-8">

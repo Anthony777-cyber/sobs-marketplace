@@ -103,6 +103,11 @@ export default function AdaptiveQuestionnaireTest() {
     setDiagnosticLog([]);
   };
 
+  const isComplete = phase === 'complete';
+  const isFreeform = phase === 'freeform';
+  const profile = decision?.profile;
+  const destination = decision?.destination || (profile ? getProfileName(profile) : '');
+
   const diagnostics = JSON.stringify({
     test: 'adaptive-questionnaire',
     maxStructuredQuestions: MAX_QUESTIONS,
@@ -124,11 +129,6 @@ export default function AdaptiveQuestionnaireTest() {
       // Clipboard access may be blocked by the browser; the output remains selectable below.
     }
   };
-
-  const isComplete = phase === 'complete';
-  const isFreeform = phase === 'freeform';
-  const profile = decision?.profile;
-  const destination = decision?.destination || (profile ? getProfileName(profile) : '');
 
   return (
     <div className="min-h-screen bg-background">

@@ -93,7 +93,6 @@ const PROFILES = {
   unusual: {
     destination: 'And now for something completely different.',
     prompts: [
-      ['identity', 'What is it, or what was it used for?', 'Your best description, even if uncertain'],
       ['distinctive', 'What makes this particular item unusual or identifiable?', 'A feature, mark, story, or detail'],
       ['association', 'What person, place, machine, or event is it associated with?', 'If known'],
       ['origin', 'Where did it come from, or where was it found?', 'Place or source, if known'],
@@ -104,18 +103,18 @@ const PROFILES = {
 };
 
 const TYPE_RULES = [
-  ['vehicle', /\b(car|vehicle|van|motorbike|motorcycle|truck|lorry|tractor|bus|scooter|bicycle|bike)\b/i],
-  ['part', /\b(part|spare|component|carburettor|carburetor|gearbox|alternator|bracket|bearing|switch|valve|nozzle|pump|engine block)\b/i],
-  ['art', /\b(art|painting|sculpture|print|drawing|photograph|photo|canvas|etching|lithograph|artwork)\b/i],
-  ['document', /\b(book|document|letter|manuscript|magazine|newspaper|map|poster|pamphlet|comic|catalogue|catalog)\b/i],
-  ['electronics', /\b(electronic|electronics|radio|amplifier|speaker|computer|circuit|pcb|television|tv|monitor|camera|charger|power supply)\b/i],
-  ['tool', /\b(tool|drill|lathe|wrench|spanner|hammer|saw|vise|vice|workshop)\b/i],
-  ['collectible', /\b(collectable|collectible|memorabilia|toy|model|badge|medal|coin|stamp|record|vinyl|figurine|autograph|relic)\b/i],
-  ['machine', /\b(machine|machinery|industrial|motor|compressor|generator|conveyor|pump|robot|equipment)\b/i],
+  ['vehicle', /\\b(car|vehicle|van|motorbike|motorcycle|truck|lorry|tractor|bus|scooter|bicycle|bike)\\b/i],
+  ['part', /\\b(part|spare|component|carburettor|carburetor|gearbox|alternator|bracket|bearing|switch|valve|nozzle|pump|engine block)\\b/i],
+  ['art', /\\b(art|painting|sculpture|print|drawing|photograph|photo|canvas|etching|lithograph|artwork)\\b/i],
+  ['document', /\\b(book|document|letter|manuscript|magazine|newspaper|map|poster|pamphlet|comic|catalogue|catalog)\\b/i],
+  ['electronics', /\\b(electronic|electronics|radio|amplifier|speaker|computer|circuit|pcb|television|tv|monitor|camera|charger|power supply)\\b/i],
+  ['tool', /\\b(tool|drill|lathe|wrench|spanner|hammer|saw|vise|vice|workshop)\\b/i],
+  ['collectible', /\\b(collectable|collectible|memorabilia|toy|model|badge|medal|coin|stamp|record|vinyl|figurine|autograph|relic)\\b/i],
+  ['machine', /\\b(machine|machinery|industrial|motor|compressor|generator|conveyor|pump|robot|equipment)\\b/i],
 ];
 
 function text(value) {
-  return String(value ?? '').trim().replace(/\s+/g, ' ');
+  return String(value ?? '').trim().replace(/\\s+/g, ' ');
 }
 
 function tokens(value) {
@@ -123,7 +122,7 @@ function tokens(value) {
 }
 
 function isUnknown(value) {
-  return !text(value) || /^(?:don't know|do not know|unknown|not sure|unsure|n\/a|na|skip|-)$/i.test(text(value));
+  return !text(value) || /^(?:don't know|do not know|unknown|not sure|unsure|n\\/a|na|skip|-)$/i.test(text(value));
 }
 
 function meaningfulTokens(value) {
@@ -138,61 +137,44 @@ function classify(answers) {
   return 'unusual';
 }
 
-function getIdentityStrength(profile, answers) {
-  const description = meaningfulTokens(answers.description || '');
+function identityStrength(profile, answers) {
   const typeTokens = new Set(meaningfulTokens(answers.type || ''));
-  const specific = description.filter(token => !typeTokens.has(token));
-  const knownSpecificAnswer = ['identity','artist','workTitle','partNumber','fitment','association']
-    .some(key => !isUnknown(answers[key]));
-  const namedIdentity = specific.length >= 2 || knownSpecificAnswer;
-  const contextualIdentity = ['distinctive','function','use','origin','context','association']
-    .some(key => !isUnknown(answers[key]));
+  const specific = meaningfulTokens(answers.description || '').filter(token => !typeTokens.has(token));
+  const named = ['identity','artist','workTitle','partNumber','fitment'].some(key => !isUnknown(answers[key]));
+  const contextual = ['distinctive','function','origin','context','association'].some(key => !isUnknown(answers[key]));
 
-  if (profile === 'vehicle') return { ready: namedIdentity, reason: namedIdentity ? 'The description identifies a searchable vehicle or model.' : 'The description still needs a make, model, or other identifying name.' };
+  if (profile === 'vehicle') {
+    const ready = specific.length >= 2 || !isUnknown(answers.identity);
+    return { ready, reason: ready ? 'The description identifies a searchable vehicle or model.' : 'A make, model, or identifying name is still needed.' };
+  }
   if (profile === 'art') {
-    const namedWork = !isUnknown(answers.artist) || !isUnknown(answers.workTitle) || specific.length >= 2;
-    return { ready: namedWork, reason: namedWork ? 'The work has a searchable name, artist, or descriptive identity.' : 'The work still needs a searchable artist, title, or distinguishing description.' };
+    const ready = !isUnknown(answers.artist) || !isUnknown(answers.workTitle) || specific.length >= 2;
+    return { ready, reason: ready ? 'The work has a searchable artist, title, or descriptive identity.' : 'A searchable artist, title, or distinguishing description is still needed.' };
   }
   if (profile === 'part') {
-    const parentOrNumber = !isUnknown(answers.fitment) || !isUnknown(answers.partNumber);
-    return { ready: (namedIdentity || parentOrNumber) && (contextualIdentity || specific.length >= 2), reason: (namedIdentity || parentOrNumber) && (contextualIdentity || specific.length >= 2) ? 'The part has an identifying name and a useful distinguishing hook.' : 'The part still needs a name, fitment, number, or distinguishing feature.' };
+    const ready = (named || !isUnknown(answers.fitment)) && (contextual || specific.length >= 2);
+    return { ready, reason: ready ? 'The part has an identifying name and a useful distinguishing detail.' : 'The part needs an identifying name, fitment, number, or distinguishing feature.' };
   }
-  if (profile === 'machine' || profile === 'electronics' || profile === 'tool') {
-    const modelOrMaker = !isUnknown(answers.identity) || !isUnknown(answers.partNumber);
-    const namedDescription = specific.length >= 2;
-    return { ready: modelOrMaker || namedDescription, reason: modelOrMaker || namedDescription ? 'The machine or equipment has a searchable identity.' : 'The machine still needs a maker, model, type, or distinctive specification.' };
+  if (['machine','electronics','tool'].includes(profile)) {
+    const ready = !isUnknown(answers.identity) || !isUnknown(answers.partNumber) || specific.length >= 2;
+    return { ready, reason: ready ? 'The equipment has a searchable identity.' : 'A maker, model, type, or distinguishing specification is still needed.' };
   }
   if (profile === 'document') {
-    const namedDocument = !isUnknown(answers.identity) || specific.length >= 2;
-    return { ready: namedDocument, reason: namedDocument ? 'The publication or document has a searchable identity.' : 'The document still needs a title, author, or identifying wording.' };
+    const ready = !isUnknown(answers.identity) || specific.length >= 2;
+    return { ready, reason: ready ? 'The publication or document has a searchable identity.' : 'A title, author, or identifying wording is still needed.' };
   }
   if (profile === 'collectible') {
-    const namedCollectible = !isUnknown(answers.identity) || !isUnknown(answers.association) || specific.length >= 2;
-    return { ready: namedCollectible, reason: namedCollectible ? 'The item has a searchable name or association.' : 'The item still needs a name, series, association, or distinctive feature.' };
+    const ready = !isUnknown(answers.identity) || !isUnknown(answers.association) || specific.length >= 2;
+    return { ready, reason: ready ? 'The item has a searchable name or association.' : 'A name, series, association, or distinguishing feature is still needed.' };
   }
-  const hasDistinctiveHook = !isUnknown(answers.distinctive) || !isUnknown(answers.association) || !isUnknown(answers.origin) || !isUnknown(answers.context);
-  const descriptionNotJustType = specific.length > 0;
-  return {
-    ready: (descriptionNotJustType && hasDistinctiveHook) || (!isUnknown(answers.use) && !isUnknown(answers.distinctive)),
-    reason: ((descriptionNotJustType && hasDistinctiveHook) || (!isUnknown(answers.use) && !isUnknown(answers.distinctive)))
-      ? 'The unusual item has a searchable description plus a distinguishing or contextual detail.'
-      : 'The unusual item needs one detail that distinguishes it from other items.',
-  };
+  const descriptionIsSpecific = specific.length > 0;
+  const ready = descriptionIsSpecific && contextual;
+  return { ready, reason: ready ? 'The unusual item has a searchable description plus a distinguishing or contextual detail.' : 'One useful identifying or contextual detail is still needed.' };
 }
 
-function chooseNextQuestion(profile, answers, asked) {
-  const available = PROFILES[profile].prompts.filter(([id]) => !asked.includes(id));
+function chooseNextQuestion(profile, answers, askedIds) {
+  const available = PROFILES[profile].prompts.filter(([id]) => !askedIds.includes(id));
   if (!available.length) return null;
-
-  const knownIdentity = ['identity','artist','workTitle','partNumber','fitment','association','use','distinctive']
-    .some(key => !isUnknown(answers[key]));
-  const knownDescription = meaningfulTokens(answers.description || '').length > 0;
-
-  // Prefer the question that adds the most searchable identity; only then ask context or condition.
-  const identityFirst = new Set(['identity','artist','workTitle','partNumber','fitment','function','use','distinctive','association']);
-  const identityQuestion = available.find(([id]) => identityFirst.has(id));
-  if (!knownIdentity && identityQuestion) return identityQuestion;
-  if (!knownDescription && identityQuestion) return identityQuestion;
   return available[0];
 }
 
@@ -206,7 +188,22 @@ export function createInitialQuestion() {
 
 export function evaluateNext(answers, askedIds, structuredCount) {
   const profile = classify(answers);
-  const identity = getIdentityStrength(profile, answers);
+
+  // Every item receives the broad type question followed by the three-word description.
+  if (!askedIds.includes('description')) {
+    if (structuredCount >= MAX_STRUCTURED_QUESTIONS) {
+      return { done: true, profile, destination: PROFILES[profile].destination, reason: 'The 12-question structured limit has been reached. The information collected is retained as-is.' };
+    }
+    return {
+      done: false,
+      profile,
+      destination: PROFILES[profile].destination,
+      reason: 'The broad type is recorded; a short description is needed to identify the item.',
+      question: { id: 'description', label: 'Describe it further in THREE words.', placeholder: 'Three words that identify or describe it' },
+    };
+  }
+
+  const identity = identityStrength(profile, answers);
   if (identity.ready) return { done: true, profile, destination: PROFILES[profile].destination, reason: identity.reason };
   if (structuredCount >= MAX_STRUCTURED_QUESTIONS) {
     return { done: true, profile, destination: PROFILES[profile].destination, reason: 'The 12-question structured limit has been reached. The information collected is retained as-is.' };

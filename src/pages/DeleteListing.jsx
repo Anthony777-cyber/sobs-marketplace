@@ -18,6 +18,7 @@ export default function DeleteListing() {
   const [enteredId, setEnteredId] = useState('');
   const [error, setError] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [attempts, setAttempts] = useState(0);
 
   if (!globalKey || !listingId || !listingNumber) {
     navigate('/manage/view-listings', { replace: true });
@@ -30,6 +31,7 @@ export default function DeleteListing() {
 
   const checkListingId = async () => {
     setError('');
+    if (attempts >= 5) return;
 
     try {
       await verifyGlobalListingKey(
@@ -39,7 +41,10 @@ export default function DeleteListing() {
       );
       setStage(3);
     } catch {
-      setError('Listing management code does not match this listing.');
+      const nextAttempts = attempts + 1;
+      setAttempts(nextAttempts);
+      setEnteredId('');
+      setError(nextAttempts >= 5 ? 'Too many attempts. Restart S.O.B.S. to try again.' : 'Listing management code does not match this listing.');
     }
   };
 
@@ -134,6 +139,7 @@ export default function DeleteListing() {
                 <button
                   type="button"
                   onClick={checkListingId}
+                  disabled={attempts >= 5}
                   className="rounded-full bg-white px-6 py-3 font-semibold text-black hover:bg-white/90"
                 >
                   Continue

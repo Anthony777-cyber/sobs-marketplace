@@ -76,7 +76,7 @@ export default function RenewListing() {
     return (
       <div className="min-h-screen bg-black text-white">
         <NavBar />
-        <div className="mx-auto max-w-xl px-4 py-12">
+        <div className="mx-auto max-w-xl px-4 pt-[25vh] pb-12">
           <Loader2 className="h-5 w-5 animate-spin" />
         </div>
       </div>
@@ -89,7 +89,7 @@ export default function RenewListing() {
     <div className="min-h-screen bg-black text-white">
       <NavBar />
 
-      <div className="mx-auto max-w-xl px-4 py-12">
+      <div className="mx-auto max-w-xl px-4 pt-[25vh] pb-12">
         <div className="mb-6 flex items-start justify-between gap-4">
           <h1 className="font-display text-3xl tracking-tight">
             Renew Listing

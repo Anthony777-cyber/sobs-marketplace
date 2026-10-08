@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import NavBar from '@/components/NavBar';
+import { sellerLogout } from '@/lib/api';
 
 const INPUT_CLASS =
   'w-full rounded-lg border-2 border-white bg-black px-3 py-2.5 text-white outline-none placeholder:text-gray-400 focus:ring-0';
@@ -100,10 +101,8 @@ export default function SellerLogin() {
 
             <button
               type="button"
-              onClick={() => {
-                sessionStorage.removeItem('sobs_seller_id');
-                sessionStorage.removeItem('sobs_seller_session_token');
-                sessionStorage.removeItem('sobs_seller_session_expires_at');
+              onClick={async () => {
+                await sellerLogout();
                 setStatus('idle');
               }}
               className="rounded-full border border-foreground/30 px-6 py-2.5 font-semibold transition-colors hover:bg-foreground/5"

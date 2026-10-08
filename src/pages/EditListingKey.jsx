@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import NavBar from '@/components/NavBar';
 import { verifyGlobalListingKey } from '@/lib/api';
 
-const MAX_ATTEMPTS = 3;
+const MAX_ATTEMPTS = 5;
 
 export default function EditListingKey() {
   const navigate = useNavigate();
@@ -33,9 +33,10 @@ export default function EditListingKey() {
 
       navigate('/manage/edit');
     } catch {
-      setAttempts((value) => value + 1);
+      const nextAttempts = attempts + 1;
+      setAttempts(nextAttempts);
       setListingKey('');
-      setError('Wrong key code');
+      setError(nextAttempts >= MAX_ATTEMPTS ? 'Too many attempts. Restart S.O.B.S. to try again.' : 'Wrong key code');
     }
   }
 

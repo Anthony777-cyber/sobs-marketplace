@@ -10,6 +10,10 @@ export default function GlobalManagementConsole() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (!sessionStorage.getItem('sobs_seller_session_token')) navigate('/seller-login', { replace: true });
+  }, [navigate]);
+
+  useEffect(() => {
     if (!sessionStorage.getItem('sobs_seller_session_token')) {
       navigate('/seller-login', { replace: true });
     }

@@ -95,6 +95,29 @@ async function clearAuthFailures(env: Env, attemptKey: string) {
     .run();
 }
 
+async function getVerifiedSessionSeller(env: Env, request: Request) {
+  const globalKey = request.headers.get('X-SOBS-Global-Key')?.trim();
+  const sessionToken = request.headers.get('X-SOBS-Seller-Session')?.trim();
+
+  if (!globalKey || !sessionToken) return null;
+
+  const sessionTokenHash = await hashTicket(sessionToken);
+
+  return env.sobs_marketplace
+    .prepare(`
+      SELECT s.id
+      FROM sellers s
+      JOIN seller_sessions ss ON ss.seller_id = s.id
+      WHERE s.global_user_key = ?
+        AND s.verification_status = 'verified'
+        AND ss.token_hash = ?
+        AND ss.expires_at > ?
+      LIMIT 1
+    `)
+    .bind(globalKey, sessionTokenHash, new Date().toISOString())
+    .first();
+}
+
 async function generateSellerId(db: D1Database): Promise<string> {
   const range = 10000000000000000n;
   const max = 1n << 64n;

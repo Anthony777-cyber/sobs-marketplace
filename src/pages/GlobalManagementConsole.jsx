@@ -1,13 +1,19 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const MAX_ATTEMPTS = 3;
+const MAX_ATTEMPTS = 5;
 
 export default function GlobalManagementConsole() {
   const navigate = useNavigate();
   const [userKey, setUserKey] = useState('');
   const [attempts, setAttempts] = useState(0);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!sessionStorage.getItem('sobs_seller_session_token')) {
+      navigate('/seller-login', { replace: true });
+    }
+  }, [navigate]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -24,7 +30,8 @@ export default function GlobalManagementConsole() {
         },
       });
 
-      if (!res.ok) throw new Error();
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || 'Wrong key');
 
       sessionStorage.setItem('sobs_global_user_key', code);
       sessionStorage.removeItem('sobs_global_listing_id');
@@ -35,7 +42,7 @@ export default function GlobalManagementConsole() {
       const nextAttempts = attempts + 1;
       setAttempts(nextAttempts);
       setUserKey('');
-      setError('Wrong key');
+      setError(nextAttempts >= MAX_ATTEMPTS ? 'Too many attempts. Restart S.O.B.S. to try again.' : 'Wrong key');
 
       if (nextAttempts >= MAX_ATTEMPTS) {
         sessionStorage.removeItem('sobs_global_user_key');

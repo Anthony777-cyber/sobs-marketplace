@@ -32,6 +32,11 @@ export default function RenewListing() {
 
     fetchRates().then(setRates).catch(() => {});
 
+    if (globalKey && !sessionStorage.getItem('sobs_seller_session_token')) {
+      navigate('/seller-login', { replace: true });
+      return;
+    }
+
     if (!key && !globalKey) {
       navigate('/manage-listings', { replace: true });
       return;

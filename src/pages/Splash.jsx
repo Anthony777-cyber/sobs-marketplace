@@ -6,7 +6,7 @@ const STEPS = [
   {
     icon: Tag,
     heading: 'List',
-    text: "Punt your junk, spares, or rare parts. Buyers contact you directly on the listing. Get 3 photos and an open-ended listing system. Go broad with 'Washers' or drill down to the fine sand of Maker, Model, Year, and Part Number for ultra-specialized detail and mega findability across site browsers and global search engines. No sign-ups and definitely no passwords and no cookies. It is exactly like an ad in the back of a newspaper—free to access, free to read, and no hassle. You shouldn't need a computer degree to place an ad. People have better things to do.",
+    text: "Punt your junk, spares, or rare parts. Buyers contact you directly. Get 3 photos and an ultra searchable listing system. No sign-ups, no passwords and no cookies for browsers. Just like an ad in the back of a newspaper—free to access, free to read, and no hassle.",
   },
   {
     icon: Clock,

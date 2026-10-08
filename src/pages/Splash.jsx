@@ -68,14 +68,28 @@ export default function Splash() {
             </h1>
           </div>
           <p className="mt-5 max-w-2xl text-lg leading-relaxed text-white sm:text-xl text-justify">
-            S∙O∙B∙S∙ is an open-ended directory for junk, spares and rare parts.
+            S∙O∙B∙S∙ is the ultra-searchable directory of EVERYTHING.
           </p>
+
           <p className="max-w-2xl text-lg leading-relaxed text-white sm:text-xl text-justify">
-            List anything from a box of washers to a specific gearbox by maker, model, year and part number. Pay per
-            duration, chat with buyers right on the listing, and lets the community keep it clean.
+            Junk, spares, repair machines or cars, rare parts, collectables, art, Pokemon cards, your precious collection of Coca-Cola bottle tops. So long as it's legal, we don't discriminate. Anything you think is worth the listing fee. For instance, you're in a band and want to advertise your next three months' gigs for a buck, cool. Or the next year, or however long you want. This is a repository of information as well as things.
           </p>
-          <p className="text-lg font-semibold text-white sm:text-xl">NO sign up, NO password, NO cookies</p>
-          <p className="text-lg leading-relaxed text-white sm:text-xl">Just like an advert in the back of a newspaper.</p>
+
+          <p className="max-w-2xl text-lg leading-relaxed text-white sm:text-xl text-justify">
+            We don't do free ads. If it's not worth the few bucks it costs to advertise, we're quite happy to let Gumtree or Facebook bottom-feed off it.
+          </p>
+
+          <p className="max-w-2xl text-lg leading-relaxed text-white sm:text-xl text-justify">
+            So list anything from a specific gearbox by maker, model, year and part number to a used fag end. Pay per duration in your own currency, chat with buyers directly on the listing, and we let the community keep it clean and enforce good taste with the downvote button. Keeping the hooker ads and county-lines drug sellers off our site, but don't abuse the button or the chat to harass others. We are watching and we are not forgiving,
+          </p>
+
+          <p className="max-w-2xl text-lg leading-relaxed text-white sm:text-xl text-justify">
+            To browsers and buyers, we offer ZERO FRICTION ENTRY. NO sign up, NO passwords, NO cookies, NO ads.
+          </p>
+
+          <p className="max-w-2xl text-lg leading-relaxed text-white sm:text-xl text-justify">
+            To sellers, we offer worldwide advertising dirt cheap, bulk uploads for the pros, and best of all, unlike eBay, we don't take a cut of your sale profits.
+          </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               to={

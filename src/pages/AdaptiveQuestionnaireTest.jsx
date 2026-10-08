@@ -9,7 +9,7 @@ import {
 const MAX_QUESTIONS = getMaxStructuredQuestions();
 
 function clean(value) {
-  return String(value ?? '').trim().replace(/\\s+/g, ' ');
+  return String(value ?? '').trim().replace(/\s+/g, ' ');
 }
 
 const LABELS = {

@@ -6,113 +6,6 @@ const STOP_WORDS = new Set([
   'this','that','it','my','your','some'
 ]);
 
-const PROFILES = {
-  vehicle: {
-    destination: 'Vehicles',
-    prompts: [
-      ['identity', 'What make, model, or identifying name is it?', 'e.g. Audi GT Coupe'],
-      ['year', 'What year or approximate period is it from?', 'Year or period, if known'],
-      ['variant', 'Is there a model, engine, part, or version detail that distinguishes it?', 'Any identifying detail, if known'],
-      ['condition', 'What is its current state?', 'e.g. Running, not running, restoration'],
-      ['distinctive', 'What is the most distinctive identifying feature?', 'A feature someone could search for'],
-      ['colour', 'What colour is it?', 'Colour, if useful'],
-    ],
-  },
-  machine: {
-    destination: 'Machines and equipment',
-    prompts: [
-      ['identity', 'Who made it, and what is its model or identifying name?', 'Maker, model, or name, if known'],
-      ['partNumber', 'Is there a model, serial, or part number?', 'Enter a number or skip if unknown'],
-      ['function', 'What does it do, or what machine does it belong to?', 'Its function or associated machine'],
-      ['year', 'What year or approximate period is it from?', 'Year or period, if known'],
-      ['condition', 'What is its current state?', 'e.g. Working, faulty, incomplete'],
-      ['distinctive', 'What detail would distinguish it from similar items?', 'A unique feature, specification, or mark'],
-    ],
-  },
-  part: {
-    destination: 'Parts and components',
-    prompts: [
-      ['fitment', 'What machine, vehicle, or product does it fit?', 'Make, model, or parent machine, if known'],
-      ['identity', 'What is the part called, or what does it do?', 'Part name or function'],
-      ['partNumber', 'Is there a part number, casting number, or maker mark?', 'Enter the marking or skip if unknown'],
-      ['condition', 'What is its current state?', 'e.g. New old stock, used, damaged'],
-      ['distinctive', 'What feature helps identify the exact part?', 'Dimensions, connector, shape, or marking'],
-    ],
-  },
-  art: {
-    destination: 'Art and creative works',
-    prompts: [
-      ['artist', 'Who made the work?', 'Artist or maker, if known'],
-      ['workTitle', 'Does it have a title or identifying name?', 'Title, if known'],
-      ['medium', 'What is it made with or made from?', 'e.g. Oil on canvas, bronze, screen print'],
-      ['originality', 'Is it an original, a print, or a reproduction?', 'If known'],
-      ['year', 'When was it made, approximately?', 'Year or period, if known'],
-      ['distinctive', 'What visible or documented detail distinguishes it?', 'Signature, edition, subject, or other detail'],
-    ],
-  },
-  collectible: {
-    destination: 'Collectables and memorabilia',
-    prompts: [
-      ['identity', 'Who made it, or what is its identifying name or edition?', 'Maker, title, series, or edition'],
-      ['date', 'When is it from?', 'Year or period, if known'],
-      ['association', 'What person, place, event, series, or subject is it associated with?', 'Association, if known'],
-      ['distinctive', 'What detail distinguishes this example from similar ones?', 'Mark, number, wording, or unusual feature'],
-      ['condition', 'What is its current state?', 'Condition, if relevant'],
-    ],
-  },
-  document: {
-    destination: 'Books, documents and printed material',
-    prompts: [
-      ['identity', 'What is the title, author, publisher, or identifying name?', 'Any title or identifying wording'],
-      ['date', 'When was it published or created?', 'Year or period, if known'],
-      ['edition', 'Is there an edition, issue, volume, or reference number?', 'If shown'],
-      ['distinctive', 'What makes this copy or document distinctive?', 'Signature, stamp, provenance, or unusual detail'],
-      ['condition', 'What is its current state?', 'Condition, if relevant'],
-    ],
-  },
-  electronics: {
-    destination: 'Electronics and electrical equipment',
-    prompts: [
-      ['identity', 'Who made it, and what is its model or identifying name?', 'Maker and model, if known'],
-      ['partNumber', 'Is there a model, serial, or part number?', 'Enter the marking or skip if unknown'],
-      ['function', 'What does it do or connect to?', 'Function or compatible equipment'],
-      ['condition', 'Does it work, partly work, or not work?', 'State, if known'],
-      ['distinctive', 'What connector, rating, specification, or feature identifies it?', 'Any identifying detail'],
-    ],
-  },
-  tool: {
-    destination: 'Tools and workshop equipment',
-    prompts: [
-      ['identity', 'Who made it, or what is its model or type?', 'Maker, model, or tool type'],
-      ['function', 'What is it designed to do?', 'Its function'],
-      ['size', 'Is there a size, rating, or specification?', 'Specification, if known'],
-      ['condition', 'What is its current state?', 'Condition, if relevant'],
-      ['distinctive', 'What detail distinguishes it from similar tools?', 'Marking, feature, or model detail'],
-    ],
-  },
-  unusual: {
-    destination: 'And now for something completely different.',
-    prompts: [
-      ['distinctive', 'What makes this particular item unusual or identifiable?', 'A feature, mark, story, or detail'],
-      ['association', 'What person, place, machine, or event is it associated with?', 'If known'],
-      ['origin', 'Where did it come from, or where was it found?', 'Place or source, if known'],
-      ['period', 'When is it from, approximately?', 'Year or period, if known'],
-      ['context', 'What else would help someone recognise or search for it?', 'Any useful identifying context'],
-    ],
-  },
-};
-
-const TYPE_RULES = [
-  ['vehicle', /\b(car|vehicle|van|motorbike|motorcycle|truck|lorry|tractor|bus|scooter|bicycle|bike)\b/i],
-  ['part', /\b(part|spare|component|carburettor|carburetor|gearbox|alternator|bracket|bearing|switch|valve|nozzle|pump|engine block)\b/i],
-  ['art', /\b(art|painting|sculpture|print|drawing|photograph|photo|canvas|etching|lithograph|artwork)\b/i],
-  ['document', /\b(book|document|letter|manuscript|magazine|newspaper|map|poster|pamphlet|comic|catalogue|catalog)\b/i],
-  ['electronics', /\b(electronic|electronics|radio|amplifier|speaker|computer|circuit|pcb|television|tv|monitor|camera|charger|power supply)\b/i],
-  ['tool', /\b(tool|drill|lathe|wrench|spanner|hammer|saw|vise|vice|workshop)\b/i],
-  ['collectible', /\b(collectable|collectible|memorabilia|toy|model|badge|medal|coin|stamp|record|vinyl|figurine|autograph|relic)\b/i],
-  ['machine', /\b(machine|machinery|industrial|motor|compressor|generator|conveyor|pump|robot|equipment)\b/i],
-];
-
 function text(value) {
   return String(value ?? '').trim().replace(/\s+/g, ' ');
 }
@@ -121,106 +14,305 @@ function tokens(value) {
   return text(value).toLowerCase().match(/[a-z0-9]+(?:['’-][a-z0-9]+)*/g) || [];
 }
 
+function meaningfulTokens(value) {
+  return tokens(value).filter((token) => !STOP_WORDS.has(token));
+}
+
 function isUnknown(value) {
   return !text(value) || /^(?:don't know|do not know|unknown|not sure|unsure|n\/a|na|skip|-)$/i.test(text(value));
 }
 
-function meaningfulTokens(value) {
-  return tokens(value).filter(token => !STOP_WORDS.has(token));
+/*
+ * The seller supplies the description. The Sifter owns the classification.
+ * "Repeatable manufactured" means the item belongs to a repeatable product/type,
+ * whether factory-made or individually built to a recognised repeatable type.
+ * "Unique" means the particular object itself is the thing being identified.
+ */
+const REPEATABLE_PATTERNS = [
+  /\b(car|vehicle|van|motorbike|motorcycle|truck|lorry|tractor|bus|scooter|bicycle|bike)\b/i,
+  /\b(piano|organ|guitar|drum|keyboard|amplifier|speaker|radio|television|tv|camera|computer|printer|monitor|pedal|echo|reverb|synth|microphone|mixer|turntable)\b/i,
+  /\b(machine|machinery|equipment|motor|compressor|generator|conveyor|robot|pump|tool|drill|lathe|wrench|spanner|hammer|saw|vise|vice|appliance|fridge|refrigerator|oven|microwave|washing machine|dishwasher|chair|table|desk|lamp|watch|clock|phone|telephone|part|spare|component|gearbox|alternator|bracket|bearing|switch|valve|nozzle|engine)\b/i,
+  /\b(musical equipment|audio equipment|recording equipment|studio equipment|sound equipment)\b/i,
+];
+
+const UNIQUE_PATTERNS = [
+  /\b(painting|sculpture|artwork|folk art|drawing|photograph|photo|manuscript|letter|diary|one-off|one of a kind|unique|original)\b/i,
+  /\b(fag end|cigarette butt|cigarette end|ash|fragment|relic|memorabilia|keepsake)\b/i,
+];
+
+function classifyForm(description) {
+  const value = text(description);
+
+  if (UNIQUE_PATTERNS.some((pattern) => pattern.test(value))) return 'unique';
+  if (REPEATABLE_PATTERNS.some((pattern) => pattern.test(value))) return 'repeatable';
+
+  // Unknown cases are not automatically treated as unique because that can
+  // prematurely send ordinary manufactured objects down the wrong path.
+  return null;
 }
 
-function classify(answers) {
-  const source = [answers.type, answers.description].filter(Boolean).join(' ');
-  for (const [profile, pattern] of TYPE_RULES) {
-    if (pattern.test(source)) return profile;
-  }
-  return 'unusual';
+function classifyFamily(description) {
+  const value = text(description);
+
+  if (/\b(painting|sculpture|artwork|drawing|photograph|photo|folk art)\b/i.test(value)) return 'art';
+  if (/\b(book|document|letter|diary|manuscript|magazine|newspaper|map|poster|pamphlet|comic)\b/i.test(value)) return 'document';
+  if (/\b(memorabilia|keepsake|relic|collectible|collectable|badge|medal|coin|stamp|toy|figurine)\b/i.test(value)) return 'collectible';
+  if (/\b(part|spare|component|gearbox|alternator|bracket|bearing|switch|valve|nozzle)\b/i.test(value)) return 'part';
+  return 'general';
 }
 
-function identityStrength(profile, answers) {
-  const typeTokens = new Set(meaningfulTokens(answers.type || ''));
-  const specific = meaningfulTokens(answers.description || '').filter(token => !typeTokens.has(token));
-  const named = ['identity','artist','workTitle','partNumber','fitment'].some(key => !isUnknown(answers[key]));
-  const contextual = ['distinctive','function','origin','context','association'].some(key => !isUnknown(answers[key]));
-
-  if (profile === 'vehicle') {
-    const ready = specific.length >= 2 || !isUnknown(answers.identity);
-    return { ready, reason: ready ? 'The description identifies a searchable vehicle or model.' : 'A make, model, or identifying name is still needed.' };
-  }
-  if (profile === 'art') {
-    const ready = !isUnknown(answers.artist) || !isUnknown(answers.workTitle) || specific.length >= 2;
-    return { ready, reason: ready ? 'The work has a searchable artist, title, or descriptive identity.' : 'A searchable artist, title, or distinguishing description is still needed.' };
-  }
-  if (profile === 'part') {
-    const ready = (named || !isUnknown(answers.fitment)) && (contextual || specific.length >= 2);
-    return { ready, reason: ready ? 'The part has an identifying name and a useful distinguishing detail.' : 'The part needs an identifying name, fitment, number, or distinguishing feature.' };
-  }
-  if (['machine','electronics','tool'].includes(profile)) {
-    const ready = !isUnknown(answers.identity) || !isUnknown(answers.partNumber) || specific.length >= 2;
-    return { ready, reason: ready ? 'The equipment has a searchable identity.' : 'A maker, model, type, or distinguishing specification is still needed.' };
-  }
-  if (profile === 'document') {
-    const ready = !isUnknown(answers.identity) || specific.length >= 2;
-    return { ready, reason: ready ? 'The publication or document has a searchable identity.' : 'A title, author, or identifying wording is still needed.' };
-  }
-  if (profile === 'collectible') {
-    const ready = !isUnknown(answers.identity) || !isUnknown(answers.association) || specific.length >= 2;
-    return { ready, reason: ready ? 'The item has a searchable name or association.' : 'A name, series, association, or distinguishing feature is still needed.' };
-  }
-  const descriptionIsSpecific = specific.length > 0;
-  const ready = descriptionIsSpecific && contextual;
-  return { ready, reason: ready ? 'The unusual item has a searchable description plus a distinguishing or contextual detail.' : 'One useful identifying or contextual detail is still needed.' };
+function question(id, label, placeholder) {
+  return { id, label, placeholder };
 }
 
-function chooseNextQuestion(profile, answers, askedIds) {
-  const available = PROFILES[profile].prompts.filter(([id]) => !askedIds.includes(id));
-  if (!available.length) return null;
-  return available[0];
+function nextRepeatableQuestion(answers, askedIds) {
+  if (!askedIds.includes('identity')) {
+    return question(
+      'identity',
+      'What is the make and model?',
+      'Maker and model, if known'
+    );
+  }
+
+  if (!askedIds.includes('condition')) {
+    return question(
+      'condition',
+      'Is it working, faulty, incomplete, or otherwise out of service?',
+      'Current condition'
+    );
+  }
+
+  if (!askedIds.includes('partNumber')) {
+    return question(
+      'partNumber',
+      'Is there a serial number, part number, or other identifying number?',
+      'Number, or press Enter if unknown'
+    );
+  }
+
+  if (!askedIds.includes('year')) {
+    return question(
+      'year',
+      'What year or approximate period is it from?',
+      'Year or period, if known'
+    );
+  }
+
+  if (!askedIds.includes('variant')) {
+    return question(
+      'variant',
+      'Is there a version, specification, size, rating, or other variant detail?',
+      'Useful identifying specification, if known'
+    );
+  }
+
+  if (!askedIds.includes('distinctive')) {
+    return question(
+      'distinctive',
+      'Is there any other detail that distinguishes this particular item?',
+      'Anything useful for searching or cross-referencing'
+    );
+  }
+
+  return null;
+}
+
+function nextUniqueQuestion(answers, askedIds) {
+  const family = classifyFamily(answers.description);
+
+  if (family === 'art' && !askedIds.includes('creator')) {
+    return question(
+      'creator',
+      'Who made it?',
+      'Artist or maker, if known'
+    );
+  }
+
+  if (!askedIds.includes('distinctive')) {
+    return question(
+      'distinctive',
+      'What makes this particular object identifiable?',
+      'A feature, mark, story, inscription, construction detail, or other distinction'
+    );
+  }
+
+  if (!askedIds.includes('association')) {
+    return question(
+      'association',
+      'Is it associated with a particular person, place, event, collection, or source?',
+      'Association, if known'
+    );
+  }
+
+  if (!askedIds.includes('origin')) {
+    return question(
+      'origin',
+      'Where did it come from, or where was it found?',
+      'Place or source, if known'
+    );
+  }
+
+  if (!askedIds.includes('period')) {
+    return question(
+      'period',
+      'When is it from, approximately?',
+      'Year or period, if known'
+    );
+  }
+
+  if (!askedIds.includes('medium')) {
+    return question(
+      'medium',
+      'What is it made from or made with?',
+      'Material or medium, if useful'
+    );
+  }
+
+  return null;
+}
+
+function repeatableReady(answers) {
+  const identity = !isUnknown(answers.identity);
+  const condition = !isUnknown(answers.condition);
+  return identity && condition;
+}
+
+function uniqueReady(answers) {
+  const description = meaningfulTokens(answers.description).length > 0;
+  const distinguishing = !isUnknown(answers.distinctive)
+    || !isUnknown(answers.association)
+    || !isUnknown(answers.origin);
+  return description && distinguishing;
+}
+
+function readinessReason(answers, form) {
+  if (form === 'repeatable') {
+    if (repeatableReady(answers)) {
+      return 'The item has a searchable make/model identity and recorded condition.';
+    }
+    if (!isUnknown(answers.identity)) {
+      return 'The item is identified; its condition is still needed.';
+    }
+    return 'The repeatable manufactured item still needs its make and model.';
+  }
+
+  if (uniqueReady(answers)) {
+    return 'The individual object has a searchable description and a distinguishing detail.';
+  }
+
+  return 'The individual object still needs enough detail to distinguish it from similar objects.';
 }
 
 export function createInitialQuestion() {
-  return {
-    id: 'type',
-    label: 'Describe what your item is in ONE word.',
-    placeholder: 'e.g. Car, Painting, Machine, Book',
-  };
+  return question(
+    'description',
+    'Describe your item.',
+    'Describe it in your own words'
+  );
 }
 
 export function evaluateNext(answers, askedIds, structuredCount) {
-  const profile = classify(answers);
+  const form = classifyForm(answers.description);
 
-  // Every item receives the broad type question followed by the three-word description.
   if (!askedIds.includes('description')) {
-    if (structuredCount >= MAX_STRUCTURED_QUESTIONS) {
-      return { done: true, profile, destination: PROFILES[profile].destination, reason: 'The 12-question structured limit has been reached. The information collected is retained as-is.' };
-    }
     return {
       done: false,
-      profile,
-      destination: PROFILES[profile].destination,
-      reason: 'The broad type is recorded; a short description is needed to identify the item.',
-      question: { id: 'description', label: 'Describe it further in THREE words.', placeholder: 'Three words that identify or describe it' },
+      form: null,
+      family: 'general',
+      destination: 'Registry',
+      reason: 'The seller provides the description; the Sifter determines the interrogation path from it.',
+      question: createInitialQuestion(),
     };
   }
 
-  const identity = identityStrength(profile, answers);
-  if (identity.ready) return { done: true, profile, destination: PROFILES[profile].destination, reason: identity.reason };
-  if (structuredCount >= MAX_STRUCTURED_QUESTIONS) {
-    return { done: true, profile, destination: PROFILES[profile].destination, reason: 'The 12-question structured limit has been reached. The information collected is retained as-is.' };
+  if (!form) {
+    return {
+      done: false,
+      form: null,
+      family: classifyFamily(answers.description),
+      destination: 'Registry',
+      reason: 'The description is not yet sufficient to determine whether this is a repeatable manufactured item or an individual object.',
+      question: question(
+        'clarification',
+        'What is the item normally made or used as?',
+        'Give its ordinary name or type'
+      ),
+    };
   }
-  const next = chooseNextQuestion(profile, answers, askedIds);
-  if (!next) return { done: true, profile, destination: PROFILES[profile].destination, reason: 'No new useful structured question remains. The information collected is retained as-is.' };
+
+  if (form === 'repeatable' && !askedIds.includes('form')) {
+    // The form is an internal decision, not a seller question.
+  }
+
+  if (form === 'repeatable' && !repeatableReady(answers)) {
+    const next = nextRepeatableQuestion(answers, askedIds);
+    if (next) {
+      return {
+        done: false,
+        form,
+        family: classifyFamily(answers.description),
+        destination: 'Repeatable manufactured items',
+        reason: readinessReason(answers, form),
+        question: next,
+      };
+    }
+  }
+
+  if (form === 'unique' && !uniqueReady(answers)) {
+    const next = nextUniqueQuestion(answers, askedIds);
+    if (next) {
+      return {
+        done: false,
+        form,
+        family: classifyFamily(answers.description),
+        destination: 'Individual / unique objects',
+        reason: readinessReason(answers, form),
+        question: next,
+      };
+    }
+  }
+
+  if (form === 'repeatable' && repeatableReady(answers)) {
+    return {
+      done: true,
+      form,
+      family: classifyFamily(answers.description),
+      destination: 'Repeatable manufactured items',
+      reason: readinessReason(answers, form),
+    };
+  }
+
+  if (form === 'unique' && uniqueReady(answers)) {
+    return {
+      done: true,
+      form,
+      family: classifyFamily(answers.description),
+      destination: 'Individual / unique objects',
+      reason: readinessReason(answers, form),
+    };
+  }
+
+  if (structuredCount >= MAX_STRUCTURED_QUESTIONS) {
+    return {
+      done: true,
+      form,
+      family: classifyFamily(answers.description),
+      destination: form === 'repeatable' ? 'Repeatable manufactured items' : 'Individual / unique objects',
+      reason: 'The 12-question structured limit has been reached. The information collected is retained as-is.',
+    };
+  }
+
   return {
-    done: false,
-    profile,
-    destination: PROFILES[profile].destination,
-    reason: identity.reason,
-    question: { id: next[0], label: next[1], placeholder: next[2] },
+    done: true,
+    form,
+    family: classifyFamily(answers.description),
+    destination: form === 'repeatable' ? 'Repeatable manufactured items' : 'Individual / unique objects',
+    reason: 'No additional useful structured question remains.',
   };
 }
 
 export function getProfileName(profile) {
-  return PROFILES[profile]?.destination || PROFILES.unusual.destination;
+  return profile || 'Registry';
 }
 
 export function getMaxStructuredQuestions() {

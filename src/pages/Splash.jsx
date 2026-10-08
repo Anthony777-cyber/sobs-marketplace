@@ -18,12 +18,13 @@ const STEPS = [
     icon: Clock,
     heading: 'Pay',
     text: [
-      "How long you list is how much you pay.",
-      "Choose your tier:",
-      "€1 for 3 months (minimum)",
-      "€2 for 6 months",
-      "€3 for 9 months",
-      "€4 for a full year.",
+      "How long you list is how much you pay.
+Choose your tier:
+€1 for 3 months (minimum)
+€2 for 6 months
+€3 for 9 months
+€4 for a full year.
+All shown in your own currency.",
       "When time is up, your post hides. You have one week to save it or renew it.",
       "It is your business, not ours. We just help buyers find you.",
       "We take no commission on sales profit.",
@@ -138,7 +139,7 @@ export default function Splash() {
               <h3 className="mt-3 font-display text-xl tracking-tight">{s.heading}</h3>
               {Array.isArray(s.text) ? (
                 <ul className="mt-2 list-disc pl-5 text-sm leading-relaxed text-white">
-                  {s.text.map((item) => <li key={item}>{item}</li>)}
+                  {s.text.map((item) => <li key={item} className="whitespace-pre-line">{item}</li>)}
                 </ul>
               ) : (
                 <p className="mt-2 text-sm leading-relaxed text-white">{s.text}</p>

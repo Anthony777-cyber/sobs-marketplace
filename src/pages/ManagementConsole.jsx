@@ -96,7 +96,7 @@ export default function ManagementConsole() {
         <NavBar />
 
         <div className="mx-auto max-w-2xl px-4 py-12">
-          <div className="flex items-start justify-between gap-4">
+          <div className="mb-6 flex items-start justify-between gap-4">
             <h1 className="font-display text-3xl tracking-tight">
               Management Console
             </h1>
@@ -110,7 +110,7 @@ export default function ManagementConsole() {
             </button>
           </div>
 
-          <div className="mt-8 grid gap-3 sm:grid-cols-2">
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
             <button
               onClick={() => navigate('/manage/edit-listings')}
               className="flex items-center gap-3 rounded-xl border border-white/15 p-5 text-left hover:border-white/40"
@@ -162,7 +162,7 @@ export default function ManagementConsole() {
       <NavBar />
 
       <div className="mx-auto max-w-2xl px-4 py-12">
-        <div className="flex items-start justify-between gap-4">
+        <div className="mb-6 flex items-start justify-between gap-4">
           <h1 className="font-display text-3xl tracking-tight">
             Management Console
           </h1>

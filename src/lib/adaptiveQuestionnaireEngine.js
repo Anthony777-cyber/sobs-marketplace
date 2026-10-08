@@ -311,20 +311,21 @@ export function evaluateNext(answers, askedIds, structuredCount) {
   if (structuredCount >= MAX_STRUCTURED_QUESTIONS) {
     return {
       done: true,
-      form: classifyForm(answers.description),
-      family: classifyFamily(answers.description),
+      form: classifyForm([answers.description, answers.clarification, answers.clarificationDetail].filter(Boolean).join(' ')),
+      family: classifyFamily([answers.description, answers.clarification, answers.clarificationDetail].filter(Boolean).join(' ')),
       destination: 'Registry',
       reason: 'The 12-question structured limit has been reached. The information collected is retained as-is.',
     };
   }
 
-  const form = classifyForm(answers.description);
+  const classificationText = [answers.description, answers.clarification].filter(Boolean).join(' ');
+  const form = classifyForm(classificationText);
 
-  if (!form) {
+  if (!form && !askedIds.includes('clarification')) {
     return {
       done: false,
       form: null,
-      family: classifyFamily(answers.description),
+      family: classifyFamily(classificationText),
       destination: 'Registry',
       reason: 'The Sifter cannot yet determine the most useful interrogation path.',
       question: question(
@@ -335,7 +336,22 @@ export function evaluateNext(answers, askedIds, structuredCount) {
     };
   }
 
-  const family = classifyFamily(answers.description);
+  if (!form && askedIds.includes('clarification')) {
+    return {
+      done: false,
+      form: null,
+      family: classifyFamily(classificationText),
+      destination: 'Registry',
+      reason: 'The Sifter still cannot classify this confidently; it asks the seller to describe the item in one more concrete way.',
+      question: question(
+        'clarificationDetail',
+        'Can you describe what it is, what it does, or what it is associated with?',
+        'Any concrete identifying detail'
+      ),
+    };
+  }
+
+  const family = classifyFamily(classificationText);
   const destination = form === 'repeatable'
     ? 'Repeatable manufactured items'
     : 'Individual / unique objects';

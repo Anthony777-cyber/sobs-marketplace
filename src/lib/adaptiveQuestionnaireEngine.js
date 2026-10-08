@@ -118,7 +118,7 @@ function nextRepeatableQuestion(answers, askedIds) {
 }
 
 function nextUniqueQuestion(answers, askedIds) {
-  const family = classifyFamily(answers.description);
+  const family = classifyFamily([answers.description, answers.clarification].filter(Boolean).join(' '));
 
   if (family === 'art' && !askedIds.includes('creator')) {
     return question(
@@ -212,7 +212,7 @@ export function createInitialQuestion() {
 }
 
 export function evaluateNext(answers, askedIds, structuredCount) {
-  const form = classifyForm(answers.description);
+  let form = classifyForm([answers.description, answers.clarification, answers.formClarification].filter(Boolean).join(' '));
 
   if (!askedIds.includes('description')) {
     return {
@@ -225,13 +225,13 @@ export function evaluateNext(answers, askedIds, structuredCount) {
     };
   }
 
-  if (!form) {
+  if (!form && !askedIds.includes('clarification')) {
     return {
       done: false,
       form: null,
-      family: classifyFamily(answers.description),
+      family: classifyFamily([answers.description, answers.clarification].filter(Boolean).join(' ')),
       destination: 'Registry',
-      reason: 'The description is not yet sufficient to determine whether this is a repeatable manufactured item or an individual object.',
+      reason: 'The description is not yet sufficient to determine the appropriate interrogation path.',
       question: question(
         'clarification',
         'What is the item normally made or used as?',
@@ -240,8 +240,36 @@ export function evaluateNext(answers, askedIds, structuredCount) {
     };
   }
 
-  if (form === 'repeatable' && !askedIds.includes('form')) {
-    // The form is an internal decision, not a seller question.
+  if (!form && askedIds.includes('clarification') && !askedIds.includes('formClarification')) {
+    return {
+      done: false,
+      form: null,
+      family: classifyFamily([answers.description, answers.clarification].filter(Boolean).join(' ')),
+      destination: 'Registry',
+      reason: 'The object class is still unclear, so the Sifter asks one focused classification question.',
+      question: question(
+        'formClarification',
+        'Is this a repeatable type of product, or is this particular object a one-off?',
+        'e.g. repeatable product / one-off individual object'
+      ),
+    };
+  }
+
+  if (!form && askedIds.includes('formClarification')) {
+    const formAnswer = text(answers.formClarification).toLowerCase();
+    form = /\b(unique|one[ -]?off|individual|original|bespoke|one of a kind)\b/i.test(formAnswer)
+      ? 'unique'
+      : 'repeatable';
+  }
+
+  if (structuredCount >= MAX_STRUCTURED_QUESTIONS) {
+    return {
+      done: true,
+      form,
+      family: classifyFamily([answers.description, answers.clarification].filter(Boolean).join(' ')),
+      destination: form === 'repeatable' ? 'Repeatable manufactured items' : 'Individual / unique objects',
+      reason: 'The 12-question structured limit has been reached. The information collected is retained as-is.',
+    };
   }
 
   if (form === 'repeatable' && !repeatableReady(answers)) {

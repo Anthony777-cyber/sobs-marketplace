@@ -67,7 +67,7 @@ export default function ViewSellerListings() {
       <NavBar />
 
       <div className="mx-auto max-w-5xl px-4 py-8">
-        <div className="mb-6 flex items-center justify-between gap-4">
+        <div className="mb-6 flex items-start justify-between gap-4">
           <h1 className="font-display text-3xl tracking-tight">Your Listings</h1>
           <button
             onClick={() => navigate('/manage/console')}

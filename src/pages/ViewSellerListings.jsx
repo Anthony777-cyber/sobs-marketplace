@@ -67,15 +67,16 @@ export default function ViewSellerListings() {
       <NavBar />
 
       <div className="mx-auto max-w-5xl px-4 py-8">
-        <button
-          onClick={() => navigate('/manage/console')}
-          className="mb-6 inline-flex items-center gap-2 rounded-full bg-red-600 px-5 py-2.5 font-semibold text-black hover:bg-red-500"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Exit
-        </button>
-
-        <h1 className="font-display text-3xl tracking-tight">Your Listings</h1>
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <h1 className="font-display text-3xl tracking-tight">Your Listings</h1>
+          <button
+            onClick={() => navigate('/manage/console')}
+            className="inline-flex items-center gap-2 rounded-full bg-red-600 px-5 py-2.5 font-semibold text-black hover:bg-red-500"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Exit
+          </button>
+        </div>
         <p className="mt-1 text-muted-foreground">
           Everything you currently have for sale.
         </p>

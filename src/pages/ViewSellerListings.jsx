@@ -63,7 +63,7 @@ export default function ViewSellerListings() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-black text-white">
       <NavBar />
 
       <div className="mx-auto max-w-xl px-4 py-12">

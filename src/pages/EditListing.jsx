@@ -141,15 +141,16 @@ export default function EditListing() {
       <NavBar />
 
       <div className="mx-auto max-w-xl px-4 py-12">
-        <button
-          onClick={() => navigate('/manage/console')}
-          className="mb-6 inline-flex items-center gap-2 rounded-full bg-red-600 px-5 py-2.5 font-semibold text-black hover:bg-red-500"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Exit
-        </button>
-
-        <h1 className="font-display text-3xl tracking-tight">Edit Listing</h1>
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <h1 className="font-display text-3xl tracking-tight">Edit Listing</h1>
+          <button
+            onClick={() => navigate('/manage/console')}
+            className="inline-flex items-center gap-2 rounded-full bg-red-600 px-5 py-2.5 font-semibold text-black hover:bg-red-500"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Exit
+          </button>
+        </div>
 
         <div className="mt-6 rounded-xl border border-white/15 p-4">
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-white/40">

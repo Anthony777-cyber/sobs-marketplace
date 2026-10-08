@@ -33,7 +33,12 @@ All shown in your own currency.` ,
   {
     icon: MessageSquare,
     heading: 'Chat',
-    text: "Interested buyers message you directly on your listing so you can chat it out, then it's up to you if you want to take it offsite—phone, email, or WhatsApp or even better they can send you their contact details. We stay out of your conversations entirely. We also don't do shipping, Take selling fees beyond the listing cost or resolve disputes, as that is what the cops and the courts are for. But we do counsel our users to be kind, as manners maketh man.",
+    text: [
+      "Buyers message you directly on your listing.",
+      "Take the conversation offsite if you want.",
+      "We stay out of your conversations.",
+      "Be kind. Manners maketh man.",
+    ],
   },
   {
     icon: Shield,

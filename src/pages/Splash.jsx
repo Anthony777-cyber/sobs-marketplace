@@ -17,7 +17,17 @@ const STEPS = [
   {
     icon: Clock,
     heading: 'Pay',
-    text: "How long you list is how much you pay. Choose your tier: €1 for 3 months (minimum), €2 for 6 months, €3 for 9 months, or €4 for a full year. Slow seller? Secure the whole year for €4. Quick seller? Take the cheapest option. When time is up, your post hides and it can be saved a week after it expires if you forget the end date, but you can renew it for as long as you want for any period you want. It is your business, not ours—we are just here to help that all important buyer find you and seal the deal.",
+    text: [
+      "How long you list is how much you pay.",
+      "Choose your tier:",
+      "€1 for 3 months (minimum)",
+      "€2 for 6 months",
+      "€3 for 9 months",
+      "€4 for a full year.",
+      "When time is up, your post hides. You have one week to save it or renew it.",
+      "It is your business, not ours. We just help buyers find you.",
+      "We take no commission on sales profit.",
+    ],
   },
   {
     icon: MessageSquare,

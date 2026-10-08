@@ -73,7 +73,7 @@ export default function SellerLogin() {
   if (status === 'success') {
     return (
       <div className="min-h-screen bg-background">
-        <main className="mx-auto max-w-2xl px-4 py-10">
+        <main className="mx-auto max-w-2xl px-4 pt-[25vh] pb-10">
           <h1 className="font-display text-3xl tracking-tight">
             Seller login
           </h1>
@@ -114,7 +114,7 @@ export default function SellerLogin() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="mx-auto max-w-2xl px-4 py-10">
+      <main className="mx-auto max-w-2xl px-4 pt-[25vh] pb-10">
         <h1 className="font-display text-3xl tracking-tight">
           Seller login
         </h1>

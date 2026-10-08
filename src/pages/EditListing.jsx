@@ -30,6 +30,11 @@ export default function EditListing() {
   useEffect(() => {
     setHead('Edit Listing — S.O.B.S.', 'Edit your S.O.B.S. listing.');
 
+    if (globalKey && !sessionStorage.getItem('sobs_seller_session_token')) {
+      navigate('/seller-login', { replace: true });
+      return;
+    }
+
     if (!key && !globalKey) {
       navigate('/manage-listings', { replace: true });
       return;

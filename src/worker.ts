@@ -18,6 +18,83 @@ async function hashTicket(ticket: string): Promise<string> {
   return hashSha256(ticket);
 }
 
+const MAX_AUTH_ATTEMPTS = 5;
+const AUTH_LOCKOUT_MS = 10 * 60 * 1000;
+
+function requestIp(request: Request): string {
+  return (
+    request.headers.get('CF-Connecting-IP')?.trim() ||
+    request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim() ||
+    'unknown'
+  );
+}
+
+async function getAuthAttemptKey(
+  scope: string,
+  request: Request,
+  ...parts: string[]
+): Promise<string> {
+  return hashSha256([scope, requestIp(request), ...parts].join(':'));
+}
+
+async function getAuthLock(env: Env, attemptKey: string) {
+  const row = await env.sobs_marketplace
+    .prepare(`
+      SELECT failed_attempts, locked_until
+      FROM seller_login_attempts
+      WHERE attempt_key = ?
+      LIMIT 1
+    `)
+    .bind(attemptKey)
+    .first() as {
+      failed_attempts: number;
+      locked_until: string | null;
+    } | null;
+
+  if (!row?.locked_until) return null;
+  return row.locked_until > new Date().toISOString() ? row : null;
+}
+
+async function recordAuthFailure(env: Env, attemptKey: string): Promise<number> {
+  const row = await env.sobs_marketplace
+    .prepare(`
+      SELECT failed_attempts
+      FROM seller_login_attempts
+      WHERE attempt_key = ?
+      LIMIT 1
+    `)
+    .bind(attemptKey)
+    .first() as { failed_attempts: number } | null;
+
+  const failedAttempts = Number(row?.failed_attempts || 0) + 1;
+  const lockedUntil =
+    failedAttempts >= MAX_AUTH_ATTEMPTS
+      ? new Date(Date.now() + AUTH_LOCKOUT_MS).toISOString()
+      : null;
+
+  await env.sobs_marketplace
+    .prepare(`
+      INSERT INTO seller_login_attempts
+        (attempt_key, failed_attempts, locked_until, updated_at)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(attempt_key) DO UPDATE SET
+        failed_attempts = excluded.failed_attempts,
+        locked_until = excluded.locked_until,
+        updated_at = excluded.updated_at
+    `)
+    .bind(attemptKey, failedAttempts, lockedUntil, new Date().toISOString())
+    .run();
+
+  return failedAttempts;
+}
+
+async function clearAuthFailures(env: Env, attemptKey: string) {
+  await env.sobs_marketplace
+    .prepare('DELETE FROM seller_login_attempts WHERE attempt_key = ?')
+    .bind(attemptKey)
+    .run();
+}
+
 async function generateSellerId(db: D1Database): Promise<string> {
   const range = 10000000000000000n;
   const max = 1n << 64n;
@@ -389,8 +466,17 @@ export default {
       const loginSecret =
         typeof body?.loginSecret === 'string' ? body.loginSecret.trim() : '';
 
-      if (!/^\d{16}$/.test(globalUserKey) || !/^\d{16}$/.test(loginSecret)) {
-        return json({ error: 'Invalid S.O.B.S ID or login secret' }, 401);
+      const attemptKey = await getAuthAttemptKey(
+        'seller-login',
+        request,
+        globalUserKey
+      );
+
+      if (await getAuthLock(env, attemptKey)) {
+        return json(
+          { error: 'Too many attempts. Restart S.O.B.S. to try again.', locked: true },
+          429
+        );
       }
 
       const seller = await env.sobs_marketplace
@@ -408,15 +494,27 @@ export default {
           login_secret_hash: string | null;
         } | null;
 
-      if (!seller?.login_secret_hash) {
-        return json({ error: 'Invalid S.O.B.S ID or login secret' }, 401);
-      }
-
       const suppliedHash = await hashTicket(loginSecret);
 
-      if (suppliedHash !== seller.login_secret_hash) {
+      if (
+        !/^\d{16}$/.test(globalUserKey) ||
+        !/^\d{16}$/.test(loginSecret) ||
+        !seller?.login_secret_hash ||
+        suppliedHash !== seller.login_secret_hash
+      ) {
+        const failedAttempts = await recordAuthFailure(env, attemptKey);
+
+        if (failedAttempts >= MAX_AUTH_ATTEMPTS) {
+          return json(
+            { error: 'Too many attempts. Restart S.O.B.S. to try again.', locked: true },
+            429
+          );
+        }
+
         return json({ error: 'Invalid S.O.B.S ID or login secret' }, 401);
       }
+
+      await clearAuthFailures(env, attemptKey);
 
       const sessionTokenBytes = crypto.getRandomValues(new Uint8Array(32));
       const sessionToken = Array.from(
@@ -497,6 +595,13 @@ export default {
     }
 
     if (url.pathname === '/api/seller/me' && request.method === 'GET') {
+      const sessionSeller = await getVerifiedSessionSeller(env, request);
+
+      if (!sessionSeller) {
+        return json({ error: 'Seller login required' }, 401);
+      }
+
+
       const globalKey = request.headers.get('X-SOBS-Global-Key')?.trim();
 
       if (!globalKey) {
@@ -522,7 +627,27 @@ export default {
     }
 
     if (url.pathname === '/api/manage/global/verify' && request.method === 'POST') {
+      const sessionSeller = await getVerifiedSessionSeller(env, request);
+
+      if (!sessionSeller) {
+        return json({ error: 'Seller login required' }, 401);
+      }
+
+
       const globalKey = request.headers.get('X-SOBS-Global-Key')?.trim();
+
+      const attemptKey = await getAuthAttemptKey(
+        'global-management-key',
+        request,
+        sessionSeller.id
+      );
+
+      if (await getAuthLock(env, attemptKey)) {
+        return json(
+          { error: 'Too many attempts. Restart S.O.B.S. to try again.', locked: true },
+          429
+        );
+      }
 
       if (!globalKey) {
         return json({ error: 'Global user key required' }, 401);
@@ -540,13 +665,31 @@ export default {
         .first();
 
       if (!seller) {
+        const failedAttempts = await recordAuthFailure(env, attemptKey);
+
+        if (failedAttempts >= MAX_AUTH_ATTEMPTS) {
+          return json(
+            { error: 'Too many attempts. Restart S.O.B.S. to try again.', locked: true },
+            429
+          );
+        }
+
         return json({ error: 'Invalid global user key' }, 401);
       }
+
+      await clearAuthFailures(env, attemptKey);
 
       return json({ verified: true });
     }
 
     if (url.pathname === '/api/manage/global/listings' && request.method === 'GET') {
+      const sessionSeller = await getVerifiedSessionSeller(env, request);
+
+      if (!sessionSeller) {
+        return json({ error: 'Seller login required' }, 401);
+      }
+
+
       const globalKey = request.headers.get('X-SOBS-Global-Key')?.trim();
 
       if (!globalKey) {
@@ -604,9 +747,30 @@ export default {
     }
 
     if (url.pathname === '/api/manage/global/listing-key' && request.method === 'POST') {
+      const sessionSeller = await getVerifiedSessionSeller(env, request);
+
+      if (!sessionSeller) {
+        return json({ error: 'Seller login required' }, 401);
+      }
+
+
       const globalKey = request.headers.get('X-SOBS-Global-Key')?.trim();
       const listingNumber = request.headers.get('X-SOBS-Listing-Number')?.trim();
       const listingKey = request.headers.get('X-SOBS-Listing-Key')?.trim();
+
+      const attemptKey = await getAuthAttemptKey(
+        'listing-key',
+        request,
+        sessionSeller.id,
+        listingNumber || ''
+      );
+
+      if (await getAuthLock(env, attemptKey)) {
+        return json(
+          { error: 'Too many attempts. Restart S.O.B.S. to try again.', locked: true },
+          429
+        );
+      }
 
       if (!globalKey || !listingNumber || !listingKey) {
         return json({ error: 'Required credentials missing' }, 401);
@@ -640,8 +804,19 @@ export default {
         .first();
 
       if (!listing) {
+        const failedAttempts = await recordAuthFailure(env, attemptKey);
+
+        if (failedAttempts >= MAX_AUTH_ATTEMPTS) {
+          return json(
+            { error: 'Too many attempts. Restart S.O.B.S. to try again.', locked: true },
+            429
+          );
+        }
+
         return json({ error: 'Invalid listing key' }, 401);
       }
+
+      await clearAuthFailures(env, attemptKey);
 
       return json({
         verified: true,
@@ -651,6 +826,13 @@ export default {
     }
 
     if (url.pathname === '/api/manage/global' && request.method === 'POST') {
+      const sessionSeller = await getVerifiedSessionSeller(env, request);
+
+      if (!sessionSeller) {
+        return json({ error: 'Seller login required' }, 401);
+      }
+
+
       const globalKey = request.headers.get('X-SOBS-Global-Key')?.trim();
 
       if (!globalKey) {
@@ -717,6 +899,13 @@ export default {
     }
 
     if (url.pathname.startsWith('/api/manage/global/listings/') && request.method === 'DELETE') {
+      const sessionSeller = await getVerifiedSessionSeller(env, request);
+
+      if (!sessionSeller) {
+        return json({ error: 'Seller login required' }, 401);
+      }
+
+
       const globalKey = request.headers.get('X-SOBS-Global-Key')?.trim();
 
       if (!globalKey) {
@@ -776,6 +965,13 @@ export default {
     }
 
     if (url.pathname.startsWith('/api/manage/global/listings/') && request.method === 'PATCH') {
+      const sessionSeller = await getVerifiedSessionSeller(env, request);
+
+      if (!sessionSeller) {
+        return json({ error: 'Seller login required' }, 401);
+      }
+
+
       const globalKey = request.headers.get('X-SOBS-Global-Key')?.trim();
 
       if (!globalKey) {
@@ -906,6 +1102,13 @@ export default {
     }
 
     if (url.pathname === '/api/listings' && request.method === 'POST') {
+      const sessionSeller = await getVerifiedSessionSeller(env, request);
+
+      if (!sessionSeller) {
+        return json({ error: 'Seller login required' }, 401);
+      }
+
+
       const body = await request.json().catch(() => null) as Record<string, unknown> | null;
 
       if (!body || typeof body !== 'object') {

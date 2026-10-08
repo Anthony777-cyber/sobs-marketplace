@@ -11,6 +11,11 @@ export default function SelectEditListing() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!sessionStorage.getItem('sobs_seller_session_token')) {
+      navigate('/seller-login', { replace: true });
+      return;
+    }
+
     if (!globalKey) {
       navigate('/manage-listings', { replace: true });
       return;

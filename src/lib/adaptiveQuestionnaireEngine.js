@@ -103,18 +103,18 @@ const PROFILES = {
 };
 
 const TYPE_RULES = [
-  ['vehicle', /\\b(car|vehicle|van|motorbike|motorcycle|truck|lorry|tractor|bus|scooter|bicycle|bike)\\b/i],
-  ['part', /\\b(part|spare|component|carburettor|carburetor|gearbox|alternator|bracket|bearing|switch|valve|nozzle|pump|engine block)\\b/i],
-  ['art', /\\b(art|painting|sculpture|print|drawing|photograph|photo|canvas|etching|lithograph|artwork)\\b/i],
-  ['document', /\\b(book|document|letter|manuscript|magazine|newspaper|map|poster|pamphlet|comic|catalogue|catalog)\\b/i],
-  ['electronics', /\\b(electronic|electronics|radio|amplifier|speaker|computer|circuit|pcb|television|tv|monitor|camera|charger|power supply)\\b/i],
-  ['tool', /\\b(tool|drill|lathe|wrench|spanner|hammer|saw|vise|vice|workshop)\\b/i],
-  ['collectible', /\\b(collectable|collectible|memorabilia|toy|model|badge|medal|coin|stamp|record|vinyl|figurine|autograph|relic)\\b/i],
-  ['machine', /\\b(machine|machinery|industrial|motor|compressor|generator|conveyor|pump|robot|equipment)\\b/i],
+  ['vehicle', /\b(car|vehicle|van|motorbike|motorcycle|truck|lorry|tractor|bus|scooter|bicycle|bike)\b/i],
+  ['part', /\b(part|spare|component|carburettor|carburetor|gearbox|alternator|bracket|bearing|switch|valve|nozzle|pump|engine block)\b/i],
+  ['art', /\b(art|painting|sculpture|print|drawing|photograph|photo|canvas|etching|lithograph|artwork)\b/i],
+  ['document', /\b(book|document|letter|manuscript|magazine|newspaper|map|poster|pamphlet|comic|catalogue|catalog)\b/i],
+  ['electronics', /\b(electronic|electronics|radio|amplifier|speaker|computer|circuit|pcb|television|tv|monitor|camera|charger|power supply)\b/i],
+  ['tool', /\b(tool|drill|lathe|wrench|spanner|hammer|saw|vise|vice|workshop)\b/i],
+  ['collectible', /\b(collectable|collectible|memorabilia|toy|model|badge|medal|coin|stamp|record|vinyl|figurine|autograph|relic)\b/i],
+  ['machine', /\b(machine|machinery|industrial|motor|compressor|generator|conveyor|pump|robot|equipment)\b/i],
 ];
 
 function text(value) {
-  return String(value ?? '').trim().replace(/\\s+/g, ' ');
+  return String(value ?? '').trim().replace(/\s+/g, ' ');
 }
 
 function tokens(value) {
@@ -122,7 +122,7 @@ function tokens(value) {
 }
 
 function isUnknown(value) {
-  return !text(value) || /^(?:don't know|do not know|unknown|not sure|unsure|n\\/a|na|skip|-)$/i.test(text(value));
+  return !text(value) || /^(?:don't know|do not know|unknown|not sure|unsure|n\/a|na|skip|-)$/i.test(text(value));
 }
 
 function meaningfulTokens(value) {

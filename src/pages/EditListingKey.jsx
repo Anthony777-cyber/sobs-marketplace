@@ -44,7 +44,7 @@ export default function EditListingKey() {
     <main className="min-h-screen bg-black text-white p-6">
       <NavBar />
 
-      <div className="mx-auto max-w-xl py-12">
+      <div className="mx-auto max-w-xl pt-[25vh] pb-12">
         <p className="font-semibold">Enter your listing key</p>
 
         <form onSubmit={handleSubmit} className="mt-3">

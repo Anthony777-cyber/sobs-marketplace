@@ -22,32 +22,45 @@ function isUnknown(value) {
   return !text(value) || /^(?:don't know|do not know|unknown|not sure|unsure|n\/a|na|skip|-)$/i.test(text(value));
 }
 
+function hasAnswer(answers, key) {
+  return !isUnknown(answers[key]);
+}
+
 /*
- * The seller supplies the description. The Sifter owns the classification.
- * "Repeatable manufactured" means the item belongs to a repeatable product/type,
- * whether factory-made or individually built to a recognised repeatable type.
- * "Unique" means the particular object itself is the thing being identified.
+ * The Sifter does not ask the seller to choose the branch.
+ * It reads the seller's description and forms a working hypothesis:
+ *
+ *   repeatable manufactured type
+ *   individual / unique object
+ *
+ * The hypothesis drives the question family. Every answer is then used to
+ * reduce the remaining uncertainty. Once the registry identity is strong
+ * enough, the Sifter closes itself instead of continuing through a checklist.
  */
-const REPEATABLE_PATTERNS = [
+const REPEATABLE_SIGNALS = [
   /\b(car|vehicle|van|motorbike|motorcycle|truck|lorry|tractor|bus|scooter|bicycle|bike)\b/i,
-  /\b(piano|organ|guitar|drum|keyboard|amplifier|speaker|radio|television|tv|camera|computer|printer|monitor|pedal|echo|reverb|synth|microphone|mixer|turntable)\b/i,
-  /\b(machine|machinery|equipment|motor|compressor|generator|conveyor|robot|pump|tool|drill|lathe|wrench|spanner|hammer|saw|vise|vice|appliance|fridge|refrigerator|oven|microwave|washing machine|dishwasher|chair|table|desk|lamp|watch|clock|phone|telephone|part|spare|component|gearbox|alternator|bracket|bearing|switch|valve|nozzle|engine)\b/i,
+  /\b(machine|machinery|equipment|motor|compressor|generator|conveyor|robot|pump|tool|drill|lathe|wrench|spanner|hammer|saw|vise|vice|appliance|fridge|refrigerator|oven|microwave|washing machine|dishwasher)\b/i,
+  /\b(piano|organ|guitar|drum|keyboard|amplifier|speaker|radio|television|tv|camera|computer|printer|monitor|charger|pedal|echo|reverb|synth|microphone|mixer|turntable)\b/i,
   /\b(musical equipment|audio equipment|recording equipment|studio equipment|sound equipment)\b/i,
+  /\b(part|spare|component|gearbox|alternator|bracket|bearing|switch|valve|nozzle|engine)\b/i,
+  /\b(model|serial|part number|catalogue|catalog|production|edition|series|mk\.?\s*[ivx0-9]+)\b/i,
+  /\b[A-Z]{1,6}[- ]?\d{2,}[A-Z]?\b/,
 ];
 
-const UNIQUE_PATTERNS = [
-  /\b(painting|sculpture|artwork|folk art|drawing|photograph|photo|manuscript|letter|diary|one-off|one of a kind|unique|original)\b/i,
-  /\b(fag end|cigarette butt|cigarette end|ash|fragment|relic|memorabilia|keepsake)\b/i,
+const UNIQUE_SIGNALS = [
+  /\b(painting|sculpture|artwork|drawing|photograph|photo|folk art)\b/i,
+  /\b(one[- ]off|one of a kind|unique|original|personal object)\b/i,
+  /\b(fag end|cigarette butt|cigarette end|fragment|relic|keepsake)\b/i,
 ];
 
 function classifyForm(description) {
   const value = text(description);
 
-  if (UNIQUE_PATTERNS.some((pattern) => pattern.test(value))) return 'unique';
-  if (REPEATABLE_PATTERNS.some((pattern) => pattern.test(value))) return 'repeatable';
+  const uniqueHits = UNIQUE_SIGNALS.filter((pattern) => pattern.test(value)).length;
+  const repeatableHits = REPEATABLE_SIGNALS.filter((pattern) => pattern.test(value)).length;
 
-  // Unknown cases are not automatically treated as unique because that can
-  // prematurely send ordinary manufactured objects down the wrong path.
+  if (uniqueHits > repeatableHits && uniqueHits > 0) return 'unique';
+  if (repeatableHits > 0) return 'repeatable';
   return null;
 }
 
@@ -65,151 +78,214 @@ function question(id, label, placeholder) {
   return { id, label, placeholder };
 }
 
-function descriptionAlreadyIdentifiesItem(answers) {
-  const description = text(answers.description);
-  const meaningful = meaningfulTokens(description);
-  const includesItemType = REPEATABLE_PATTERNS.some((pattern) => pattern.test(description));
-  // A longer seller description can already contain the maker/model or designation.
-  // Do not ask the seller to repeat details already supplied.
-  return includesItemType && meaningful.length >= 3;
+function descriptionAlreadyIdentifiesRepeatable(answers) {
+  const value = text(answers.description);
+  const words = meaningfulTokens(value);
+
+  const hasModelLikeCode = /\b[A-Z]{1,6}[- ]?\d{2,}[A-Z]?\b/i.test(value);
+  const hasMakerModelLanguage = /\b(by|made by|from|model|mk\.?|mark)\b/i.test(value);
+
+  return words.length >= 3 && (hasModelLikeCode || hasMakerModelLanguage);
+}
+
+function descriptionAlreadyIdentifiesUnique(answers) {
+  return meaningfulTokens(answers.description).length >= 4;
 }
 
 function nextRepeatableQuestion(answers, askedIds) {
-  if (!askedIds.includes('identity') && !descriptionAlreadyIdentifiesItem(answers)) {
-    return question(
-      'identity',
-      'What is the make and model?',
-      'Maker and model, if known'
-    );
+  if (!askedIds.includes('identity') && !descriptionAlreadyIdentifiesRepeatable(answers)) {
+    return {
+      question: question(
+        'identity',
+        'What is the make and model?',
+        'Maker and model, if known'
+      ),
+      value: 'identity',
+      priority: 100,
+    };
   }
 
   if (!askedIds.includes('condition')) {
-    return question(
-      'condition',
-      'Is it working, faulty, incomplete, or otherwise out of service?',
-      'Current condition'
-    );
+    return {
+      question: question(
+        'condition',
+        'What is its condition?',
+        'e.g. Working, faulty, incomplete, damaged, restored'
+      ),
+      value: 'condition',
+      priority: 60,
+    };
   }
 
   if (!askedIds.includes('partNumber')) {
-    return question(
-      'partNumber',
-      'Is there a serial number, part number, or other identifying number?',
-      'Number, or press Enter if unknown'
-    );
+    return {
+      question: question(
+        'partNumber',
+        'Is there a serial number, part number, or other identifying number?',
+        'Number, or press Enter if unknown'
+      ),
+      value: 'partNumber',
+      priority: 90,
+    };
   }
 
   if (!askedIds.includes('year')) {
-    return question(
-      'year',
-      'What year or approximate period is it from?',
-      'Year or period, if known'
-    );
+    return {
+      question: question(
+        'year',
+        'What year or approximate period is it from?',
+        'Year or period, if known'
+      ),
+      value: 'year',
+      priority: 70,
+    };
   }
 
   if (!askedIds.includes('variant')) {
-    return question(
-      'variant',
-      'Is there a version, specification, size, rating, or other variant detail?',
-      'Useful identifying specification, if known'
-    );
+    return {
+      question: question(
+        'variant',
+        'Is there a version, specification, size, rating, or other identifying detail?',
+        'Useful specification, if known'
+      ),
+      value: 'variant',
+      priority: 80,
+    };
   }
 
   if (!askedIds.includes('distinctive')) {
-    return question(
-      'distinctive',
-      'Is there any other detail that distinguishes this particular item?',
-      'Anything useful for searching or cross-referencing'
-    );
+    return {
+      question: question(
+        'distinctive',
+        'Is there any other detail that distinguishes this particular item?',
+        'Anything useful for searching or cross-referencing'
+      ),
+      value: 'distinctive',
+      priority: 50,
+    };
   }
 
   return null;
 }
 
 function nextUniqueQuestion(answers, askedIds) {
-  const family = classifyFamily([answers.description, answers.clarification].filter(Boolean).join(' '));
+  const family = classifyFamily(answers.description);
 
   if (family === 'art' && !askedIds.includes('creator')) {
-    return question(
-      'creator',
-      'Who made it?',
-      'Artist or maker, if known'
-    );
+    return {
+      question: question(
+        'creator',
+        'Who made it?',
+        'Artist or maker, if known'
+      ),
+      value: 'creator',
+      priority: 100,
+    };
   }
 
   if (!askedIds.includes('distinctive')) {
-    return question(
-      'distinctive',
-      'What makes this particular object identifiable?',
-      'A feature, mark, story, inscription, construction detail, or other distinction'
-    );
+    return {
+      question: question(
+        'distinctive',
+        'What makes this particular object identifiable?',
+        'A feature, mark, story, inscription, construction detail, or other distinction'
+      ),
+      value: 'distinctive',
+      priority: 100,
+    };
   }
 
   if (!askedIds.includes('association')) {
-    return question(
-      'association',
-      'Is it associated with a particular person, place, event, collection, or source?',
-      'Association, if known'
-    );
+    return {
+      question: question(
+        'association',
+        'Is it associated with a particular person, place, event, collection, or source?',
+        'Association, if known'
+      ),
+      value: 'association',
+      priority: 80,
+    };
   }
 
   if (!askedIds.includes('origin')) {
-    return question(
-      'origin',
-      'Where did it come from, or where was it found?',
-      'Place or source, if known'
-    );
+    return {
+      question: question(
+        'origin',
+        'Where did it come from, or where was it found?',
+        'Place or source, if known'
+      ),
+      value: 'origin',
+      priority: 70,
+    };
   }
 
   if (!askedIds.includes('period')) {
-    return question(
-      'period',
-      'When is it from, approximately?',
-      'Year or period, if known'
-    );
+    return {
+      question: question(
+        'period',
+        'When is it from, approximately?',
+        'Year or period, if known'
+      ),
+      value: 'period',
+      priority: 60,
+    };
   }
 
   if (!askedIds.includes('medium')) {
-    return question(
-      'medium',
-      'What is it made from or made with?',
-      'Material or medium, if useful'
-    );
+    return {
+      question: question(
+        'medium',
+        'What is it made from or made with?',
+        'Material or medium, if useful'
+      ),
+      value: 'medium',
+      priority: 50,
+    };
   }
 
   return null;
 }
 
-function repeatableReady(answers) {
-  const identity = !isUnknown(answers.identity);
-  const condition = !isUnknown(answers.condition);
-  return identity && condition;
+function repeatableIdentityReady(answers) {
+  const descriptionSpecific = meaningfulTokens(answers.description).length >= 3;
+  const suppliedIdentity = hasAnswer(answers, 'identity');
+  const suppliedNumber = hasAnswer(answers, 'partNumber');
+
+  return descriptionAlreadyIdentifiesRepeatable(answers)
+    || suppliedIdentity
+    || suppliedNumber
+    || descriptionSpecific && hasAnswer(answers, 'variant');
 }
 
-function uniqueReady(answers) {
-  const description = meaningfulTokens(answers.description).length > 0;
-  const distinguishing = !isUnknown(answers.distinctive)
-    || !isUnknown(answers.association)
-    || !isUnknown(answers.origin);
-  return description && distinguishing;
+function uniqueIdentityReady(answers) {
+  const descriptionSpecific = descriptionAlreadyIdentifiesUnique(answers);
+  const creator = hasAnswer(answers, 'creator');
+  const distinctive = hasAnswer(answers, 'distinctive');
+  const association = hasAnswer(answers, 'association');
+  const origin = hasAnswer(answers, 'origin');
+
+  return (descriptionSpecific && distinctive)
+    || (creator && (distinctive || association || origin));
 }
 
 function readinessReason(answers, form) {
   if (form === 'repeatable') {
-    if (repeatableReady(answers)) {
-      return 'The item has a searchable make/model identity and recorded condition.';
+    if (repeatableIdentityReady(answers)) {
+      return 'The Sifter has enough identifying information to close the registry interrogation.';
     }
-    if (!isUnknown(answers.identity)) {
-      return 'The item is identified; its condition is still needed.';
+
+    if (hasAnswer(answers, 'identity') || hasAnswer(answers, 'partNumber')) {
+      return 'The item has an identifying lead; the Sifter is checking for anything still needed to close the identity.';
     }
-    return 'The repeatable manufactured item still needs its make and model.';
+
+    return 'The Sifter is still reducing uncertainty around the manufactured item identity.';
   }
 
-  if (uniqueReady(answers)) {
-    return 'The individual object has a searchable description and a distinguishing detail.';
+  if (uniqueIdentityReady(answers)) {
+    return 'The Sifter has enough identifying and distinguishing information to close the registry interrogation.';
   }
 
-  return 'The individual object still needs enough detail to distinguish it from similar objects.';
+  return 'The Sifter is still reducing uncertainty around the individual object.';
 }
 
 export function createInitialQuestion() {
@@ -221,130 +297,97 @@ export function createInitialQuestion() {
 }
 
 export function evaluateNext(answers, askedIds, structuredCount) {
-  let form = classifyForm([answers.description, answers.clarification, answers.formClarification].filter(Boolean).join(' '));
-
   if (!askedIds.includes('description')) {
     return {
       done: false,
       form: null,
       family: 'general',
       destination: 'Registry',
-      reason: 'The seller provides the description; the Sifter determines the interrogation path from it.',
+      reason: 'The seller supplies the description. The Sifter determines the interrogation path from it.',
       question: createInitialQuestion(),
     };
   }
 
-  if (!form && !askedIds.includes('clarification')) {
+  if (structuredCount >= MAX_STRUCTURED_QUESTIONS) {
+    return {
+      done: true,
+      form: classifyForm(answers.description),
+      family: classifyFamily(answers.description),
+      destination: 'Registry',
+      reason: 'The 12-question structured limit has been reached. The information collected is retained as-is.',
+    };
+  }
+
+  const form = classifyForm(answers.description);
+
+  if (!form) {
     return {
       done: false,
       form: null,
-      family: classifyFamily([answers.description, answers.clarification].filter(Boolean).join(' ')),
+      family: classifyFamily(answers.description),
       destination: 'Registry',
-      reason: 'The description is not yet sufficient to determine the appropriate interrogation path.',
+      reason: 'The Sifter cannot yet determine the most useful interrogation path.',
       question: question(
         'clarification',
-        'What is the item normally made or used as?',
+        'What is this item normally called or used as?',
         'Give its ordinary name or type'
       ),
     };
   }
 
-  if (!form && askedIds.includes('clarification') && !askedIds.includes('formClarification')) {
+  const family = classifyFamily(answers.description);
+  const destination = form === 'repeatable'
+    ? 'Repeatable manufactured items'
+    : 'Individual / unique objects';
+
+  const ready = form === 'repeatable'
+    ? repeatableIdentityReady(answers)
+    : uniqueIdentityReady(answers);
+
+  if (ready) {
     return {
-      done: false,
-      form: null,
-      family: classifyFamily([answers.description, answers.clarification].filter(Boolean).join(' ')),
-      destination: 'Registry',
-      reason: 'The object class is still unclear, so the Sifter asks one focused classification question.',
+      done: true,
+      form,
+      family,
+      destination,
+      reason: readinessReason(answers, form),
+    };
+  }
+
+  let candidate = form === 'repeatable'
+    ? nextRepeatableQuestion(answers, askedIds)
+    : nextUniqueQuestion(answers, askedIds);
+
+  if (!candidate && !askedIds.includes('context')) {
+    candidate = {
       question: question(
-        'formClarification',
-        'Is this a repeatable type of product, or is this particular object a one-off?',
-        'e.g. repeatable product / one-off individual object'
+        'context',
+        'What else would help someone recognise or search for this item?',
+        'Any useful identifying context'
       ),
+      value: 'context',
+      priority: 40,
     };
   }
 
-  if (!form && askedIds.includes('formClarification')) {
-    const formAnswer = text(answers.formClarification).toLowerCase();
-    form = /\b(unique|one[ -]?off|individual|original|bespoke|one of a kind)\b/i.test(formAnswer)
-      ? 'unique'
-      : 'repeatable';
-  }
-
-  if (structuredCount >= MAX_STRUCTURED_QUESTIONS) {
+  if (!candidate) {
     return {
       done: true,
       form,
-      family: classifyFamily([answers.description, answers.clarification].filter(Boolean).join(' ')),
-      destination: form === 'repeatable' ? 'Repeatable manufactured items' : 'Individual / unique objects',
-      reason: 'The 12-question structured limit has been reached. The information collected is retained as-is.',
-    };
-  }
-
-  if (form === 'repeatable' && !repeatableReady(answers)) {
-    const next = nextRepeatableQuestion(answers, askedIds);
-    if (next) {
-      return {
-        done: false,
-        form,
-        family: classifyFamily(answers.description),
-        destination: 'Repeatable manufactured items',
-        reason: readinessReason(answers, form),
-        question: next,
-      };
-    }
-  }
-
-  if (form === 'unique' && !uniqueReady(answers)) {
-    const next = nextUniqueQuestion(answers, askedIds);
-    if (next) {
-      return {
-        done: false,
-        form,
-        family: classifyFamily(answers.description),
-        destination: 'Individual / unique objects',
-        reason: readinessReason(answers, form),
-        question: next,
-      };
-    }
-  }
-
-  if (form === 'repeatable' && repeatableReady(answers)) {
-    return {
-      done: true,
-      form,
-      family: classifyFamily(answers.description),
-      destination: 'Repeatable manufactured items',
-      reason: readinessReason(answers, form),
-    };
-  }
-
-  if (form === 'unique' && uniqueReady(answers)) {
-    return {
-      done: true,
-      form,
-      family: classifyFamily(answers.description),
-      destination: 'Individual / unique objects',
-      reason: readinessReason(answers, form),
-    };
-  }
-
-  if (structuredCount >= MAX_STRUCTURED_QUESTIONS) {
-    return {
-      done: true,
-      form,
-      family: classifyFamily(answers.description),
-      destination: form === 'repeatable' ? 'Repeatable manufactured items' : 'Individual / unique objects',
-      reason: 'The 12-question structured limit has been reached. The information collected is retained as-is.',
+      family,
+      destination,
+      reason: 'No further question offers enough value to justify continuing. The Sifter closes the interrogation.',
     };
   }
 
   return {
-    done: true,
+    done: false,
     form,
-    family: classifyFamily(answers.description),
-    destination: form === 'repeatable' ? 'Repeatable manufactured items' : 'Individual / unique objects',
-    reason: 'No additional useful structured question remains.',
+    family,
+    destination,
+    reason: readinessReason(answers, form),
+    question: candidate.question,
+    priority: candidate.priority,
   };
 }
 

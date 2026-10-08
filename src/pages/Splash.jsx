@@ -31,41 +31,31 @@ export default function Splash() {
       <header className="mx-auto flex max-w-5xl items-center justify-between px-4 py-5">
         <div className="flex flex-col leading-none">
           <span className="font-display text-7xl tracking-tight sm:text-8xl">S<span className="font-sans font-bold">.</span>O<span className="font-sans font-bold">.</span>B<span className="font-sans font-bold">.</span>S</span>
-          <span className="mt-1 grid w-full grid-cols-4 items-center text-xs font-semibold text-white sm:text-sm">
-            <span className="text-center">SELL</span>
-            <span className="text-center">OLD</span>
-            <span className="text-center">BROKEN</span>
-            <span className="text-center">STUFF</span>
+          <span className="mt-1 text-xs font-semibold tracking-[0.25em] text-white sm:text-sm">
+            SELL OLD BROKEN STUFF
           </span>
         </div>
-        <div className="flex items-center gap-3">
-          <Link
-            to="/seller-login"
-            className="inline-flex w-24 items-center justify-center rounded-full bg-red-600 px-5 py-2 font-semibold text-black transition-colors hover:bg-red-700"
-          >
-            Login
-          </Link>
-          <Link
-            to="/manage-listings"
-            className="inline-flex w-24 items-center justify-center rounded-full bg-red-600 px-5 py-2 font-semibold text-black transition-colors hover:bg-red-700"
-          >
-            Manage
-          </Link>
-          <Link
-            to="/rules"
-            className="inline-flex w-24 items-center justify-center rounded-full bg-white px-5 py-2 font-semibold text-black transition-colors hover:bg-gray-100"
-          >
-            Rules
-          </Link>
-        </div>
+        <Link
+          to="/manage-listings"
+          className="inline-flex items-center justify-center rounded-full bg-red-600 px-5 py-2 font-semibold text-black transition-colors hover:bg-red-700"
+        >
+          Manage
+        </Link>
+        <Link
+          to="/seller-login"
+          className="inline-flex items-center justify-center rounded-full bg-red-600 px-5 py-2 font-semibold text-black transition-colors hover:bg-red-700"
+        >
+          Login
+        </Link>
       </header>
 
       <section className="mx-auto max-w-5xl px-4 pb-0 pt-4 sm:pt-6">
         <div className="max-w-3xl">
           <div className="flex items-center gap-8">
             <h1 className="font-display text-2xl leading-tight tracking-tight sm:text-4xl">
-              List it, chat it, sell it.
+              Sell old broken stuff.<br />List it, chat it, sell it.
             </h1>
+            <Link to="/rules" className="inline-flex shrink-0 items-center justify-center rounded-full bg-white px-5 py-2 font-semibold text-black transition-colors hover:bg-gray-100">Rules</Link>
           </div>
           <p className="mt-5 max-w-2xl text-lg leading-relaxed text-white sm:text-xl text-justify">
             S∙O∙B∙S∙ is an open-ended directory for junk, spares and rare parts.

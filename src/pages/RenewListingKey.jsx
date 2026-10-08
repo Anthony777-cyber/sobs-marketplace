@@ -4,7 +4,7 @@ import NavBar from '@/components/NavBar';
 import { ArrowLeft } from 'lucide-react';
 import { verifyGlobalListingKey } from '@/lib/api';
 
-const MAX_ATTEMPTS = 3;
+const MAX_ATTEMPTS = 5;
 
 export default function RenewListingKey() {
   const navigate = useNavigate();
@@ -27,7 +27,7 @@ export default function RenewListingKey() {
       const nextAttempts = attempts + 1;
       setAttempts(nextAttempts);
       setListingKey('');
-      setError('Wrong key code');
+      setError(nextAttempts >= MAX_ATTEMPTS ? 'Too many attempts. Restart S.O.B.S. to try again.' : 'Wrong key code');
     }
   }
 

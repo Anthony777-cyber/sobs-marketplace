@@ -23,21 +23,18 @@ export default function ManagementConsole() {
       'Manage your S.O.B.S. listing.'
     );
 
-    if (globalKey && !sessionStorage.getItem('sobs_seller_session_token')) {
+    if (!sessionStorage.getItem('sobs_seller_session_token')) {
       navigate('/seller-login', { replace: true });
       return;
     }
 
-    if (!key && !globalKey) {
+    if (!globalKey) {
       navigate('/manage-listings', { replace: true });
       return;
     }
 
-    if (globalKey) {
-      setLoading(false);
-      return;
-    }
-
+    setLoading(false);
+    if (false) {
     getManageListing(key)
       .then(setListing)
       .catch(() => {
@@ -45,7 +42,8 @@ export default function ManagementConsole() {
         navigate('/manage', { replace: true });
       })
       .finally(() => setLoading(false));
-  }, [key, navigate]);
+    }
+  }, [globalKey, navigate]);
 
   const logout = () => {
     sessionStorage.removeItem(KEY_STORAGE);

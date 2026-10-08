@@ -65,8 +65,17 @@ function question(id, label, placeholder) {
   return { id, label, placeholder };
 }
 
+function descriptionAlreadyIdentifiesItem(answers) {
+  const description = text(answers.description);
+  const meaningful = meaningfulTokens(description);
+  const includesItemType = REPEATABLE_PATTERNS.some((pattern) => pattern.test(description));
+  // A longer seller description can already contain the maker/model or designation.
+  // Do not ask the seller to repeat details already supplied.
+  return includesItemType && meaningful.length >= 3;
+}
+
 function nextRepeatableQuestion(answers, askedIds) {
-  if (!askedIds.includes('identity')) {
+  if (!askedIds.includes('identity') && !descriptionAlreadyIdentifiesItem(answers)) {
     return question(
       'identity',
       'What is the make and model?',

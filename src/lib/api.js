@@ -7,7 +7,6 @@ function sellerAuthHeaders(globalUserKey) {
       sessionStorage.getItem('sobs_seller_session_token') || '',
   };
 }
-
 export async function getListing(id) {
   const res = await fetch(`/api/listings/${encodeURIComponent(id)}`);
   if (!res.ok) throw new Error(`Listing request failed: ${res.status}`);
@@ -80,7 +79,6 @@ export async function getGlobalSellerListings(globalUserKey) {
   const res = await fetch('/api/manage/global/listings', {
     method: 'GET',
     headers: sellerAuthHeaders(globalUserKey),
-    },
   });
 
   if (!res.ok) throw new Error(`Global listings lookup failed: ${res.status}`);
@@ -90,7 +88,8 @@ export async function getGlobalSellerListings(globalUserKey) {
 export async function verifyGlobalListingKey(globalUserKey, listingNumber, listingKey) {
   const res = await fetch('/api/manage/global/listing-key', {
     method: 'POST',
-    headers: sellerAuthHeaders(globalUserKey),
+    headers: {
+      'X-SOBS-Global-Key': globalUserKey,
       'X-SOBS-Listing-Number': String(listingNumber),
       'X-SOBS-Listing-Key': listingKey,
     },
@@ -103,7 +102,8 @@ export async function verifyGlobalListingKey(globalUserKey, listingNumber, listi
 export async function getGlobalManageListing(globalUserKey, listingNumber) {
   const res = await fetch('/api/manage/global', {
     method: 'POST',
-    headers: sellerAuthHeaders(globalUserKey),
+    headers: {
+      'X-SOBS-Global-Key': globalUserKey,
       ...(listingNumber ? { 'X-SOBS-Listing-Number': String(listingNumber) } : {}),
     },
   });
@@ -130,7 +130,8 @@ export async function updateGlobalListing(id, globalUserKey, data) {
 export async function deleteGlobalListing(id, globalUserKey) {
   const res = await fetch(`/api/manage/global/listings/${encodeURIComponent(id)}`, {
     method: 'DELETE',
-    headers: sellerAuthHeaders(globalUserKey),
+    headers: {
+      'X-SOBS-Global-Key': globalUserKey,
     },
   });
 

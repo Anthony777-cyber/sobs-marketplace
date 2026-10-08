@@ -1,6 +1,5 @@
 import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import NavBar from '@/components/NavBar';
 import { createWorker } from 'tesseract.js';
 
 const INPUT_CLASS =
@@ -251,8 +250,6 @@ export default function Signup() {
 
   return (
     <div className="min-h-screen bg-background">
-      <NavBar />
-
       <main className="mx-auto max-w-2xl px-4 py-10">
         {step === 0 && (
           <>
@@ -260,35 +257,44 @@ export default function Signup() {
               Before you sell on S.O.B.S.
             </h1>
 
-            <div className="mt-6 space-y-3 text-sm leading-6">
-              <p>• We need to know who our sellers are, but we are not building a dossier on you.</p>
+            <div className="mt-6 space-y-3 text-base leading-6">
+              <p>• S.O.B.S. is not an anonymous marketplace.</p>
+              <p>• We need to know who our sellers are so we can prevent misuse.</p>
+              <p>• To sell on S.O.B.S., you must complete seller verification and receive a unique S.O.B.S. seller ID.</p>
               <p>• Your identity information is treated as super confidential and encrypted.</p>
-              <p>• Never handed out to anyone who simply asks for it, unless lawful.</p>
-              <p>• Buyers will not see your personal details.</p>
+              <p>• Buyers will not see your personal details through S.O.B.S. unless you choose to share them yourself.</p>
               <p>• We do not sell your information.</p>
               <p>• S.O.B.S. does not permit stolen goods, drugs, fraud or other unlawful activity.</p>
               <p>• S.O.B.S. will cooperate with lawful legal and law-enforcement requests for information worldwide.</p>
               <p>• Your bank payment must match the seller details you provide or it will be rejected.</p>
             </div>
 
-            <label className="mt-6 flex items-start gap-2 text-sm">
+            <label className="mt-6 flex items-start gap-3 text-base">
               <input
                 type="checkbox"
                 checked={termsRead}
                 onChange={(e) => setTermsRead(e.target.checked)}
-                className="mt-1"
+                className="mt-1 h-5 w-5 shrink-0"
               />
               <span>I have read and agree to the terms above.</span>
             </label>
 
-            <button
-              type="button"
-              onClick={() => setStep(1)}
-              disabled={!termsRead}
-              className={`mt-8 ${BUTTON_CLASS}`}
-            >
-              Continue
-            </button>
+            <div className="mt-8 flex items-center gap-4">
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                disabled={!termsRead}
+                className={BUTTON_CLASS}
+              >
+                Continue
+              </button>
+              <Link
+                to="/"
+                className="inline-flex items-center justify-center rounded-full border border-foreground/30 px-6 py-2.5 font-semibold transition-colors hover:bg-foreground/5"
+              >
+                Cancel
+              </Link>
+            </div>
           </>
         )}
 
@@ -390,6 +396,12 @@ export default function Signup() {
               >
                 Continue
               </button>
+              <Link
+                to="/"
+                className="mt-4 inline-flex items-center justify-center rounded-full border border-foreground/30 px-6 py-2.5 font-semibold hover:bg-foreground/5"
+              >
+                Cancel
+              </Link>
             </div>
           </>
         )}
@@ -418,6 +430,12 @@ export default function Signup() {
               >
                 Continue
               </button>
+              <Link
+                to="/"
+                className="mt-4 inline-flex items-center justify-center rounded-full border border-foreground/30 px-6 py-2.5 font-semibold hover:bg-foreground/5"
+              >
+                Cancel
+              </Link>
             </div>
           </>
         )}
@@ -519,6 +537,12 @@ export default function Signup() {
               >
                 {idStatus === 'checking' ? 'Checking...' : 'Continue'}
               </button>
+              <Link
+                to="/"
+                className="mt-4 inline-flex items-center justify-center rounded-full border border-foreground/30 px-6 py-2.5 font-semibold hover:bg-foreground/5"
+              >
+                Cancel
+              </Link>
             </div>
           </>
         )}

@@ -57,7 +57,7 @@ export default function GlobalManagementConsole() {
   }
 
   return (
-    <main className="min-h-screen bg-black text-white p-6">
+    <main className="min-h-screen bg-black text-white p-6 pt-[25vh]">
       <div className="mx-auto max-w-xl">
         <h1 className="text-3xl font-bold">Manage Listings</h1>
 

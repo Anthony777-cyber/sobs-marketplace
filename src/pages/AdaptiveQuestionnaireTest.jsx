@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import {
+  buildKeywordGroups,
+  buildSearchTerms,
   createInitialQuestion,
   evaluateNext,
   getMaxStructuredQuestions,
-  getProfileName,
 } from '../lib/adaptiveQuestionnaireEngine';
 
 const MAX_QUESTIONS = getMaxStructuredQuestions();
@@ -13,29 +14,10 @@ function clean(value) {
 }
 
 const LABELS = {
-  type: 'Type',
-  description: 'Three-word description',
-  identity: 'Identity / maker / model',
-  year: 'Year or period',
-  variant: 'Variant',
-  condition: 'Condition',
-  distinctive: 'Distinctive detail',
-  colour: 'Colour',
-  partNumber: 'Part / serial number',
-  function: 'Function',
-  fitment: 'Fits / parent item',
-  artist: 'Artist / maker',
-  workTitle: 'Work title',
-  medium: 'Medium / material',
-  originality: 'Originality',
-  date: 'Date',
-  association: 'Associated with',
-  origin: 'Origin',
-  period: 'Period',
-  context: 'Additional context',
-  edition: 'Edition / reference',
-  size: 'Size / specification',
-  freeform: 'Anything else',
+  description: 'Broad category / starting description',
+  type: 'Narrower type',
+  feature: 'Feature / distinguishing detail',
+  freeform: 'Additional keywords',
 };
 
 export default function AdaptiveQuestionnaireTest() {
@@ -47,6 +29,7 @@ export default function AdaptiveQuestionnaireTest() {
   const [input, setInput] = useState('');
   const [decision, setDecision] = useState(null);
   const [diagnosticLog, setDiagnosticLog] = useState([]);
+  const [copyStatus, setCopyStatus] = useState('');
 
   const registrySummary = useMemo(
     () => Object.entries(answers).map(([key, value]) => ({
@@ -56,6 +39,8 @@ export default function AdaptiveQuestionnaireTest() {
     [answers],
   );
 
+  const keywordGroups = useMemo(() => buildKeywordGroups(answers), [answers]);
+  const searchTerms = useMemo(() => buildSearchTerms(answers), [answers]);
   const answerLabel = (key) => LABELS[key] || key;
 
   const submitAnswer = (event) => {
@@ -63,31 +48,60 @@ export default function AdaptiveQuestionnaireTest() {
     const value = clean(input);
 
     if (phase === 'freeform') {
-      setAnswers((previous) => ({ ...previous, freeform: value }));
+      const nextAnswers = { ...answers, freeform: value };
+      setAnswers(nextAnswers);
       setInput('');
       setPhase('complete');
+      setDiagnosticLog((previous) => [
+        ...previous,
+        {
+          event: 'final-addition-recorded',
+          questionId: 'freeform',
+          answer: value || 'Skipped',
+          moreStructuredQuestionsAsked: false,
+          keywordGroups: buildKeywordGroups(nextAnswers),
+          searchTerms: buildSearchTerms(nextAnswers),
+        },
+      ]);
       return;
     }
 
     const nextAnswers = { ...answers, [current.id]: value };
-    const nextAskedIds = [...askedIds, current.id];
+    const nextAskedIds = [...new Set([...askedIds, current.id])];
     const nextCount = structuredCount + 1;
+    const result = evaluateNext(nextAnswers, nextAskedIds, nextCount);
+
     setAnswers(nextAnswers);
     setAskedIds(nextAskedIds);
     setStructuredCount(nextCount);
     setInput('');
+    setDecision(result);
+    setDiagnosticLog((previous) => [
+      ...previous,
+      {
+        event: 'answer-recorded',
+        questionId: current.id,
+        question: current.label,
+        answer: value || 'Skipped',
+        structuredCount: nextCount,
+      },
+      {
+        event: 'next-decision',
+        nextQuestionId: result.done ? 'freeform' : result.question.id,
+        reason: result.reason,
+        keywordGroups: result.keywordGroups,
+        searchTerms: result.searchTerms,
+      },
+    ]);
 
-    const result = evaluateNext(nextAnswers, nextAskedIds, nextCount);
     if (result.done) {
-      setDecision(result);
       setCurrent({
         id: 'freeform',
         label: 'Anything you would like to add?',
-        placeholder: 'Optional: add any other detail in your own words',
+        placeholder: 'Optional: add any other useful search terms',
       });
       setPhase('freeform');
     } else {
-      setDecision(result);
       setCurrent(result.question);
     }
   };
@@ -101,32 +115,54 @@ export default function AdaptiveQuestionnaireTest() {
     setInput('');
     setDecision(null);
     setDiagnosticLog([]);
+    setCopyStatus('');
   };
 
   const isComplete = phase === 'complete';
   const isFreeform = phase === 'freeform';
-  const profile = decision?.profile;
-  const destination = decision?.destination || (profile ? getProfileName(profile) : '');
 
   const diagnostics = JSON.stringify({
-    test: 'adaptive-questionnaire',
+    test: 'adaptive-keyword-sifter',
+    purpose: 'Guide the seller to provide useful search keywords; do not attempt exhaustive item identification.',
     maxStructuredQuestions: MAX_QUESTIONS,
     phase,
     structuredCount,
     currentQuestion: current,
-    profile,
-    destination,
+    destination: 'Registry',
     answers,
     askedIds,
+    keywordGroups,
+    searchTerms,
     lastDecision: decision,
     log: diagnosticLog,
   }, null, 2);
 
   const copyDiagnostics = async () => {
+    setCopyStatus('');
     try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable');
       await navigator.clipboard.writeText(diagnostics);
+      setCopyStatus('Diagnostics copied.');
+      return;
     } catch {
-      // Clipboard access may be blocked by the browser; the output remains selectable below.
+      // Fall back for browsers that block the Clipboard API.
+    }
+
+    try {
+      const area = document.createElement('textarea');
+      area.value = diagnostics;
+      area.setAttribute('readonly', '');
+      area.style.position = 'absolute';
+      area.style.left = '-10000px';
+      area.style.top = '0';
+      document.body.appendChild(area);
+      area.select();
+      const copied = document.execCommand('copy');
+      document.body.removeChild(area);
+      if (!copied) throw new Error('Copy command failed');
+      setCopyStatus('Diagnostics copied.');
+    } catch {
+      setCopyStatus('Copy failed. Select the diagnostic text below and copy it manually.');
     }
   };
 
@@ -138,12 +174,12 @@ export default function AdaptiveQuestionnaireTest() {
             S.O.B.S TEST
           </p>
           <h1 className="mt-2 font-display text-3xl tracking-tight sm:text-4xl">
-            Adaptive item questionnaire
+            Adaptive keyword Sifter
           </h1>
           <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
-            A deterministic local engine selects each question from the answers already given.
-            No AI service or external API is used at runtime. “Don't know” or pressing Enter to
-            skip is valid.
+            It guides the seller from a broad category to a narrower type and useful features.
+            Each answer becomes searchable wording. One final optional addition collects any
+            remaining keywords; the machine does not try to prove the item’s exact identity.
           </p>
         </div>
 
@@ -153,13 +189,11 @@ export default function AdaptiveQuestionnaireTest() {
               <>
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">
-                    {isFreeform ? 'OPTIONAL FINAL STEP' : `STRUCTURED QUESTION ${structuredCount + 1} OF ${MAX_QUESTIONS}`}
+                    {isFreeform ? 'OPTIONAL FINAL STEP' : 'STRUCTURED QUESTION ' + (structuredCount + 1) + ' OF ' + MAX_QUESTIONS}
                   </span>
-                  {destination && (
-                    <span className="rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide">
-                      {destination}
-                    </span>
-                  )}
+                  <span className="rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide">
+                    Registry
+                  </span>
                 </div>
 
                 <div className="mt-12 min-h-[150px]">
@@ -171,8 +205,8 @@ export default function AdaptiveQuestionnaireTest() {
                   </p>
                   {isFreeform && (
                     <p className="mt-4 text-sm text-muted-foreground">
-                      Structured questions have stopped. This final addition is optional and will
-                      not trigger more questions.
+                      This is the final question. Your additions become more search keywords and
+                      will not trigger further questions.
                     </p>
                   )}
                 </div>
@@ -200,12 +234,10 @@ export default function AdaptiveQuestionnaireTest() {
 
                 {!isFreeform && (
                   <div className="mt-12 border-t pt-6">
-                    <p className="text-sm font-semibold">Registry test</p>
+                    <p className="text-sm font-semibold">Search keyword builder</p>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      After every answer, the engine checks whether it has enough identifying
-                      information to make the item searchable. It stops when its rules say the
-                      information is sufficient, when no useful prompt remains, or at 12 structured
-                      questions.
+                      It asks for a narrower type when the starting description is broad, then
+                      seeks a useful feature when one has not already been supplied.
                     </p>
                     {decision?.reason && (
                       <p className="mt-3 text-sm">{decision.reason}</p>
@@ -216,30 +248,27 @@ export default function AdaptiveQuestionnaireTest() {
             ) : (
               <div className="flex min-h-[520px] flex-col justify-center">
                 <p className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">
-                  TEST COMPLETE
+                  KEYWORDS READY
                 </p>
                 <h2 className="mt-4 text-4xl font-semibold tracking-tight">
-                  Structured questions stopped.
+                  Search terms collected.
                 </h2>
                 <p className="mt-5 max-w-xl text-lg text-muted-foreground">
-                  The engine retained the answers and offered one optional free-form addition.
-                  This test does not create or publish a live listing.
+                  The collected words are intended to make the item findable. Its pictures help
+                  the buyer recognise the particular item.
                 </p>
                 <div className="mt-8 rounded-xl border bg-muted/20 p-5">
                   <p className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">
-                    REGISTRY DESTINATION
+                    SEARCH TERMS CREATED
                   </p>
-                  <p className="mt-3 text-xl font-semibold">{destination || 'Undetermined'}</p>
-                  {decision?.reason && <p className="mt-2 text-sm text-muted-foreground">{decision.reason}</p>}
-                </div>
-                {answers.freeform && (
-                  <div className="mt-5 rounded-xl border p-5">
-                    <p className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">
-                      FINAL ADDITION
-                    </p>
-                    <p className="mt-2 whitespace-pre-wrap">{answers.freeform}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {searchTerms.length ? searchTerms.map((term) => (
+                      <span key={term} className="rounded-full border bg-background px-3 py-1 text-sm">
+                        {term}
+                      </span>
+                    )) : <span className="text-sm text-muted-foreground">No search terms supplied.</span>}
                   </div>
-                )}
+                </div>
                 <button
                   type="button"
                   onClick={reset}
@@ -251,15 +280,61 @@ export default function AdaptiveQuestionnaireTest() {
             )}
           </main>
 
-          <section className="mt-8 rounded-2xl border bg-muted/20 p-5 md:col-span-2">
+          <aside className="rounded-2xl border bg-muted/20 p-5">
+            <p className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">
+              SEARCH KEYWORDS
+            </p>
+            <div className="mt-4 space-y-4">
+              {keywordGroups.length ? keywordGroups.map((group) => (
+                <div key={group.id}>
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    {group.label}
+                  </p>
+                  <p className="mt-1 break-words font-medium">{group.value}</p>
+                </div>
+              )) : (
+                <p className="text-sm text-muted-foreground">
+                  Nothing yet. Start with a broad category such as lamp, chair, or book.
+                </p>
+              )}
+            </div>
+            <div className="mt-6 border-t pt-4">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Individual terms</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {searchTerms.length ? searchTerms.map((term) => (
+                  <span key={term} className="rounded-full border bg-background px-2 py-1 text-xs">
+                    {term}
+                  </span>
+                )) : <span className="text-sm text-muted-foreground">None yet</span>}
+              </div>
+            </div>
+            <div className="mt-6 border-t pt-4">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Answers recorded</p>
+              <div className="mt-3 space-y-3">
+                {registrySummary.length ? registrySummary.map(({ key, value }) => (
+                  <div key={key}>
+                    <p className="text-xs text-muted-foreground">{answerLabel(key)}</p>
+                    <p className="mt-1 break-words text-sm">{value}</p>
+                  </div>
+                )) : (
+                  <p className="text-sm text-muted-foreground">No answers yet.</p>
+                )}
+              </div>
+            </div>
+          </aside>
+
+          <section className="rounded-2xl border bg-muted/20 p-5 md:col-span-2">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">
                   DIAGNOSTICS
                 </p>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Copy this output and paste it into the chat when something behaves incorrectly.
+                  Output includes the recorded answers, search terms, next decision, and decision log.
                 </p>
+                {copyStatus && (
+                  <p className="mt-2 text-sm" role="status" aria-live="polite">{copyStatus}</p>
+                )}
               </div>
               <button
                 type="button"
@@ -273,28 +348,6 @@ export default function AdaptiveQuestionnaireTest() {
               {diagnostics}
             </pre>
           </section>
-
-          <aside className="rounded-2xl border bg-muted/20 p-5">
-            <p className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">
-              WHAT IT KNOWS
-            </p>
-            <div className="mt-5 space-y-4">
-              {registrySummary.length ? (
-                registrySummary.map(({ key, value }) => (
-                  <div key={key}>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                      {answerLabel(key)}
-                    </p>
-                    <p className="mt-1 break-words font-medium">{value}</p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Nothing yet. Start with the broadest possible answer.
-                </p>
-              )}
-            </div>
-          </aside>
         </div>
       </div>
     </div>

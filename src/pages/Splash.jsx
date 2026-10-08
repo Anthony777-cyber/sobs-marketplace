@@ -18,13 +18,13 @@ const STEPS = [
     icon: Clock,
     heading: 'Pay',
     text: [
-      "How long you list is how much you pay.
+      `How long you list is how much you pay.
 Choose your tier:
 €1 for 3 months (minimum)
 €2 for 6 months
 €3 for 9 months
 €4 for a full year.
-All shown in your own currency.",
+All shown in your own currency.` ,
       "When time is up, your post hides. You have one week to save it or renew it.",
       "It is your business, not ours. We just help buyers find you.",
       "We take no commission on sales profit.",

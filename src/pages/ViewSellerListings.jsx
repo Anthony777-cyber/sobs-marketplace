@@ -53,7 +53,7 @@ export default function ViewSellerListings() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-black text-white">
         <NavBar />
         <div className="mx-auto max-w-xl px-4 py-12">
           <Loader2 className="h-5 w-5 animate-spin" />
@@ -66,7 +66,7 @@ export default function ViewSellerListings() {
     <div className="min-h-screen bg-background">
       <NavBar />
 
-      <div className="mx-auto max-w-5xl px-4 py-8">
+      <div className="mx-auto max-w-xl px-4 py-12">
         <div className="mb-6 flex items-start justify-between gap-4">
           <h1 className="font-display text-3xl tracking-tight">Your Listings</h1>
           <button

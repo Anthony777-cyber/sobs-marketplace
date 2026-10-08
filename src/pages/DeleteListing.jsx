@@ -66,7 +66,7 @@ export default function DeleteListing() {
     <div className="min-h-screen bg-black text-white">
       <NavBar />
 
-      <div className="mx-auto max-w-2xl px-4 py-12">
+      <div className="mx-auto max-w-2xl px-4 pt-[25vh] pb-12">
         <button
           type="button"
           onClick={cancel}

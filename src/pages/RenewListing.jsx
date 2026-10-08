@@ -85,7 +85,7 @@ export default function RenewListing() {
       <NavBar />
 
       <div className="mx-auto max-w-xl px-4 py-12">
-        <div className="mb-6 flex items-center justify-between gap-4">
+        <div className="mb-6 flex items-start justify-between gap-4">
           <h1 className="font-display text-3xl tracking-tight">
             Renew Listing
           </h1>

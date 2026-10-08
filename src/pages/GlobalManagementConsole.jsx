@@ -31,6 +31,8 @@ export default function GlobalManagementConsole() {
         method: 'POST',
         headers: {
           'X-SOBS-Global-Key': code,
+          'X-SOBS-Seller-Session':
+            sessionStorage.getItem('sobs_seller_session_token') || '',
         },
       });
 

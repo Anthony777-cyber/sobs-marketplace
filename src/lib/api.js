@@ -130,9 +130,7 @@ export async function updateGlobalListing(id, globalUserKey, data) {
 export async function deleteGlobalListing(id, globalUserKey) {
   const res = await fetch(`/api/manage/global/listings/${encodeURIComponent(id)}`, {
     method: 'DELETE',
-    headers: {
-      'X-SOBS-Global-Key': globalUserKey,
-    },
+    headers: sellerAuthHeaders(globalUserKey),
   });
 
   if (!res.ok) throw new Error(`Global listing delete failed: ${res.status}`);

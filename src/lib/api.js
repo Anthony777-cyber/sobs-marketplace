@@ -19,6 +19,24 @@ export async function getListings() {
   return res.json();
 }
 
+export async function sellerLogout() {
+  const token = sessionStorage.getItem('sobs_seller_session_token') || '';
+
+  if (token) {
+    await fetch('/api/seller/logout', {
+      method: 'POST',
+      headers: {
+        'X-SOBS-Seller-Session': token,
+      },
+    }).catch(() => {});
+  }
+
+  sessionStorage.removeItem('sobs_seller_id');
+  sessionStorage.removeItem('sobs_global_user_key');
+  sessionStorage.removeItem('sobs_seller_session_token');
+  sessionStorage.removeItem('sobs_seller_session_expires_at');
+}
+
 export async function getManageListing(keyToken) {
   const res = await fetch('/api/listings/manage', {
     method: 'POST',

@@ -1,4 +1,13 @@
 import { getEntryTicket } from "@/lib/entryTicket";
+
+function sellerAuthHeaders(globalUserKey) {
+  return {
+    ...sellerAuthHeaders(globalUserKey),
+    'X-SOBS-Seller-Session':
+      sessionStorage.getItem('sobs_seller_session_token') || '',
+  };
+}
+
 export async function getListing(id) {
   const res = await fetch(`/api/listings/${encodeURIComponent(id)}`);
   if (!res.ok) throw new Error(`Listing request failed: ${res.status}`);

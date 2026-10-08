@@ -97,18 +97,13 @@ export default function ManagementConsole() {
 
         <div className="mx-auto max-w-2xl px-4 py-12">
           <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="font-mono text-xs uppercase tracking-[0.2em] text-white/40">
-                S.O.B.S.
-              </p>
-              <h1 className="mt-1 font-display text-3xl tracking-tight">
-                Management Console
-              </h1>
-            </div>
+            <h1 className="font-display text-3xl tracking-tight">
+              Management Console
+            </h1>
 
             <button
               onClick={logout}
-              className="inline-flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-black hover:bg-red-500"
+              className="inline-flex items-center gap-2 rounded-full bg-red-600 px-5 py-2.5 font-semibold text-black hover:bg-red-500"
             >
               <LogOut className="h-4 w-4" />
               Exit
@@ -168,18 +163,13 @@ export default function ManagementConsole() {
 
       <div className="mx-auto max-w-2xl px-4 py-12">
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="font-mono text-xs uppercase tracking-[0.2em] text-white/40">
-              S.O.B.S.
-            </p>
-            <h1 className="mt-1 font-display text-3xl tracking-tight">
-              Management Console
-            </h1>
-          </div>
+          <h1 className="font-display text-3xl tracking-tight">
+            Management Console
+          </h1>
 
           <button
             onClick={logout}
-            className="inline-flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-black hover:bg-red-500"
+            className="inline-flex items-center gap-2 rounded-full bg-red-600 px-5 py-2.5 font-semibold text-black hover:bg-red-500"
           >
             <LogOut className="h-4 w-4" />
             Exit

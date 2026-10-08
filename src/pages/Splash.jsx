@@ -8,7 +8,6 @@ const STEPS = [
     heading: 'List',
     text: [
       "Punt your junk, spares, or rare parts.",
-      "Buyers contact you directly.",
       "Get 3 photos and an ultra searchable listing system.",
       "No sign-ups, no passwords and no cookies for buyers.",
       "Just like an ad in the back of a newspaper—free to access, free to read, and no hassle.",

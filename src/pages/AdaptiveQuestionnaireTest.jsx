@@ -165,7 +165,7 @@ export default function AdaptiveQuestionnaireTest() {
                 <div className="mt-12 min-h-[150px]">
                   <p
                     key={current.id + '-' + structuredCount + '-' + phase}
-                    className="text-3xl font-semibold leading-tight tracking-tight sm:text-5xl"
+                    className="text-2xl font-semibold leading-tight tracking-tight sm:text-3xl"
                   >
                     {current.label}
                   </p>

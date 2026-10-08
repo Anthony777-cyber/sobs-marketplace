@@ -60,36 +60,33 @@ export default function Splash() {
         </div>
       </header>
 
-      <section className="mx-auto max-w-5xl px-4 pb-0 pt-4 sm:pt-6">
-        <div className="max-w-3xl">
+      <section className="mx-auto max-w-5xl px-4 pb-0 pt-1 sm:pt-2">
           <div className="flex items-center gap-8">
             <h1 className="font-display text-2xl leading-tight tracking-tight sm:text-4xl">
               List it, chat it, sell it.
             </h1>
           </div>
-          <p className="mt-5 max-w-2xl text-lg leading-relaxed text-white sm:text-xl text-justify">
+          <div className="relative left-0 w-[calc(100vw-24rem)]">
+          <p className="mt-5 w-full text-lg leading-relaxed text-white sm:text-xl text-left">
             S∙O∙B∙S∙ is the ultra-searchable directory of EVERYTHING.
           </p>
 
-          <p className="max-w-2xl text-lg leading-relaxed text-white sm:text-xl text-justify">
+          <p className="w-full text-lg leading-relaxed text-white sm:text-xl text-left">
             Junk, spares, repair machines or cars, rare parts, collectables, art, Pokemon cards, your precious collection of Coca-Cola bottle tops. So long as it's legal, we don't discriminate. Anything you think is worth the listing fee. For instance, you're in a band and want to advertise your next three months' gigs for a buck, cool. Or the next year, or however long you want. This is a repository of information as well as things.
           </p>
 
-          <p className="max-w-2xl text-lg leading-relaxed text-white sm:text-xl text-justify">
-            We don't do free ads. If it's not worth the few bucks it costs to advertise, we're quite happy to let Gumtree or Facebook bottom-feed off it.
+          <p className="w-full text-lg leading-relaxed text-white sm:text-xl text-left">
+            We don't do free ads. If it's not worth the few bucks it costs to advertise,<br />we're quite happy to let Gumtree or Facebook bottom-feed off it.
           </p>
 
-          <p className="max-w-2xl text-lg leading-relaxed text-white sm:text-xl text-justify">
-            So list anything from a specific gearbox by maker, model, year and part number to a used fag end. Pay per duration in your own currency, chat with buyers directly on the listing, and we let the community keep it clean and enforce good taste with the downvote button. Keeping the hooker ads and county-lines drug sellers off our site, but don't abuse the button or the chat to harass others. We are watching and we are not forgiving,
+          <p className="w-full text-lg leading-relaxed text-white sm:text-xl text-left">
+            To browsers and buyers, we offer <strong className="font-extrabold">ZERO FRICTION ENTRY<br />NO sign up, NO passwords, NO cookies, NO ads.</strong>
           </p>
 
-          <p className="max-w-2xl text-lg leading-relaxed text-white sm:text-xl text-justify">
-            To browsers and buyers, we offer ZERO FRICTION ENTRY. NO sign up, NO passwords, NO cookies, NO ads.
+          <p className="w-full text-lg leading-relaxed text-white sm:text-xl text-left">
+            To sellers, we offer worldwide advertising dirt cheap, bulk uploads for the pros, and best of all,<br />unlike eBay, we don't take a cut of your sale profits.
           </p>
-
-          <p className="max-w-2xl text-lg leading-relaxed text-white sm:text-xl text-justify">
-            To sellers, we offer worldwide advertising dirt cheap, bulk uploads for the pros, and best of all, unlike eBay, we don't take a cut of your sale profits.
-          </p>
+          </div>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               to={
@@ -114,7 +111,6 @@ export default function Splash() {
               Index <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
-        </div>
       </section>
 
       <section className="mx-auto max-w-5xl px-4 pt-8 pb-12">

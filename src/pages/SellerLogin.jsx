@@ -135,6 +135,7 @@ export default function SellerLogin() {
               Your S.O.B.S ID
             </label>
             <input
+              name="username"
               inputMode="numeric"
               autoComplete="username"
               maxLength={16}
@@ -153,6 +154,7 @@ export default function SellerLogin() {
               Login secret
             </label>
             <input
+              name="password"
               type="password"
               inputMode="numeric"
               autoComplete="current-password"

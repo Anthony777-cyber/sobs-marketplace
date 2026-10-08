@@ -41,6 +41,7 @@ export default function AdaptiveQuestionnaireTest() {
 
   const keywordGroups = useMemo(() => buildKeywordGroups(answers), [answers]);
   const searchTerms = useMemo(() => buildSearchTerms(answers), [answers]);
+
   const answerLabel = (key) => LABELS[key] || key;
 
   const submitAnswer = (event) => {
@@ -82,15 +83,16 @@ export default function AdaptiveQuestionnaireTest() {
         event: 'answer-recorded',
         questionId: current.id,
         question: current.label,
-        answer: value || 'Skipped',
+        answer: value || 'Unknown / skipped',
         structuredCount: nextCount,
       },
       {
-        event: 'next-decision',
+        event: result.done ? 'structured-questions-stopped' : 'next-question-selected',
         nextQuestionId: result.done ? 'freeform' : result.question.id,
         reason: result.reason,
         keywordGroups: result.keywordGroups,
         searchTerms: result.searchTerms,
+        taxonomyTerms: result.taxonomyTerms,
       },
     ]);
 
@@ -125,6 +127,7 @@ export default function AdaptiveQuestionnaireTest() {
     test: 'adaptive-keyword-sifter',
     purpose: 'Guide the seller to provide useful search keywords; do not attempt exhaustive item identification.',
     maxStructuredQuestions: MAX_QUESTIONS,
+    target: 'Fewest useful questions; 12 structured questions is the hard ceiling, not the goal.',
     phase,
     structuredCount,
     currentQuestion: current,
@@ -139,30 +142,44 @@ export default function AdaptiveQuestionnaireTest() {
 
   const copyDiagnostics = async () => {
     setCopyStatus('');
+
     try {
       if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable');
       await navigator.clipboard.writeText(diagnostics);
       setCopyStatus('Diagnostics copied.');
       return;
     } catch {
-      // Fall back for browsers that block the Clipboard API.
+      // Try the legacy copy command for contexts where Clipboard API is blocked.
     }
 
+    let area;
     try {
-      const area = document.createElement('textarea');
+      area = document.createElement('textarea');
       area.value = diagnostics;
       area.setAttribute('readonly', '');
-      area.style.position = 'absolute';
-      area.style.left = '-10000px';
+      area.setAttribute('aria-label', 'Diagnostics to copy');
+      area.style.position = 'fixed';
+      area.style.left = '0';
       area.style.top = '0';
+      area.style.width = '1px';
+      area.style.height = '1px';
+      area.style.padding = '0';
+      area.style.opacity = '0.01';
       document.body.appendChild(area);
+      area.focus();
       area.select();
+      area.setSelectionRange(0, area.value.length);
       const copied = document.execCommand('copy');
-      document.body.removeChild(area);
-      if (!copied) throw new Error('Copy command failed');
-      setCopyStatus('Diagnostics copied.');
+      area.remove();
+
+      if (copied) {
+        setCopyStatus('Diagnostics copied.');
+        return;
+      }
+      throw new Error('Legacy copy command returned false');
     } catch {
-      setCopyStatus('Copy failed. Select the diagnostic text below and copy it manually.');
+      area?.remove();
+      setCopyStatus('Automatic copy was blocked. Select the diagnostic text below and press Ctrl+C.');
     }
   };
 
@@ -177,9 +194,9 @@ export default function AdaptiveQuestionnaireTest() {
             Adaptive keyword Sifter
           </h1>
           <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
-            It guides the seller from a broad category to a narrower type and useful features.
-            Each answer becomes searchable wording. One final optional addition collects any
-            remaining keywords; the machine does not try to prove the item’s exact identity.
+            The Sifter guides the seller from a broad category to a narrower type and useful
+            features. It asks only for missing details, then offers one final optional addition.
+            The resulting words support search; the pictures help buyers recognise the item.
           </p>
         </div>
 
@@ -189,7 +206,9 @@ export default function AdaptiveQuestionnaireTest() {
               <>
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">
-                    {isFreeform ? 'OPTIONAL FINAL STEP' : 'STRUCTURED QUESTION ' + (structuredCount + 1) + ' OF ' + MAX_QUESTIONS}
+                    {isFreeform
+                      ? 'OPTIONAL FINAL STEP'
+                      : 'STRUCTURED QUESTION ' + (structuredCount + 1) + ' OF ' + MAX_QUESTIONS}
                   </span>
                   <span className="rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide">
                     Registry
@@ -205,8 +224,8 @@ export default function AdaptiveQuestionnaireTest() {
                   </p>
                   {isFreeform && (
                     <p className="mt-4 text-sm text-muted-foreground">
-                      This is the final question. Your additions become more search keywords and
-                      will not trigger further questions.
+                      This is the final question. Add any further keywords you think buyers might
+                      use. No more structured questions will follow.
                     </p>
                   )}
                 </div>
@@ -236,12 +255,11 @@ export default function AdaptiveQuestionnaireTest() {
                   <div className="mt-12 border-t pt-6">
                     <p className="text-sm font-semibold">Search keyword builder</p>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      It asks for a narrower type when the starting description is broad, then
-                      seeks a useful feature when one has not already been supplied.
+                      It stops asking as soon as the broad category, any available narrower type,
+                      and at least one useful feature are represented—or those questions have
+                      already been answered or skipped. Twelve is the hard limit, not the target.
                     </p>
-                    {decision?.reason && (
-                      <p className="mt-3 text-sm">{decision.reason}</p>
-                    )}
+                    {decision?.reason && <p className="mt-3 text-sm">{decision.reason}</p>}
                   </div>
                 )}
               </>
@@ -254,8 +272,8 @@ export default function AdaptiveQuestionnaireTest() {
                   Search terms collected.
                 </h2>
                 <p className="mt-5 max-w-xl text-lg text-muted-foreground">
-                  The collected words are intended to make the item findable. Its pictures help
-                  the buyer recognise the particular item.
+                  The keywords help buyers find the listing. Its pictures help them recognise the
+                  particular item.
                 </p>
                 <div className="mt-8 rounded-xl border bg-muted/20 p-5">
                   <p className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">
@@ -282,7 +300,7 @@ export default function AdaptiveQuestionnaireTest() {
 
           <aside className="rounded-2xl border bg-muted/20 p-5">
             <p className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">
-              SEARCH KEYWORDS
+              KEYWORDS RECORDED
             </p>
             <div className="mt-4 space-y-4">
               {keywordGroups.length ? keywordGroups.map((group) => (
@@ -299,7 +317,7 @@ export default function AdaptiveQuestionnaireTest() {
               )}
             </div>
             <div className="mt-6 border-t pt-4">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Individual terms</p>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Search terms</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {searchTerms.length ? searchTerms.map((term) => (
                   <span key={term} className="rounded-full border bg-background px-2 py-1 text-xs">
@@ -317,7 +335,7 @@ export default function AdaptiveQuestionnaireTest() {
                     <p className="mt-1 break-words text-sm">{value}</p>
                   </div>
                 )) : (
-                  <p className="text-sm text-muted-foreground">No answers yet.</p>
+                  <p className="text-sm text-muted-foreground">No answers yet</p>
                 )}
               </div>
             </div>
@@ -330,7 +348,8 @@ export default function AdaptiveQuestionnaireTest() {
                   DIAGNOSTICS
                 </p>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Output includes the recorded answers, search terms, next decision, and decision log.
+                  Output includes the answers, resulting keywords, next decision, and a log of every
+                  question/answer transition.
                 </p>
                 {copyStatus && (
                   <p className="mt-2 text-sm" role="status" aria-live="polite">{copyStatus}</p>

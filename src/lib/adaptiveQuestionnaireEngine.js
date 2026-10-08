@@ -1,16 +1,15 @@
 const MAX_STRUCTURED_QUESTIONS = 12;
 
-const CONNECTOR_WORDS = new Set([
+const STOP_WORDS = new Set([
   'a', 'an', 'the', 'and', 'or', 'of', 'for', 'with', 'in', 'on', 'to',
-  'from', 'by', 'it', 'is', 'this', 'that', 'my', 'your',
+  'from', 'by', 'it', 'is', 'this', 'that', 'my', 'your', 'normally',
+  'called', 'used', 'kind', 'type',
 ]);
 
 const GENERIC_WORDS = new Set([
   'item', 'thing', 'object', 'stuff', 'something',
 ]);
 
-// These are cues for descriptive features, not a list of items the machine
-// must recognise. The seller's own words remain the source of the keywords.
 const FEATURE_WORDS = new Set([
   'black', 'white', 'red', 'blue', 'green', 'yellow', 'orange', 'purple',
   'pink', 'brown', 'grey', 'gray', 'silver', 'gold', 'beige', 'cream',
@@ -23,18 +22,19 @@ const FEATURE_WORDS = new Set([
   'refurbished', 'new', 'used', 'worn', 'tested', 'untested',
   'old', 'vintage', 'antique', 'modern', 'retro', 'rare',
   'large', 'small', 'miniature', 'tall', 'short', 'wide', 'narrow',
-  'heavy', 'light', 'round', 'square', 'oval', 'rectangular', 'folding',
-  'adjustable', 'portable', 'electric', 'electrical', 'manual',
-  'automatic', 'indoor', 'outdoor', 'left', 'right', 'single', 'double',
-  'pair', 'set', 'with', 'without', 'striped', 'plain', 'patterned',
+  'heavy', 'lightweight', 'round', 'square', 'oval', 'rectangular',
+  'folding', 'adjustable', 'portable', 'electric', 'electrical',
+  'manual', 'automatic', 'indoor', 'outdoor', 'left', 'right',
+  'single', 'double', 'pair', 'set', 'striped', 'plain', 'patterned',
+  '1950s', '1960s', '1970s', '1980s', '1990s', '2000s',
 ]);
 
 function clean(value) {
   return String(value ?? '').trim().replace(/\s+/g, ' ');
 }
 
-function words(value) {
-  return clean(value).toLowerCase().match(/[a-z0-9]+(?:['’-][a-z0-9]+)*/g) || [];
+function tokens(value) {
+  return clean(value).toLowerCase().match(/[a-z0-9]+/g) || [];
 }
 
 function isUnknown(value) {
@@ -46,11 +46,107 @@ function question(id, label, placeholder) {
   return { id, label, placeholder };
 }
 
+function allDescriptiveText(answers = {}) {
+  return [
+    answers.description,
+    answers.type,
+    answers.feature,
+    answers.freeform,
+  ].map(clean).filter(Boolean).join(' ');
+}
+
+function identityTokens(value) {
+  return [...new Set(tokens(value).filter((word) =>
+    !STOP_WORDS.has(word)
+    && !GENERIC_WORDS.has(word)
+    && !FEATURE_WORDS.has(word)
+  ))];
+}
+
+function hasSpecificType(answers) {
+  return identityTokens([answers.description, answers.type].filter(Boolean).join(' ')).length > 1;
+}
+
+function hasFeatureInformation(answers) {
+  if (!isUnknown(answers.feature)) return true;
+
+  const words = tokens([answers.description, answers.type].filter(Boolean).join(' '));
+  if (words.some((word) => FEATURE_WORDS.has(word))) return true;
+
+  // Dates and identifying numbers are useful searchable details too.
+  return /\b(?:19|20)\d{2}s?\b|\b\d{2,}\b/i.test(
+    [answers.description, answers.type].filter(Boolean).join(' '),
+  );
+}
+
+function broadCategory(answers) {
+  const categoryText = clean(answers.description);
+  const categoryTokens = tokens(categoryText).filter((word) =>
+    !STOP_WORDS.has(word)
+    && !GENERIC_WORDS.has(word)
+    && !FEATURE_WORDS.has(word)
+  );
+  if (!categoryTokens.length) return 'item';
+
+  const knownCategories = new Set([
+    'lamp', 'lamps', 'light', 'lights', 'chair', 'chairs', 'desk', 'table',
+    'book', 'books', 'car', 'cars', 'part', 'parts', 'tool', 'tools',
+    'machine', 'machines', 'guitar', 'piano', 'radio', 'camera', 'phone',
+    'computer', 'speaker', 'amplifier', 'pedal', 'bicycle', 'bike',
+    'clothing', 'coat', 'jacket', 'shoe', 'shoes', 'painting', 'sculpture',
+    'toy', 'toys', 'record', 'records', 'furniture', 'motor', 'engine',
+  ]);
+
+  for (let i = categoryTokens.length - 1; i >= 0; i -= 1) {
+    if (knownCategories.has(categoryTokens[i])) return categoryTokens[i];
+  }
+
+  return categoryTokens[categoryTokens.length - 1];
+}
+
+function featurePrompt(answers) {
+  const text = allDescriptiveText(answers).toLowerCase();
+  const category = broadCategory(answers);
+
+  if (/\b(lamp|lamps|light|lights|lighting)\b/.test(text)) {
+    return {
+      label: 'What feature would help someone find this lamp?',
+      placeholder: 'Colour, material, style, adjustability, size, or another useful detail',
+    };
+  }
+
+  if (/\b(book|books|magazine|manual|document|record|records)\b/.test(text)) {
+    return {
+      label: 'What detail would help someone find this item?',
+      placeholder: 'Author, subject, edition, language, year, condition, or another useful detail',
+    };
+  }
+
+  if (/\b(clothing|coat|jacket|shoe|shoes|dress|shirt|trousers)\b/.test(text)) {
+    return {
+      label: 'What feature would help someone find this item?',
+      placeholder: 'Size, colour, fabric, style, brand, condition, or another useful detail',
+    };
+  }
+
+  if (/\b(part|spare|component|engine|motor|machine|tool|electronic|electronics|audio|speaker|amplifier|pedal|guitar)\b/.test(text)) {
+    return {
+      label: 'What detail would help someone find this item?',
+      placeholder: 'Function, make, connection, size, material, condition, or another useful detail',
+    };
+  }
+
+  return {
+    label: 'What feature would help someone find this item?',
+    placeholder: 'Colour, material, size, use, condition, age, shape, or another useful detail',
+  };
+}
+
 export function createInitialQuestion() {
   return question(
     'description',
     'What is it in one word?',
-    'e.g. lamp, chair, book',
+    'e.g. lamp, chair, book — more words are okay',
   );
 }
 
@@ -67,48 +163,54 @@ export function buildKeywordGroups(answers = {}) {
     .filter((field) => field.value && !isUnknown(field.value));
 }
 
+function buildTaxonomyTerms(answers = {}) {
+  const text = allDescriptiveText(answers).toLowerCase();
+  const terms = [];
+  const add = (value) => {
+    const term = clean(value).toLowerCase();
+    if (term && !terms.includes(term)) terms.push(term);
+  };
+
+  // The broad taxonomy parent supports broad searches. More specific related
+  // terms are added only when the seller has actually supplied the relevant type.
+  if (/\b(lamp|lamps|light|lights|lighting)\b/.test(text)) add('lighting');
+
+  if (
+    /\blamp\b/.test(text)
+    && /\b(?:angle[\s-]*poise|desk lamp|task lamp)\b/.test(text)
+  ) {
+    add('desk lamp');
+    add('task lamp');
+    add('adjustable lamp');
+  }
+
+  if (/\b(?:desk lamp|task lamp)\b/.test(text)) add('lighting');
+
+  return terms;
+}
+
 export function buildSearchTerms(answers = {}) {
   const result = [];
   const seen = new Set();
 
   const add = (value) => {
-    const term = clean(value).toLowerCase();
-    if (!term || isUnknown(term) || seen.has(term)) return;
-    seen.add(term);
+    const term = clean(value);
+    const key = term.toLowerCase();
+    if (!term || isUnknown(term) || seen.has(key)) return;
+    seen.add(key);
     result.push(term);
   };
 
   for (const group of buildKeywordGroups(answers)) {
     add(group.value);
-    for (const word of words(group.value)) {
-      if (!CONNECTOR_WORDS.has(word) && !GENERIC_WORDS.has(word)) add(word);
+    for (const word of tokens(group.value)) {
+      if (!STOP_WORDS.has(word) && !GENERIC_WORDS.has(word)) add(word);
     }
   }
 
+  for (const term of buildTaxonomyTerms(answers)) add(term);
+
   return result;
-}
-
-function substantiveWords(value) {
-  return words(value).filter((word) =>
-    !CONNECTOR_WORDS.has(word)
-    && !GENERIC_WORDS.has(word)
-    && !FEATURE_WORDS.has(word)
-  );
-}
-
-function hasNarrowerType(description) {
-  // A lone category such as "lamp" is broad. A phrase such as
-  // "desk lamp" or "angle poise lamp" already provides a narrower type.
-  return substantiveWords(description).length > 1;
-}
-
-function hasFeatureWords(value) {
-  return words(value).some((word) => FEATURE_WORDS.has(word));
-}
-
-function broadTerm(description) {
-  const terms = substantiveWords(description);
-  return terms.length ? terms[terms.length - 1] : 'item';
 }
 
 function withKeywords(result, answers) {
@@ -117,14 +219,12 @@ function withKeywords(result, answers) {
     destination: 'Registry',
     keywordGroups: buildKeywordGroups(answers),
     searchTerms: buildSearchTerms(answers),
+    taxonomyTerms: buildTaxonomyTerms(answers),
   };
 }
 
 function finish(answers, reason) {
-  return withKeywords({
-    done: true,
-    reason,
-  }, answers);
+  return withKeywords({ done: true, reason }, answers);
 }
 
 export function evaluateNext(answers = {}, askedIds = [], structuredCount = 0) {
@@ -133,7 +233,7 @@ export function evaluateNext(answers = {}, askedIds = [], structuredCount = 0) {
   if (!asked.has('description')) {
     return withKeywords({
       done: false,
-      reason: 'Start with the broad category. The seller can use more than one word if needed.',
+      reason: 'Start with the broad category. More than one word is fine if that describes it better.',
       question: createInitialQuestion(),
     }, answers);
   }
@@ -141,45 +241,41 @@ export function evaluateNext(answers = {}, askedIds = [], structuredCount = 0) {
   if (structuredCount >= MAX_STRUCTURED_QUESTIONS) {
     return finish(
       answers,
-      'The structured-question limit was reached. All collected search terms are retained.',
+      'The 12-question hard limit has been reached. All collected keywords are retained.',
     );
   }
 
-  const description = clean(answers.description);
-  const type = clean(answers.type);
-  const feature = clean(answers.feature);
-  const currentTerms = [description, type, feature].filter(Boolean).join(' ');
-
-  if (!asked.has('type') && !hasNarrowerType(description)) {
-    const category = broadTerm(description);
+  // Ask only for a dimension that is still missing. Each structured question
+  // has a unique ID and can only be asked once; an unknown/skip is not repeated.
+  if (!hasSpecificType(answers) && !asked.has('type')) {
+    const category = broadCategory(answers);
     return withKeywords({
       done: false,
       step: 'narrower-type',
-      reason: 'A broad category is in place. A narrower type will help people find the item.',
+      reason: 'The description has a broad category but no narrower type yet.',
       question: question(
         'type',
-        'What kind of ' + category + ' is it?',
+        category === 'item'
+          ? 'What kind of item is it?'
+          : 'What kind of ' + category + ' is it?',
         'The more specific type or name, if known',
       ),
     }, answers);
   }
 
-  if (!asked.has('feature') && !hasFeatureWords(currentTerms)) {
+  if (!hasFeatureInformation(answers) && !asked.has('feature')) {
+    const prompt = featurePrompt(answers);
     return withKeywords({
       done: false,
       step: 'feature',
-      reason: 'The category and any narrower type are retained. One useful feature can make the search more precise.',
-      question: question(
-        'feature',
-        'What feature would help someone find this item?',
-        'Colour, material, shape, use, condition, or another distinctive detail',
-      ),
+      reason: 'The category and any narrower type are retained. One useful feature may make the item easier to find.',
+      question: question('feature', prompt.label, prompt.placeholder),
     }, answers);
   }
 
   return finish(
     answers,
-    'The collected words provide a starting category and, where supplied, a narrower type and feature. Further keywords are optional.',
+    'Enough descriptive information has been collected for a useful starting set of search terms. Further keywords are optional.',
   );
 }
 

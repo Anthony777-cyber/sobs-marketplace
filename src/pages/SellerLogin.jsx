@@ -14,6 +14,7 @@ export default function SellerLogin() {
   const [sellerId, setSellerId] = useState('');
   const [loginSecret, setLoginSecret] = useState('');
   const [status, setStatus] = useState('idle');
+  const [attempts, setAttempts] = useState(0);
   const [error, setError] = useState('');
 
   const ready =
@@ -23,7 +24,7 @@ export default function SellerLogin() {
   async function handleLogin(event) {
     event.preventDefault();
 
-    if (!ready || status === 'logging-in') {
+    if (!ready || status === 'logging-in' || attempts >= 5) {
       return;
     }
 
@@ -45,8 +46,13 @@ export default function SellerLogin() {
       const data = await response.json().catch(() => null);
 
       if (!response.ok || !data?.success || !data?.sessionToken) {
+        const nextAttempts = attempts + 1;
+        setAttempts(nextAttempts);
         setError(
-          data?.error || 'Login failed. Check your S.O.B.S ID and login secret.'
+
+          data?.locked || nextAttempts >= 5
+            ? 'Too many attempts. Restart S.O.B.S. to try again.'
+            : (data?.error || 'Login failed. Check your S.O.B.S ID and login secret.')
         );
         setStatus('error');
         return;
@@ -169,7 +175,7 @@ export default function SellerLogin() {
 
           <button
             type="submit"
-            disabled={!ready || status === 'logging-in'}
+            disabled={!ready || status === 'logging-in' || attempts >= 5}
             className={BUTTON_CLASS}
           >
             {status === 'logging-in' ? 'Logging in...' : 'Log in'}

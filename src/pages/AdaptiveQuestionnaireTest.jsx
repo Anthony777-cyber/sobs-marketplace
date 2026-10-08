@@ -46,6 +46,7 @@ export default function AdaptiveQuestionnaireTest() {
   const [phase, setPhase] = useState('question');
   const [input, setInput] = useState('');
   const [decision, setDecision] = useState(null);
+  const [diagnosticLog, setDiagnosticLog] = useState([]);
 
   const registrySummary = useMemo(
     () => Object.entries(answers).map(([key, value]) => ({
@@ -99,6 +100,29 @@ export default function AdaptiveQuestionnaireTest() {
     setPhase('question');
     setInput('');
     setDecision(null);
+    setDiagnosticLog([]);
+  };
+
+  const diagnostics = JSON.stringify({
+    test: 'adaptive-questionnaire',
+    maxStructuredQuestions: MAX_QUESTIONS,
+    phase,
+    structuredCount,
+    currentQuestion: current,
+    profile,
+    destination,
+    answers,
+    askedIds,
+    lastDecision: decision,
+    log: diagnosticLog,
+  }, null, 2);
+
+  const copyDiagnostics = async () => {
+    try {
+      await navigator.clipboard.writeText(diagnostics);
+    } catch {
+      // Clipboard access may be blocked by the browser; the output remains selectable below.
+    }
   };
 
   const isComplete = phase === 'complete';
@@ -226,6 +250,29 @@ export default function AdaptiveQuestionnaireTest() {
               </div>
             )}
           </main>
+
+          <section className="mt-8 rounded-2xl border bg-muted/20 p-5 md:col-span-2">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">
+                  DIAGNOSTICS
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Copy this output and paste it into the chat when something behaves incorrectly.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={copyDiagnostics}
+                className="rounded-full border bg-background px-5 py-2 text-sm font-semibold"
+              >
+                Copy diagnostics
+              </button>
+            </div>
+            <pre className="mt-4 max-h-[420px] overflow-auto whitespace-pre-wrap break-words rounded-xl border bg-background p-4 text-xs leading-relaxed">
+              {diagnostics}
+            </pre>
+          </section>
 
           <aside className="rounded-2xl border bg-muted/20 p-5">
             <p className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">

@@ -249,7 +249,7 @@ export function buildSearchTerms(answers = {}) {
 function withKeywords(result, answers) {
   return {
     ...result,
-    destination: 'Registry',
+    destination: 'Test page only — no Registry write is performed',
     keywordGroups: buildKeywordGroups(answers),
     searchTerms: buildSearchTerms(answers),
     taxonomyTerms: buildTaxonomyTerms(answers),

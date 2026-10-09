@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import {
   buildKeywordGroups,
   buildSearchTerms,
+  buildTaxonomyTerms,
   createInitialQuestion,
   evaluateNext,
   getMaxStructuredQuestions,
@@ -47,6 +48,7 @@ export default function SifterMK2() {
 
   const keywordGroups = useMemo(() => buildKeywordGroups(answers), [answers]);
   const searchTerms = useMemo(() => buildSearchTerms(answers), [answers]);
+  const taxonomyTerms = useMemo(() => buildTaxonomyTerms(answers), [answers]);
 
   const answerLabel = (key) => LABELS[key] || key;
 
@@ -76,6 +78,7 @@ export default function SifterMK2() {
         answers: nextAnswers,
         keywordGroups: buildKeywordGroups(nextAnswers),
         searchTerms: buildSearchTerms(nextAnswers),
+        taxonomyTerms: buildTaxonomyTerms(nextAnswers),
       }]);
       return;
     }
@@ -94,6 +97,7 @@ export default function SifterMK2() {
           moreStructuredQuestionsAsked: false,
           keywordGroups: buildKeywordGroups(nextAnswers),
           searchTerms: buildSearchTerms(nextAnswers),
+          taxonomyTerms: buildTaxonomyTerms(nextAnswers),
         },
       ]);
       return;
@@ -117,6 +121,9 @@ export default function SifterMK2() {
         question: current.label,
         answer: value || 'Unknown / skipped',
         structuredCount: nextCount,
+        keywordGroups: buildKeywordGroups(nextAnswers),
+        searchTerms: buildSearchTerms(nextAnswers),
+        taxonomyTerms: buildTaxonomyTerms(nextAnswers),
       },
       {
         event: result.done ? 'structured-questions-stopped' : 'next-question-selected',
@@ -166,11 +173,18 @@ export default function SifterMK2() {
     phase,
     structuredCount,
     currentQuestion: current,
-    destination: 'Registry',
+    destination: 'Test page only — no Registry write is performed',
     answers,
     askedIds,
     keywordGroups,
     searchTerms,
+    taxonomyTerms,
+    outputCounts: {
+      keywordGroups: keywordGroups.length,
+      searchTerms: searchTerms.length,
+      taxonomyTerms: taxonomyTerms.length,
+    },
+    generatedOutput: { keywordGroups, searchTerms, taxonomyTerms },
     lastDecision: decision,
     log: diagnosticLog,
   }, null, 2);

@@ -195,10 +195,18 @@ export function buildKeywordGroups(answers = {}) {
     .filter((field) => field.value && !isUnknown(field.value));
 }
 
-export export function buildTaxonomyTerms(answers = {}) {
-  // Build taxonomy dynamically from the object's own name and its narrower type.
-  // Do not depend on a hard-coded list of known categories.
-  const candidates = [answers.description, answers.type];
+export function buildTaxonomyTerms(answers = {}) {
+  // Every newly encountered object can contribute taxonomy terms; do not
+  // restrict taxonomy creation to a hard-coded list of known categories.
+  // Machine objects can be identified by their make, model, and part/identity.
+  const candidates = [
+    answers.description,
+    answers.type,
+    answers.make,
+    answers.model,
+    answers.identification,
+    answers.partNumber,
+  ];
   const terms = [];
   const seen = new Set();
 

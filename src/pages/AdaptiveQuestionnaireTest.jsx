@@ -101,7 +101,7 @@ export default function AdaptiveQuestionnaireTest() {
     if (result.done) {
       setCurrent({
         id: 'freeform',
-        label: 'Anything you would like to add?',
+        label: 'Do you have anything else to add?',
         placeholder: 'Optional: add any other useful search terms',
       });
       setPhase('freeform');

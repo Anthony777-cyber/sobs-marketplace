@@ -14,10 +14,12 @@ function clean(value) {
 }
 
 const LABELS = {
-  description: 'Broad category / starting description',
+  description: 'What it is',
+  category: 'Item category',
   type: 'Narrower type',
   feature: 'Feature / distinguishing detail',
-  freeform: 'Additional keywords',
+  identification: 'Identification and description',
+  freeform: 'Anything else to add',
 };
 
 export default function AdaptiveQuestionnaireTest() {
@@ -231,13 +233,29 @@ export default function AdaptiveQuestionnaireTest() {
                 </div>
 
                 <form onSubmit={submitAnswer}>
-                  <input
-                    autoFocus
-                    value={input}
-                    onChange={(event) => setInput(event.target.value)}
-                    placeholder={current.placeholder}
-                    className="w-full rounded-xl border bg-background px-5 py-5 text-xl outline-none transition focus:ring-2 focus:ring-ring sm:text-2xl"
-                  />
+                  {current.options ? (
+                    <select
+                      autoFocus
+                      value={input}
+                      onChange={(event) => setInput(event.target.value)}
+                      className="w-full rounded-xl border bg-background px-5 py-5 text-xl outline-none transition focus:ring-2 focus:ring-ring sm:text-2xl"
+                      required
+                    >
+                      <option value="" disabled>Choose one</option>
+                      {current.options.map((option) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      autoFocus
+                      spellCheck={true}
+                      value={input}
+                      onChange={(event) => setInput(event.target.value)}
+                      placeholder={current.placeholder}
+                      className="w-full rounded-xl border bg-background px-5 py-5 text-xl outline-none transition focus:ring-2 focus:ring-ring sm:text-2xl"
+                    />
+                  )}
                   <div className="mt-5 flex items-center justify-between gap-4">
                     <span className="text-sm text-muted-foreground">
                       {isFreeform ? 'Press Enter to finish, or leave blank.' : 'Press Enter to answer or skip.'}
@@ -255,9 +273,8 @@ export default function AdaptiveQuestionnaireTest() {
                   <div className="mt-12 border-t pt-6">
                     <p className="text-sm font-semibold">Search keyword builder</p>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      It stops asking as soon as the broad category, any available narrower type,
-                      and at least one useful feature are represented—or those questions have
-                      already been answered or skipped. Twelve is the hard limit, not the target.
+                      It asks only for useful missing information. Twelve structured questions is
+                      the hard limit, not the target. The final optional addition is outside that limit.
                     </p>
                     {decision?.reason && <p className="mt-3 text-sm">{decision.reason}</p>}
                   </div>

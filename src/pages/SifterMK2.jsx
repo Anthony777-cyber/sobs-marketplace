@@ -71,11 +71,26 @@ export default function SifterMK2() {
         machineDescription: details.machineDescription,
       };
       setAnswers(nextAnswers);
-      setPhase('complete');
-      setDecision({ done: true, reason: 'Machine details recorded.' });
+      const finalQuestion = {
+        id: 'freeform',
+        label: "Anything else you'd like to add?",
+        placeholder: 'Optional: add any other useful search terms',
+      };
+      setCurrent(finalQuestion);
+      setPhase('freeform');
+      setDecision({
+        done: false,
+        reason: 'Machine details recorded. One final optional question follows.',
+        destination: 'Test page only — no Registry write is performed',
+        keywordGroups: buildKeywordGroups(nextAnswers),
+        searchTerms: buildSearchTerms(nextAnswers),
+        taxonomyTerms: buildTaxonomyTerms(nextAnswers),
+      });
       setDiagnosticLog((previous) => [...previous, {
         event: 'machine-details-recorded',
         answers: nextAnswers,
+        nextQuestionId: 'freeform',
+        finalOptionalQuestionProvided: true,
         keywordGroups: buildKeywordGroups(nextAnswers),
         searchTerms: buildSearchTerms(nextAnswers),
         taxonomyTerms: buildTaxonomyTerms(nextAnswers),
@@ -88,6 +103,16 @@ export default function SifterMK2() {
       setAnswers(nextAnswers);
       setInput('');
       setPhase('complete');
+      setDecision({
+        done: true,
+        reason: value
+          ? 'Final optional addition recorded; no further questions will be asked.'
+          : 'Final optional addition skipped; no further questions will be asked.',
+        destination: 'Test page only — no Registry write is performed',
+        keywordGroups: buildKeywordGroups(nextAnswers),
+        searchTerms: buildSearchTerms(nextAnswers),
+        taxonomyTerms: buildTaxonomyTerms(nextAnswers),
+      });
       setDiagnosticLog((previous) => [
         ...previous,
         {
@@ -138,7 +163,7 @@ export default function SifterMK2() {
     if (result.done) {
       setCurrent({
         id: 'freeform',
-        label: 'Do you have anything else to add?',
+        label: "Anything else you'd like to add?",
         placeholder: 'Optional: add any other useful search terms',
       });
       setPhase('freeform');

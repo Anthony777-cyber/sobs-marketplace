@@ -195,7 +195,7 @@ export function buildKeywordGroups(answers = {}) {
     .filter((field) => field.value && !isUnknown(field.value));
 }
 
-function buildTaxonomyTerms(answers = {}) {
+export function buildTaxonomyTerms(answers = {}) {
   const text = allDescriptiveText(answers).toLowerCase();
   const terms = [];
   const add = (value) => {

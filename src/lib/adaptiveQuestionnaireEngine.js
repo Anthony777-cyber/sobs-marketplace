@@ -42,8 +42,24 @@ function isUnknown(value) {
     || /^(?:don't know|do not know|unknown|not sure|unsure|n\/a|na|skip|-)$/i.test(clean(value));
 }
 
-function question(id, label, placeholder) {
-  return { id, label, placeholder };
+function question(id, label, placeholder, options) {
+  return { id, label, placeholder, ...(options ? { options } : {}) };
+}
+
+function cleanSearchText(value) {
+  return clean(value)
+    .replace(/\b(?:made|manufactured|produced|built)\s+by\b/gi, ' ')
+    .replace(/\b(?:this is|it is|it was|known as)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function createCategoryQuestion() {
+  return question('category', 'Which best describes it?', 'Choose one', [
+    { value: 'machine', label: 'Machine' },
+    { value: 'machine_part', label: 'Part of a machine' },
+    { value: 'other', label: 'Everything else' },
+  ]);
 }
 
 function allDescriptiveText(answers = {}) {
@@ -51,6 +67,7 @@ function allDescriptiveText(answers = {}) {
     answers.description,
     answers.type,
     answers.feature,
+    answers.identification,
     answers.freeform,
   ].map(clean).filter(Boolean).join(' ');
 }
@@ -152,10 +169,11 @@ export function createInitialQuestion() {
 
 export function buildKeywordGroups(answers = {}) {
   const fields = [
-    { id: 'description', label: 'Broad category / starting description' },
+    { id: 'description', label: 'What it is' },
     { id: 'type', label: 'Narrower type' },
     { id: 'feature', label: 'Feature / distinguishing detail' },
-    { id: 'freeform', label: 'Additional keywords' },
+    { id: 'identification', label: 'Identification and description' },
+    { id: 'freeform', label: 'Anything else to add' },
   ];
 
   return fields
@@ -202,8 +220,9 @@ export function buildSearchTerms(answers = {}) {
   };
 
   for (const group of buildKeywordGroups(answers)) {
-    add(group.value);
-    for (const word of tokens(group.value)) {
+    const searchableValue = cleanSearchText(group.value);
+    add(searchableValue);
+    for (const word of tokens(searchableValue)) {
       if (!STOP_WORDS.has(word) && !GENERIC_WORDS.has(word)) add(word);
     }
   }
@@ -233,31 +252,47 @@ export function evaluateNext(answers = {}, askedIds = [], structuredCount = 0) {
   if (!asked.has('description')) {
     return withKeywords({
       done: false,
-      reason: 'Start with the broad category. More than one word is fine if that describes it better.',
+      reason: 'Start with the item name.',
       question: createInitialQuestion(),
     }, answers);
   }
 
   if (structuredCount >= MAX_STRUCTURED_QUESTIONS) {
-    return finish(
-      answers,
-      'The 12-question hard limit has been reached. All collected keywords are retained.',
-    );
+    return finish(answers, 'The 12-question hard limit has been reached.');
   }
 
-  // Ask only for a dimension that is still missing. Each structured question
-  // has a unique ID and can only be asked once; an unknown/skip is not repeated.
+  if (!asked.has('category')) {
+    return withKeywords({
+      done: false,
+      reason: 'Choose the broad item category.',
+      question: createCategoryQuestion(),
+    }, answers);
+  }
+
+  if (answers.category === 'machine' || answers.category === 'machine_part') {
+    if (!asked.has('identification')) {
+      return withKeywords({
+        done: false,
+        reason: 'Collect the identifying details and the seller description together in one field.',
+        question: question(
+          'identification',
+          'Enter make, model, year, part number, other identifying details, and your own description.',
+          'Put everything you know in this one field.',
+        ),
+      }, answers);
+    }
+    return finish(answers, 'The identifying details and description have been collected. Further keywords are optional.');
+  }
+
   if (!hasSpecificType(answers) && !asked.has('type')) {
     const category = broadCategory(answers);
     return withKeywords({
       done: false,
       step: 'narrower-type',
-      reason: 'The description has a broad category but no narrower type yet.',
+      reason: 'A narrower type may help buyers find the item.',
       question: question(
         'type',
-        category === 'item'
-          ? 'What kind of item is it?'
-          : 'What kind of ' + category + ' is it?',
+        category === 'item' ? 'What kind of item is it?' : 'What kind of ' + category + ' is it?',
         'The more specific type or name, if known',
       ),
     }, answers);
@@ -268,15 +303,12 @@ export function evaluateNext(answers = {}, askedIds = [], structuredCount = 0) {
     return withKeywords({
       done: false,
       step: 'feature',
-      reason: 'The category and any narrower type are retained. One useful feature may make the item easier to find.',
+      reason: 'One useful feature may make the item easier to find.',
       question: question('feature', prompt.label, prompt.placeholder),
     }, answers);
   }
 
-  return finish(
-    answers,
-    'Enough descriptive information has been collected for a useful starting set of search terms. Further keywords are optional.',
-  );
+  return finish(answers, 'Enough descriptive information has been collected. Further keywords are optional.');
 }
 
 export function getMaxStructuredQuestions() {

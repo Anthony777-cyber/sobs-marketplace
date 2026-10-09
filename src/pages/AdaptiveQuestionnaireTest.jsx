@@ -29,6 +29,10 @@ export default function AdaptiveQuestionnaireTest() {
   const [current, setCurrent] = useState(createInitialQuestion());
   const [phase, setPhase] = useState('question');
   const [input, setInput] = useState('');
+  const [machineDetails, setMachineDetails] = useState({
+    make: '', model: '', year: '', partNumber: '', otherDetails: '',
+    colour: '', runningOperating: '', machineDescription: '',
+  });
   const [decision, setDecision] = useState(null);
   const [diagnosticLog, setDiagnosticLog] = useState([]);
   const [copyStatus, setCopyStatus] = useState('');
@@ -49,6 +53,32 @@ export default function AdaptiveQuestionnaireTest() {
   const submitAnswer = (event) => {
     event?.preventDefault();
     const value = clean(input);
+
+    if (phase === 'machine-form') {
+      const details = Object.fromEntries(Object.entries(machineDetails).map(([key, val]) => [key, clean(val)]));
+      const identification = [details.otherDetails].filter(Boolean).join(' ');
+      const nextAnswers = {
+        ...answers,
+        make: details.make,
+        model: details.model,
+        year: details.year,
+        partNumber: details.partNumber,
+        identification,
+        colour: details.colour,
+        runningOperating: details.runningOperating,
+        machineDescription: details.machineDescription,
+      };
+      setAnswers(nextAnswers);
+      setPhase('complete');
+      setDecision({ done: true, reason: 'Machine details recorded.' });
+      setDiagnosticLog((previous) => [...previous, {
+        event: 'machine-details-recorded',
+        answers: nextAnswers,
+        keywordGroups: buildKeywordGroups(nextAnswers),
+        searchTerms: buildSearchTerms(nextAnswers),
+      }]);
+      return;
+    }
 
     if (phase === 'freeform') {
       const nextAnswers = { ...answers, freeform: value };
@@ -107,6 +137,7 @@ export default function AdaptiveQuestionnaireTest() {
       setPhase('freeform');
     } else {
       setCurrent(result.question);
+      if (result.question.id === 'identification') setPhase('machine-form');
     }
   };
 
@@ -117,6 +148,7 @@ export default function AdaptiveQuestionnaireTest() {
     setCurrent(createInitialQuestion());
     setPhase('question');
     setInput('');
+    setMachineDetails({ make: '', model: '', year: '', partNumber: '', otherDetails: '', colour: '', runningOperating: '', machineDescription: '' });
     setDecision(null);
     setDiagnosticLog([]);
     setCopyStatus('');
@@ -124,6 +156,7 @@ export default function AdaptiveQuestionnaireTest() {
 
   const isComplete = phase === 'complete';
   const isFreeform = phase === 'freeform';
+  const isMachineForm = phase === 'machine-form';
 
   const diagnostics = JSON.stringify({
     test: 'adaptive-keyword-sifter',
@@ -233,19 +266,60 @@ export default function AdaptiveQuestionnaireTest() {
                 </div>
 
                 <form onSubmit={submitAnswer}>
-                  {current.options ? (
-                    <select
-                      autoFocus
-                      value={input}
-                      onChange={(event) => setInput(event.target.value)}
-                      className="w-full rounded-xl border bg-background px-5 py-5 text-xl outline-none transition focus:ring-2 focus:ring-ring sm:text-2xl"
-                      required
-                    >
-                      <option value="" disabled>Choose one</option>
-                      {current.options.map((option) => (
-                        <option key={option.value} value={option.value}>{option.label}</option>
+                  {isMachineForm ? (
+                    <div className="space-y-5 rounded-2xl border bg-muted/20 p-5">
+                      {[
+                        ['make', 'Make'], ['model', 'Model'], ['year', 'Year'],
+                        ['partNumber', 'Part number'], ['otherDetails', 'Other identifying details'],
+                        ['colour', 'Colour'],
+                      ].map(([key, label]) => (
+                        <label key={key} className="block text-sm font-semibold">
+                          {label}
+                          <input
+                            value={machineDetails[key]}
+                            onChange={(event) => setMachineDetails((previous) => ({ ...previous, [key]: event.target.value }))}
+                            placeholder={'Enter ' + label.toLowerCase() + ' if known'}
+                            className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-base font-normal outline-none focus:ring-2 focus:ring-ring"
+                          />
+                        </label>
                       ))}
-                    </select>
+                      <fieldset>
+                        <legend className="text-sm font-semibold">Running / operating?</legend>
+                        <div className="mt-2 flex gap-3">
+                          {['Yes', 'No'].map((choice) => (
+                            <button
+                              key={choice}
+                              type="button"
+                              aria-pressed={machineDetails.runningOperating === choice}
+                              onClick={() => setMachineDetails((previous) => ({ ...previous, runningOperating: choice }))}
+                              className={'rounded-full border px-6 py-3 font-semibold transition ' + (machineDetails.runningOperating === choice ? 'border-red-600 bg-red-600 text-white' : 'bg-background hover:border-red-600')}
+                            >{choice}</button>
+                          ))}
+                        </div>
+                      </fieldset>
+                      <label className="block text-sm font-semibold">
+                        Seller description
+                        <textarea
+                          value={machineDetails.machineDescription}
+                          onChange={(event) => setMachineDetails((previous) => ({ ...previous, machineDescription: event.target.value }))}
+                          placeholder="Describe the machine or part in your own words"
+                          rows={4}
+                          className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-base font-normal outline-none focus:ring-2 focus:ring-ring"
+                        />
+                      </label>
+                    </div>
+                  ) : current.options ? (
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      {current.options.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          aria-pressed={input === option.value}
+                          onClick={() => setInput(option.value)}
+                          className={'min-h-16 rounded-xl border px-4 py-4 text-lg font-semibold transition ' + (input === option.value ? 'border-red-600 bg-red-600 text-white' : 'bg-background hover:border-red-600')}
+                        >{option.label}</button>
+                      ))}
+                    </div>
                   ) : (
                     <input
                       autoFocus
@@ -258,13 +332,13 @@ export default function AdaptiveQuestionnaireTest() {
                   )}
                   <div className="mt-5 flex items-center justify-between gap-4">
                     <span className="text-sm text-muted-foreground">
-                      {isFreeform ? 'Press Enter to finish, or leave blank.' : 'Press Enter to answer or skip.'}
+                      {isMachineForm ? 'Leave unknown details blank.' : isFreeform ? 'Press Enter to finish, or leave blank.' : current.options ? 'Choose an option, then continue.' : 'Press Enter to answer or skip.'}
                     </span>
                     <button
                       type="submit"
                       className="rounded-full bg-red-600 px-7 py-3 font-semibold text-white"
                     >
-                      {isFreeform ? 'Finish' : 'Next'}
+                      {isFreeform || isMachineForm ? 'Finish' : 'Next'}
                     </button>
                   </div>
                 </form>

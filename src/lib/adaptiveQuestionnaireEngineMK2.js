@@ -195,28 +195,19 @@ export function buildKeywordGroups(answers = {}) {
     .filter((field) => field.value && !isUnknown(field.value));
 }
 
-export function buildTaxonomyTerms(answers = {}) {
-  const text = allDescriptiveText(answers).toLowerCase();
+export export function buildTaxonomyTerms(answers = {}) {
+  // Build taxonomy dynamically from the object's own name and its narrower type.
+  // Do not depend on a hard-coded list of known categories.
+  const candidates = [answers.description, answers.type];
   const terms = [];
-  const add = (value) => {
-    const term = clean(value).toLowerCase();
-    if (term && !terms.includes(term)) terms.push(term);
-  };
+  const seen = new Set();
 
-  // The broad taxonomy parent supports broad searches. More specific related
-  // terms are added only when the seller has actually supplied the relevant type.
-  if (/\b(lamp|lamps|light|lights|lighting)\b/.test(text)) add('lighting');
-
-  if (
-    /\blamp\b/.test(text)
-    && /\b(?:angle[\s-]*poise|desk lamp|task lamp)\b/.test(text)
-  ) {
-    add('desk lamp');
-    add('task lamp');
-    add('adjustable lamp');
+  for (const candidate of candidates) {
+    const term = clean(candidate).toLowerCase();
+    if (!term || isUnknown(term) || seen.has(term)) continue;
+    seen.add(term);
+    terms.push(term);
   }
-
-  if (/\b(?:desk lamp|task lamp)\b/.test(text)) add('lighting');
 
   return terms;
 }

@@ -68,6 +68,13 @@ function allDescriptiveText(answers = {}) {
     answers.type,
     answers.feature,
     answers.identification,
+    answers.make,
+    answers.model,
+    answers.year,
+    answers.partNumber,
+    answers.colour,
+    answers.runningOperating,
+    answers.machineDescription,
     answers.freeform,
   ].map(clean).filter(Boolean).join(' ');
 }
@@ -173,6 +180,13 @@ export function buildKeywordGroups(answers = {}) {
     { id: 'type', label: 'Narrower type' },
     { id: 'feature', label: 'Feature / distinguishing detail' },
     { id: 'identification', label: 'Identification and description' },
+    { id: 'make', label: 'Make' },
+    { id: 'model', label: 'Model' },
+    { id: 'year', label: 'Year' },
+    { id: 'partNumber', label: 'Part number' },
+    { id: 'colour', label: 'Colour' },
+    { id: 'runningOperating', label: 'Running / operating' },
+    { id: 'machineDescription', label: 'Seller description' },
     { id: 'freeform', label: 'Anything else to add' },
   ];
 
@@ -273,11 +287,11 @@ export function evaluateNext(answers = {}, askedIds = [], structuredCount = 0) {
     if (!asked.has('identification')) {
       return withKeywords({
         done: false,
-        reason: 'Collect the identifying details and the seller description together in one field.',
+        reason: 'Collect the identifying details, colour, operating state, and seller description together in one form.',
         question: question(
           'identification',
-          'Enter make, model, year, part number, other identifying details, and your own description.',
-          'Put everything you know in this one field.',
+          'Enter the machine details in the dedicated form.',
+          'Complete whichever details you know.',
         ),
       }, answers);
     }

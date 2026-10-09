@@ -30,6 +30,7 @@ import DeleteListing from '@/pages/DeleteListing';
 import RenewListingKey from '@/pages/RenewListingKey';
 import CategoryTest from '@/pages/CategoryTest';
 import AdaptiveQuestionnaireTest from '@/pages/AdaptiveQuestionnaireTest';
+import AdaptiveQuestionnaireUpgradeTest from '@/pages/AdaptiveQuestionnaireUpgradeTest';
 
 const AuthenticatedApp = () => {
   return (
@@ -47,6 +48,7 @@ const AuthenticatedApp = () => {
       <Route path="/categories" element={<Directory />} />
       <Route path="/category-test" element={<CategoryTest />} />
       <Route path="/adaptive-test" element={<AdaptiveQuestionnaireTest />} />
+      <Route path="/adaptive-upgrade-test" element={<AdaptiveQuestionnaireUpgradeTest />} />
       <Route path="/confirmed/:id" element={<Confirmed />} />
       <Route path="/manage" element={<Manage />} />
       <Route path="/manage-listings" element={<GlobalManagementConsole />} />

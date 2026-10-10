@@ -69,7 +69,7 @@ export function buildKeywordGroups(answers = {}, routeKeywords = []) {
 }
 export function buildSearchTerms(answers = {}, routeKeywords = []) {
  const result=[],seen=new Set();const add=value=>{const v=clean(value),k=v.toLowerCase();if(!v||unknown(v)||seen.has(k))return;seen.add(k);result.push(v);};
- for(const group of buildKeywordGroups(answers,routeKeywords)){const value=clean(group.value).replace(/\b(?:this is|it is|it was|known as)\b/gi,' ').replace(/\s+/g,' ').trim();add(value);for(const word of tokens(value))if(!STOP.has(word))add(word);}return result;
+ for(const group of buildKeywordGroups(answers,routeKeywords)){const value=clean(group.value).replace(/\b(?:this is|it is|it was|known as)\b/gi,' ').replace(/\s+/g,' ').trim();add(value);for(const word of tokens(value))if(!STOP.has(word)&&!(word==='working'&&/\\bnot\\s+working\\b/i.test(value)))add(word);}return result;
 }
 export function getNextGeneralQuestion(answers = {}, askedIds = [], structuredCount = 0) {
  const asked=new Set(askedIds);if(structuredCount>=MAX_STRUCTURED_QUESTIONS)return {done:true,reason:'The 12-question hard limit has been reached.'};

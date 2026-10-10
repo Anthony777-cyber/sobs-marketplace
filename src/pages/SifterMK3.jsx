@@ -131,8 +131,36 @@ export default function SifterMK3() {
   },null,2);
   const copyDiagnostics = async () => {
     setCopyStatus('');
-    try { await navigator.clipboard.writeText(diagnostics); setCopyStatus('Diagnostics copied.'); }
-    catch { setCopyStatus('Automatic copy was blocked. Select the diagnostic text below and press Ctrl+C.'); }
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(diagnostics);
+        setCopyStatus('Diagnostics copied.');
+        return;
+      }
+    } catch {}
+    let area;
+    try {
+      area = document.createElement('textarea');
+      area.value = diagnostics;
+      area.setAttribute('readonly', '');
+      area.setAttribute('aria-label', 'Diagnostics to copy');
+      area.style.position = 'fixed';
+      area.style.left = '0';
+      area.style.top = '0';
+      area.style.width = '1px';
+      area.style.height = '1px';
+      area.style.opacity = '0.01';
+      document.body.appendChild(area);
+      area.focus();
+      area.select();
+      area.setSelectionRange(0, area.value.length);
+      const copied = document.execCommand('copy');
+      area.remove();
+      setCopyStatus(copied ? 'Diagnostics copied.' : 'Automatic copy was blocked. Select the diagnostic text below and press Ctrl+C.');
+    } catch {
+      area?.remove();
+      setCopyStatus('Automatic copy was blocked. Select the diagnostic text below and press Ctrl+C.');
+    }
   };
   const complete = phase === 'complete';
   const freeform = phase === 'freeform';
@@ -150,7 +178,7 @@ export default function SifterMK3() {
     <div className="grid flex-1 gap-8 md:grid-cols-[1fr_300px]">
       <main className="rounded-2xl border bg-background p-6 shadow-sm sm:p-10">
         {!complete ? <>
-          <div className="flex items-center justify-between gap-4"><span className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">{phase==='route'?'CHOOSE A ROUTE':phase==='vehicle-type'?'MACHINE ROUTE':freeform?'OPTIONAL FINAL QUESTION':machineForm?'MACHINE DETAILS':carForm?'CAR DETAILS':'STRUCTURED QUESTION '+structuredCount+' OF '+MAX_QUESTIONS}</span><span className="rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide">Test only</span></div>
+          <div className="flex items-center justify-between gap-4"><span className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">{phase==='route'?'CHOOSE A ROUTE':phase==='vehicle-type'?'MACHINE ROUTE':freeform?'OPTIONAL FINAL QUESTION':machineForm?'MACHINE DETAILS':carForm?'CAR DETAILS':'STRUCTURED QUESTION '+(structuredCount+1)+' OF '+MAX_QUESTIONS}</span><span className="rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide">Test only</span></div>
           {phase==='route' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">What are you listing?</h2><div className="mt-6 grid gap-3">{[['machine','Machine','Adds “machine” to keywords'],['spares','Part of a machine','Adds “spares” to keywords'],['other','Everything else','Adds no route keyword']].map(([value,label,desc])=><button key={value} type="button" onClick={()=>chooseRoute(value)} className="rounded-xl border p-5 text-left hover:border-red-600"><span className="block text-lg font-semibold">{label}</span><span className="mt-1 block text-sm text-muted-foreground">{desc}</span></button>)}</div></div>
           : phase==='vehicle-type' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">Is it a car or another machine?</h2><div className="mt-6 grid gap-3 sm:grid-cols-2">{[['car','Car','Adds “Cars” and opens the car-specific form'],['machine','Other machine','Opens the existing machine-details form']].map(([value,label,desc])=><button key={value} type="button" onClick={()=>chooseMachineType(value)} className="rounded-xl border p-5 text-left hover:border-red-600"><span className="block text-lg font-semibold">{label}</span><span className="mt-1 block text-sm text-muted-foreground">{desc}</span></button>)}</div></div>
           : machineForm || carForm ? <form onSubmit={submitAnswer} className="mt-8 space-y-5 rounded-2xl border bg-muted/20 p-5">

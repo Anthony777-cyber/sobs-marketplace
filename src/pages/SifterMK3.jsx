@@ -181,7 +181,7 @@ export default function SifterMK3() {
     const details = Object.fromEntries(Object.entries(categoryDetails).map(([key,value]) => [key,clean(value)]));
     const nextAnswers = {...answers,...details};
     setAnswers(nextAnswers);
-    setCurrent({id:'freeform',label:'Anything else you\\'d like to add?',placeholder:'Optional: add any other useful search terms'});
+    setCurrent({id:'freeform',label:'Anything else you\'d like to add?',placeholder:'Optional: add any other useful search terms'});
     setPhase('freeform');
     setInput('');
     const groups = buildKeywordGroups(nextAnswers,routeKeywords), terms = buildSearchTerms(nextAnswers,routeKeywords);

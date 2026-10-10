@@ -1,10 +1,66 @@
 const MAX_STRUCTURED_QUESTIONS = 12;
-const STOP = new Set(['a','an','the','and','or','of','for','with','in','on','to','from','by','it','is','this','that','my','your','used','kind','type']);
+const STOP = new Set(['a','an','the','and','or','of','for','with','in','on','to','from','by','it','is','this','that','my','your','used','kind','type','not']);
 const FEATURES = new Set(['black','white','red','blue','green','yellow','orange','purple','pink','brown','grey','gray','silver','gold','beige','cream','wood','wooden','metal','steel','plastic','glass','ceramic','leather','fabric','cotton','wool','working','faulty','broken','damaged','incomplete','restored','refurbished','new','used','worn','tested','untested','old','vintage','antique','modern','retro','rare','large','small','tall','short','wide','narrow','heavy','lightweight','round','square','oval','folding','adjustable','portable','electric','manual','automatic','indoor','outdoor','left','right','pair','set']);
 const clean = value => String(value ?? '').trim().replace(/\s+/g, ' ');
 const tokens = value => clean(value).toLowerCase().match(/[a-z0-9]+(?:[-'][a-z0-9]+)*/g) || [];
-const unknown = value => !clean(value) || /^(?:don't know|do not know|unknown|not sure|unsure|n\/a|na|skip|-)$/i.test(clean(value));
-const fields = [['description','What it is'],['type','Narrower type'],['feature','Feature / distinguishing detail'],['identification','Other identifying details'],['make','Make'],['model','Model'],['year','Year'],['partNumber','Part number'],['variant','Variant / trim'],['mileage','Mileage'],['fuelType','Fuel type'],['transmission','Transmission'],['colour','Colour'],['runningOperating','Running / operating'],['machineDescription','Seller description'],['freeform','Anything else to add']];
+const unknown = value => {
+ const normalized = clean(value).toLowerCase().replace(/[’]/g, "'").replace(/[.!?]+$/g, '');
+ return !normalized || /^(?:(?:i )?(?:don't know|do not know)|unknown|not sure|unsure|n\/a|na|skip|-)$/i.test(normalized);
+};
+const fields = [
+ ['description','What it is'],
+ ['type','Narrower type'],
+ ['feature','Feature / distinguishing detail'],
+ ['identification','Other identifying details'],
+ ['make','Make'],
+ ['model','Model'],
+ ['year','Year'],
+ ['partNumber','Part number'],
+ ['variant','Variant / trim'],
+ ['mileage','Mileage'],
+ ['fuelType','Fuel type'],
+ ['transmission','Transmission'],
+ ['colour','Colour'],
+ ['material','Material'],
+ ['dimensions','Dimensions'],
+ ['condition','Condition'],
+ ['quantity','Quantity'],
+ ['capacity','Capacity'],
+ ['specifications','Specifications'],
+ ['compatibility','Compatibility'],
+ ['powerSource','Power source'],
+ ['fault','Faults / known issues'],
+ ['storage','Storage capacity'],
+ ['title','Title / item name'],
+ ['author','Author'],
+ ['publisher','Publisher / label'],
+ ['edition','Edition / issue'],
+ ['format','Format'],
+ ['artist','Artist / maker'],
+ ['platform','Platform'],
+ ['completeness','Completeness'],
+ ['scale','Scale / model size'],
+ ['era','Age / era'],
+ ['origin','Origin'],
+ ['clothingSize','Clothing / shoe size'],
+ ['style','Style'],
+ ['movement','Movement / mechanism'],
+ ['identifyingMarks','Identifying marks'],
+ ['ageRange','Age range'],
+ ['accessories','Included accessories'],
+ ['sport','Sport / activity'],
+ ['size','Size'],
+ ['frameSize','Frame size'],
+ ['wheelSize','Wheel size'],
+ ['length','Length'],
+ ['petType','Animal / pet type'],
+ ['catalogNumber','Catalogue number'],
+ ['denomination','Denomination / issue'],
+ ['runningOperating','Running / operating'],
+ ['workingStatus','Working status'],
+ ['machineDescription','Seller description'],
+ ['freeform','Anything else to add'],
+];
 export function getMaxStructuredQuestions(){return MAX_STRUCTURED_QUESTIONS;}
 export function buildKeywordGroups(answers = {}, routeKeywords = []) {
  const groups=[],seen=new Set(); const add=(id,label,value)=>{const v=clean(value),k=v.toLowerCase();if(!v||unknown(v)||seen.has(k))return;seen.add(k);groups.push({id,label,value:v});};

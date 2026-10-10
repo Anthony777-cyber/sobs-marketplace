@@ -20,6 +20,11 @@ const FEATURES = new Set([
   '1950s', '1960s', '1970s', '1980s', '1990s', '2000s',
 ]);
 const clean = value => String(value ?? '').trim().replace(/\s+/g, ' ');
+const cleanSearchText = value => clean(value)
+ .replace(/\b(?:made|manufactured|produced|built)\s+by\b/gi, ' ')
+ .replace(/\b(?:this is|it is|it was|known as)\b/gi, ' ')
+ .replace(/\s+/g, ' ')
+ .trim();
 const tokens = value => clean(value).toLowerCase().match(/[a-z0-9]+/g) || [];
 const unknown = value => {
  const normalized = clean(value).toLowerCase().replace(/[’]/g, "'").replace(/[.!?]+$/g, '');
@@ -91,8 +96,9 @@ export function buildSearchTerms(answers = {}, routeKeywords = []) {
  const result=[],seen=new Set();
  const add=value=>{const v=clean(value),k=v.toLowerCase();if(!v||unknown(v)||seen.has(k))return;seen.add(k);result.push(v);};
  for(const group of buildKeywordGroups(answers,routeKeywords)){
-  add(group.value);
-  for(const word of tokens(group.value)) if(!STOP.has(word)&&!GENERIC_WORDS.has(word)) add(word);
+  const searchableValue=cleanSearchText(group.value);
+  add(searchableValue);
+  for(const word of tokens(searchableValue)) if(!STOP.has(word)&&!GENERIC_WORDS.has(word)) add(word);
  }
  return result;
 }

@@ -5,7 +5,8 @@ const MAX_QUESTIONS = getMaxStructuredQuestions();
 const clean = value => String(value ?? '').trim().replace(/\s+/g, ' ');
 const EMPTY_MACHINE = { make:'', model:'', year:'', partNumber:'', otherDetails:'', colour:'', runningOperating:'', machineDescription:'' };
 const EMPTY_CAR = { make:'', model:'', year:'', variant:'', partNumber:'', mileage:'', fuelType:'', transmission:'', colour:'', runningOperating:'', otherDetails:'', machineDescription:'' };
-const LABELS = { description:'What it is', type:'Narrower type', feature:'Feature / distinguishing detail', freeform:'Anything else to add' };
+const FORM_INSTRUCTION = "If you don't know something, don't worry; just leave it blank.";
+const LABELS = { description:'What it is', type:'Narrower type', feature:'Feature / distinguishing detail', freeform:'Anything else to add', workingStatus:'Working status' };
 const GENERAL_CATEGORIES = [
   'Home, furniture & interiors','Garden & outdoor','Kitchen & dining','DIY, tools & building supplies',
   'Building & renovation materials','Electrical, lighting & wiring','Computers & IT','Phones & telecommunications',
@@ -23,6 +24,22 @@ const GENERAL_CATEGORY_BUTTON_COLORS = [
   '#1d4ed8','#c2410c','#475569','#6d28d9','#0e7490','#be123c',
   '#854d0e','#a21caf','#4d7c0f','#4338ca','#b45309','#047857',
 ];
+const MACHINE_STATUS_CATEGORIES = new Set([
+  'DIY, tools & building supplies',
+  'Electrical, lighting & wiring',
+  'Computers & IT',
+  'Phones & telecommunications',
+  'TV, audio & home cinema',
+  'Cameras, photography & optics',
+  'Household appliances',
+  'Heating, cooling & ventilation',
+  'Office equipment',
+  'Business, industrial & workshop equipment',
+  'Agricultural & farm equipment',
+  'Commercial catering & hospitality',
+  'Medical, laboratory & test equipment',
+  'Security & specialist equipment',
+]);
 const CATEGORY_FIELD_DEFS = {
   type:{label:'Item type',placeholder:'Specific item type or name'},
   make:{label:'Brand / maker',placeholder:'Manufacturer, brand or maker if known'},
@@ -172,13 +189,13 @@ export default function SifterMK3() {
     } else {
       setCategoryDetails({});
       setPhase('category-form');
-      setDiagnosticLog(previous => [...previous,{event:'general-category-selected',category,addedKeywords:[category],nextStep:'category-form',adaptiveQuestionnaireStarted:false,formFields:CATEGORY_FORM_FIELDS[category] || ['type','make','model','condition']}]);
+      setDiagnosticLog(previous => [...previous,{event:'general-category-selected',category,addedKeywords:[category],nextStep:'category-form',adaptiveQuestionnaireStarted:false,formFields:[...(CATEGORY_FORM_FIELDS[category] || ['type','make','model','condition']).map(key=>key === 'condition' && MACHINE_STATUS_CATEGORIES.has(category) ? 'workingStatus' : key),'machineDescription']}]);
     }
   };
   const completeCategoryForm = event => {
     event?.preventDefault();
     pushHistory();
-    const details = Object.fromEntries(Object.entries(categoryDetails).map(([key,value]) => [key,clean(value)]));
+    const details = Object.fromEntries(Object.entries(categoryDetails).map(([key,value]) => [key,clean(value)]).filter(([,value]) => value !== ''));
     const nextAnswers = {...answers,...details};
     setAnswers(nextAnswers);
     setCurrent({id:'freeform',label:'Anything else you\'d like to add?',placeholder:'Optional: add any other useful search terms'});
@@ -229,21 +246,21 @@ export default function SifterMK3() {
     pushHistory();
     const value = clean(input);
     if (phase === 'freeform') {
-      const nextAnswers = {...answers,freeform:value}; setAnswers(nextAnswers); setInput(''); setPhase('complete');
+      const nextAnswers = value ? {...answers,freeform:value} : {...answers}; setAnswers(nextAnswers); setInput(''); setPhase('complete');
       const groups=buildKeywordGroups(nextAnswers,routeKeywords), terms=buildSearchTerms(nextAnswers,routeKeywords);
       const result={done:true,reason:value?'Final optional addition recorded; no further questions will be asked.':'Final optional addition skipped; no further questions will be asked.',keywordGroups:groups,searchTerms:terms};
       setDecision(result);
-      setDiagnosticLog(previous=>[...previous,{event:'final-addition-recorded',questionId:'freeform',answer:value||'Skipped',keywordGroups:groups,searchTerms:terms}]);
+      setDiagnosticLog(previous=>[...previous,{event:'final-addition-recorded',questionId:'freeform',answer:value,answerStatus:value?'supplied':'blank-unsupplied',keywordGroups:groups,searchTerms:terms}]);
       return;
     }
-    const nextAnswers={...answers,[current.id]:value};
+    const nextAnswers=value?{...answers,[current.id]:value}:{...answers};
     const nextAsked=[...new Set([...askedIds,current.id])];
     const nextCount=structuredCount+1;
     const result=getNextGeneralQuestion(nextAnswers,nextAsked,nextCount);
     setAnswers(nextAnswers); setAskedIds(nextAsked); setStructuredCount(nextCount); setInput(''); setDecision(result);
     const groups=buildKeywordGroups(nextAnswers,routeKeywords),terms=buildSearchTerms(nextAnswers,routeKeywords);
     setDiagnosticLog(previous=>[...previous,
-      {event:'answer-recorded',questionId:current.id,question:current.label,answer:value||'Unknown / skipped',structuredCount:nextCount,keywordGroups:groups,searchTerms:terms},
+      {event:'answer-recorded',questionId:current.id,question:current.label,answer:value,answerStatus:value?'supplied':'blank-unsupplied',structuredCount:nextCount,keywordGroups:groups,searchTerms:terms},
       {event:result.done?'structured-questions-stopped':'next-question-selected',nextQuestionId:result.done?'freeform':result.question.id,reason:result.reason,keywordGroups:groups,searchTerms:terms},
     ]);
     if(result.done){setCurrent({id:'freeform',label:'Anything else you\'d like to add?',placeholder:'Optional: add any other useful search terms'});setPhase('freeform');}
@@ -303,7 +320,7 @@ export default function SifterMK3() {
   const machineForm = phase === 'machine-form';
   const carForm = phase === 'car-form';
   const categoryForm = phase === 'category-form';
-  const categoryFormFields = CATEGORY_FORM_FIELDS[selectedCategory] || ['type','make','model','condition'];
+  const categoryFormFields = (CATEGORY_FORM_FIELDS[selectedCategory] || ['type','make','model','condition']).map(key=>key === 'condition' && MACHINE_STATUS_CATEGORIES.has(selectedCategory) ? 'workingStatus' : key);
   const field = (key,label,placeholder='Enter '+label.toLowerCase()+' if known',setter=machineForm?setMachineDetails:setCarDetails,source=machineForm?machineDetails:carDetails) => (
     <label key={key} className="block text-sm font-semibold">{label}
       <input value={source[key] ?? ''} onChange={e=>updateForm(setter,key,e.target.value)} placeholder={placeholder}
@@ -320,14 +337,15 @@ export default function SifterMK3() {
           {phase==='route' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">What are you listing?</h2><div className="mt-6 grid gap-3 sm:grid-cols-3">{[['machine','Machine'],['spares','Part of a machine'],['other','Everything else']].map(([value,label])=><button key={value} type="button" onClick={()=>chooseRoute(value)} className="min-h-16 rounded-xl border border-red-600 bg-red-600 px-4 py-4 text-lg font-semibold text-white transition hover:bg-red-700">{label}</button>)}</div></div>
           : phase==='vehicle-type' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">Is it a vehicle or another machine?</h2><div className="mt-6 grid gap-3 sm:grid-cols-2">{[['car','Vehicles','Adds “Vehicles” and opens the vehicle-specific form'],['machine','Other machine','Opens the existing machine-details form']].map(([value,label,desc])=><button key={value} type="button" onClick={()=>chooseMachineType(value)} className="min-h-16 rounded-xl border border-blue-600 bg-blue-600 px-4 py-4 text-lg font-semibold text-white transition hover:bg-blue-700">{label}</button>)}</div></div>
           : phase==='category' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">Which category best fits the item?</h2><p className="mt-3 text-sm text-muted-foreground">Choose the closest fit. The category becomes a search keyword, then the sifter asks for useful details.</p><div className="mt-6 grid gap-3 sm:grid-cols-3">{GENERAL_CATEGORIES.map((category,index)=><button key={category} type="button" onClick={()=>chooseGeneralCategory(category)} style={{backgroundColor:GENERAL_CATEGORY_BUTTON_COLORS[index % GENERAL_CATEGORY_BUTTON_COLORS.length]}} className="min-h-[62px] w-full rounded-full px-3 py-3 text-center text-lg font-semibold text-white transition hover:brightness-95">{category}</button>)}</div></div>
-          : categoryForm ? <form onSubmit={submitAnswer} className="mt-8 space-y-5 rounded-2xl border bg-muted/20 p-5"><h2 className="text-xl font-semibold">{selectedCategory}</h2><p className="text-sm text-muted-foreground">Fill in the details you know. Leave anything unknown blank.</p>{[...categoryFormFields,'machineDescription'].map(key=>{const def=CATEGORY_FIELD_DEFS[key];if(!def)return null;return <label key={key} className="block text-sm font-semibold">{def.label}{key==='machineDescription'?<textarea value={categoryDetails[key]||''} onChange={e=>updateForm(setCategoryDetails,key,e.target.value)} rows={4} placeholder={def.placeholder} className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-base font-normal"/>:<input value={categoryDetails[key]||''} onChange={e=>updateForm(setCategoryDetails,key,e.target.value)} placeholder={def.placeholder} className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-base font-normal outline-none focus:ring-2 focus:ring-ring"/>}</label>})}<div className="flex justify-end"><button type="submit" className="rounded-full bg-red-600 px-7 py-3 font-semibold text-white">Continue</button></div></form>
+          : categoryForm ? <form onSubmit={submitAnswer} className="mt-8 space-y-5 rounded-2xl border bg-muted/20 p-5"><p className="text-base font-bold">{FORM_INSTRUCTION}</p><h2 className="text-xl font-semibold">{selectedCategory}</h2><p className="text-sm text-muted-foreground">Fill in the details you know. Leave anything unknown blank.</p>{[...categoryFormFields,'machineDescription'].map(key=>{if(key==='workingStatus')return <fieldset key="workingStatus" className="block"><legend className="text-sm font-semibold">Working?</legend><div className="mt-2 flex items-center gap-6"><label className="inline-flex cursor-pointer items-center gap-2 text-sm"><input type="radio" name="category-working-status" value="Working" checked={categoryDetails.workingStatus==='Working'} onChange={()=>updateForm(setCategoryDetails,'workingStatus','Working')} className="h-4 w-4 accent-red-600"/>Yes</label><label className="inline-flex cursor-pointer items-center gap-2 text-sm"><input type="radio" name="category-working-status" value="Not working" checked={categoryDetails.workingStatus==='Not working'} onChange={()=>updateForm(setCategoryDetails,'workingStatus','Not working')} className="h-4 w-4 accent-red-600"/>No</label></div></fieldset>;const def=CATEGORY_FIELD_DEFS[key];if(!def)return null;return <label key={key} className="block text-sm font-semibold">{def.label}{key==='machineDescription'?<textarea value={categoryDetails[key]||''} onChange={e=>updateForm(setCategoryDetails,key,e.target.value)} rows={4} placeholder={def.placeholder} className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-base font-normal"/>:<input value={categoryDetails[key]||''} onChange={e=>updateForm(setCategoryDetails,key,e.target.value)} placeholder={def.placeholder} className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-base font-normal outline-none focus:ring-2 focus:ring-ring"/>}</label>})}<div className="flex justify-end"><button type="submit" className="rounded-full bg-red-600 px-7 py-3 font-semibold text-white">Continue</button></div></form>
           : machineForm || carForm ? <form onSubmit={submitAnswer} className="mt-8 space-y-5 rounded-2xl border bg-muted/20 p-5">
+            <p className="text-base font-bold">{FORM_INSTRUCTION}</p>
             <h2 className="text-xl font-semibold">{carForm?'Car details':'Machine details'}</h2>
             {carForm ? <>{field('make','Make')}{field('model','Model')}{field('year','Year')}{field('variant','Variant / trim')}{field('partNumber','Part number')}{field('mileage','Mileage')}{field('fuelType','Fuel type')}{field('transmission','Transmission')}{field('colour','Colour')}{field('otherDetails','Other identifying details', 'Registration / engine / useful identifiers',setCarDetails,carDetails)}{operatingField(setCarDetails,carDetails)}<label className="block text-sm font-semibold">Seller description<textarea value={carDetails.machineDescription} onChange={e=>updateForm(setCarDetails,'machineDescription',e.target.value)} rows={4} placeholder="Describe the car in your own words" className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-base font-normal"/></label></>
               : <>{field('make','Make')}{field('model','Model')}{field('year','Year')}{field('partNumber','Part number')}{field('otherDetails','Other identifying details','Enter any other identifiers',setMachineDetails,machineDetails)}{field('colour','Colour')}{operatingField(setMachineDetails,machineDetails)}<label className="block text-sm font-semibold">Seller description<textarea value={machineDetails.machineDescription} onChange={e=>updateForm(setMachineDetails,'machineDescription',e.target.value)} rows={4} placeholder="Describe the machine or part in your own words" className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-base font-normal"/></label></>}
             <div className="flex justify-end"><button type="submit" className="rounded-full bg-red-600 px-7 py-3 font-semibold text-white">Continue</button></div>
           </form>
-          : <form onSubmit={submitAnswer} className="mt-10"><h2 className="text-2xl font-semibold leading-tight sm:text-3xl">{current.label}</h2>{freeform&&<p className="mt-3 text-sm text-muted-foreground">Optional. Add further useful search terms or leave blank to finish.</p>}<input autoFocus value={input} onChange={e=>setInput(e.target.value)} placeholder={current.placeholder} className="mt-6 w-full rounded-xl border bg-background px-5 py-5 text-xl outline-none focus:ring-2 focus:ring-ring sm:text-2xl"/><div className="mt-5 flex justify-end"><button type="submit" className="rounded-full bg-red-600 px-7 py-3 font-semibold text-white">{freeform?'Finish':'Submit answer'}</button></div>{decision?.reason&&<p className="mt-5 text-sm text-muted-foreground">{decision.reason}</p>}</form>}
+          : <form onSubmit={submitAnswer} className="mt-10"><p className="text-base font-bold">{FORM_INSTRUCTION}</p><h2 className="text-2xl font-semibold leading-tight sm:text-3xl">{current.label}</h2>{freeform&&<p className="mt-3 text-sm text-muted-foreground">Optional. Add further useful search terms or leave blank to finish.</p>}<input autoFocus value={input} onChange={e=>setInput(e.target.value)} placeholder={current.placeholder} className="mt-6 w-full rounded-xl border bg-background px-5 py-5 text-xl outline-none focus:ring-2 focus:ring-ring sm:text-2xl"/><div className="mt-5 flex justify-end"><button type="submit" className="rounded-full bg-red-600 px-7 py-3 font-semibold text-white">{freeform?'Finish':'Submit answer'}</button></div>{decision?.reason&&<p className="mt-5 text-sm text-muted-foreground">{decision.reason}</p>}</form>}
           <div className="mt-8 flex flex-wrap justify-between gap-3 border-t pt-5"><button type="button" onClick={goBack} disabled={!history.length} className="rounded-full border px-5 py-2 text-sm font-semibold disabled:opacity-40">Back</button><button type="button" onClick={abandon} className="rounded-full border px-5 py-2 text-sm font-semibold">Abandon test</button></div>
         </> : <div className="flex min-h-[400px] flex-col justify-center"><p className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">KEYWORDS READY</p><h2 className="mt-4 text-4xl font-semibold tracking-tight">Search terms collected.</h2><div className="mt-8 rounded-xl border bg-muted/20 p-5"><p className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">GENERATED SEARCH TERMS</p><div className="mt-3 flex flex-wrap gap-2">{searchTerms.length?searchTerms.map(term=><span key={term} className="rounded-full border bg-background px-3 py-1 text-sm">{term}</span>):<span className="text-sm text-muted-foreground">No search terms supplied.</span>}</div></div><div className="mt-8 flex flex-wrap gap-3"><button type="button" onClick={goBack} disabled={!history.length} className="rounded-full border px-6 py-3 font-semibold disabled:opacity-40">Back</button><button type="button" onClick={abandon} className="rounded-full border px-6 py-3 font-semibold">Abandon test</button><button type="button" onClick={reset} className="rounded-full border px-6 py-3 font-semibold">Run another test</button></div></div>}
       </main>

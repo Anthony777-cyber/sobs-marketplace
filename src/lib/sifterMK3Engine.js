@@ -1,5 +1,6 @@
 const MAX_STRUCTURED_QUESTIONS = 12;
-const STOP = new Set(['a','an','the','and','or','of','for','with','in','on','to','from','by','it','is','this','that','my','your','used','kind','type','not']);
+const STOP = new Set(['a','an','the','and','or','of','for','with','in','on','to','from','by','it','is','this','that','my','your','normally','called','used','kind','type']);
+const GENERIC_WORDS = new Set(['item','thing','object','stuff','something']);
 const FEATURES = new Set(['black','white','red','blue','green','yellow','orange','purple','pink','brown','grey','gray','silver','gold','beige','cream','wood','wooden','metal','steel','plastic','glass','ceramic','leather','fabric','cotton','wool','working','faulty','broken','damaged','incomplete','restored','refurbished','new','used','worn','tested','untested','old','vintage','antique','modern','retro','rare','large','small','tall','short','wide','narrow','heavy','lightweight','round','square','oval','folding','adjustable','portable','electric','manual','automatic','indoor','outdoor','left','right','pair','set']);
 const clean = value => String(value ?? '').trim().replace(/\s+/g, ' ');
 const tokens = value => clean(value).toLowerCase().match(/[a-z0-9]+(?:[-'][a-z0-9]+)*/g) || [];
@@ -68,8 +69,13 @@ export function buildKeywordGroups(answers = {}, routeKeywords = []) {
  fields.forEach(([id,label])=>add(id,label,answers[id])); return groups;
 }
 export function buildSearchTerms(answers = {}, routeKeywords = []) {
- const result=[],seen=new Set();const add=value=>{const v=clean(value),k=v.toLowerCase();if(!v||unknown(v)||seen.has(k))return;seen.add(k);result.push(v);};
- for(const group of buildKeywordGroups(answers,routeKeywords)){const value=clean(group.value).replace(/\b(?:this is|it is|it was|known as)\b/gi,' ').replace(/\s+/g,' ').trim();add(value);for(const word of tokens(value))if(!STOP.has(word)&&!(word==='working'&&/\\bnot\\s+working\\b/i.test(value)))add(word);}return result;
+ const result=[],seen=new Set();
+ const add=value=>{const v=clean(value),k=v.toLowerCase();if(!v||unknown(v)||seen.has(k))return;seen.add(k);result.push(v);};
+ for(const group of buildKeywordGroups(answers,routeKeywords)){
+  add(group.value);
+  for(const word of tokens(group.value)) if(!STOP.has(word)&&!GENERIC_WORDS.has(word)) add(word);
+ }
+ return result;
 }
 export function getNextGeneralQuestion(answers = {}, askedIds = [], structuredCount = 0) {
  const asked=new Set(askedIds);if(structuredCount>=MAX_STRUCTURED_QUESTIONS)return {done:true,reason:'The 12-question hard limit has been reached.'};

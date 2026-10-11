@@ -1,0 +1,1 @@
+ALTER TABLE listings ADD COLUMN search_terms TEXT NOT NULL DEFAULT '[]';

@@ -1,0 +1,10 @@
+{
+  "name": "sobs-sifter-mk4-test",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-09-18",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  }
+}

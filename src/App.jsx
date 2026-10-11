@@ -29,6 +29,9 @@ import ViewSellerListings from '@/pages/ViewSellerListings';
 import DeleteListing from '@/pages/DeleteListing';
 import RenewListingKey from '@/pages/RenewListingKey';
 import CategoryTest from '@/pages/CategoryTest';
+import AdaptiveQuestionnaireTest from '@/pages/AdaptiveQuestionnaireTest';
+import SifterMK2 from '@/pages/SifterMK2';
+import SifterMK3 from '@/pages/SifterMK3';
 
 const AuthenticatedApp = () => {
   return (
@@ -45,6 +48,9 @@ const AuthenticatedApp = () => {
       <Route path="/browse/*" element={<Browse />} />
       <Route path="/categories" element={<Directory />} />
       <Route path="/category-test" element={<CategoryTest />} />
+      <Route path="/adaptive-test" element={<AdaptiveQuestionnaireTest />} />
+      <Route path="/sifter-mk2" element={<SifterMK2 />} />
+      <Route path="/sifter-mk3" element={<SifterMK3 />} />
       <Route path="/confirmed/:id" element={<Confirmed />} />
       <Route path="/manage" element={<Manage />} />
       <Route path="/manage-listings" element={<GlobalManagementConsole />} />

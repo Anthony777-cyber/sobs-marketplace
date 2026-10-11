@@ -98,6 +98,13 @@ export function buildSearchTerms(answers = {}, routeKeywords = []) {
  const result=[],seen=new Set();
  const add=(value,preserve=false)=>{const v=preserve?String(value??''):clean(value),k=v.toLowerCase();if(!v.trim()||unknown(v)||seen.has(k))return;seen.add(k);result.push(v);};
  for(const group of buildKeywordGroups(answers,routeKeywords)){
+  if(group.id==='runningOperating'){
+   const answer=clean(group.value).toLowerCase();
+   if(answer==='yes') add('running');
+   else if(answer==='no') add('non-running');
+   else if(!unknown(group.value)) add(group.value);
+   continue;
+  }
   const searchableValue=group.id==='description'?group.value:cleanSearchText(group.value);
   add(searchableValue,group.id==='description');
   for(const word of tokens(searchableValue)) if(!STOP.has(word)&&!GENERIC_WORDS.has(word)) add(word);

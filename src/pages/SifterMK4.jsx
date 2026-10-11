@@ -6,7 +6,7 @@ const clean = value => String(value ?? '').trim().replace(/\s+/g, ' ');
 const EMPTY_MACHINE = { make:'', model:'', year:'', partNumber:'', otherDetails:'', colour:'', runningOperating:'', machineDescription:'' };
 const EMPTY_CAR = { make:'', model:'', year:'', variant:'', partNumber:'', mileage:'', fuelType:'', transmission:'', colour:'', runningOperating:'', otherDetails:'', machineDescription:'' };
 const FORM_INSTRUCTION = "If you don't know something, don't worry; just leave it blank.";
-const LABELS = { description:'What is it?', title:'What is it called?', use:'What is it used for?', make:'Who made it?', origin:'Where was it made?', year:'When was it made?', material:'What is it made of?', dimensions:'What are its dimensions or size?', condition:'What condition is it in?', fault:'Is anything missing, damaged or unusual about it?', identifyingMarks:'Does it have any identifying marks, numbers or labels?', freeform:'What else should a potential buyer know?', type:'Narrower type', feature:'Feature / distinguishing detail', workingStatus:'Working status' };
+const LABELS = { description:'What it is', type:'Narrower type', feature:'Feature / distinguishing detail', freeform:'Anything else to add', workingStatus:'Working status' };
 const GENERAL_CATEGORIES = [
   'Home, furniture & interiors','Garden & outdoor','Kitchen & dining','DIY, tools & building supplies',
   'Building & renovation materials','Electrical, lighting & wiring','Computers & IT','Phones & telecommunications',

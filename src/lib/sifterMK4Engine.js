@@ -31,7 +31,7 @@ const unknown = value => {
  return !normalized || /^(?:(?:i )?(?:don't know|do not know)|unknown|not sure|unsure|n\/a|na|skip|-)$/i.test(normalized);
 };
 const fields = [
- ['description','What it is'],
+ ['description','What is it?'],
  ['use','What it is used for'],
  ['type','Narrower type'],
  ['feature','Feature / distinguishing detail'],

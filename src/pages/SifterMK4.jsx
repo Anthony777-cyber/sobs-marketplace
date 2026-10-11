@@ -3,10 +3,10 @@ import { buildKeywordGroups, buildSearchTerms, getMaxStructuredQuestions, getNex
 
 const MAX_QUESTIONS = getMaxStructuredQuestions();
 const clean = value => String(value ?? '').trim().replace(/\s+/g, ' ');
-const EMPTY_MACHINE = { machineClass:'', make:'', model:'', year:'', partNumber:'', otherDetails:'', colour:'', runningOperating:'', machineDescription:'' };
-const EMPTY_CAR = { make:'', model:'', year:'', variant:'', partNumber:'', mileage:'', fuelType:'', transmission:'', colour:'', runningOperating:'', otherDetails:'', machineDescription:'' };
+const EMPTY_MACHINE = { machineClass:'', make:'', model:'', year:'', partNumber:'', otherDetails:'', colour:'', runningOperating:'' };
+const EMPTY_CAR = { make:'', model:'', year:'', variant:'', partNumber:'', mileage:'', fuelType:'', transmission:'', colour:'', runningOperating:'', otherDetails:'' };
 const FORM_INSTRUCTION = "If you don't know something, don't worry; just leave it blank.";
-const LABELS = { description:'What it is', type:'Narrower type', feature:'Feature / distinguishing detail', freeform:'Anything else to add', workingStatus:'Working status' };
+const LABELS = { description:'What it is', type:'Narrower type', feature:'Feature / distinguishing detail', workingStatus:'Working status' };
 const GENERAL_CATEGORIES = [
   'Home, furniture & interiors','Garden & outdoor','Kitchen & dining','DIY, tools & building supplies',
   'Building & renovation materials','Electrical, lighting & wiring','Computers & IT','Phones & telecommunications',
@@ -82,7 +82,6 @@ const CATEGORY_FIELD_DEFS = {
   petType:{label:'Animal / pet type',placeholder:'Animal, species or intended pet'},
   catalogNumber:{label:'Catalogue number',placeholder:'Catalogue or reference number'},
   denomination:{label:'Denomination / issue',placeholder:'Denomination, face value or issue details'},
-  machineDescription:{label:'Seller description',placeholder:'Describe the item and anything else useful'},
 };
 const CATEGORY_FORM_FIELDS = {
   'Home, furniture & interiors':['type','make','material','dimensions','colour','condition'],
@@ -196,7 +195,7 @@ export default function SifterMK4() {
     } else {
       setCategoryDetails({});
       setPhase('category-form');
-      setDiagnosticLog(previous => [...previous,{event:'general-category-selected',category,taxonomy:nextTaxonomy,addedKeywords:[],nextStep:'category-form',adaptiveQuestionnaireStarted:false,formFields:[...(CATEGORY_FORM_FIELDS[category] || ['type','make','model','condition']).map(key=>key === 'condition' && MACHINE_STATUS_CATEGORIES.has(category) ? 'workingStatus' : key),'machineDescription']}]);
+      setDiagnosticLog(previous => [...previous,{event:'general-category-selected',category,taxonomy:nextTaxonomy,addedKeywords:[],nextStep:'category-form',adaptiveQuestionnaireStarted:false,formFields:(CATEGORY_FORM_FIELDS[category] || ['type','make','model','condition']).map(key=>key === 'condition' && MACHINE_STATUS_CATEGORIES.has(category) ? 'workingStatus' : key)}]);
     }
   };
   const completeCategoryForm = event => {
@@ -205,13 +204,11 @@ export default function SifterMK4() {
     const details = Object.fromEntries(Object.entries(categoryDetails).map(([key,value]) => [key,clean(value)]).filter(([,value]) => value !== ''));
     const nextAnswers = {...answers,...details};
     setAnswers(nextAnswers);
-    setCurrent({id:'freeform',label:'Anything else you\'d like to add?',placeholder:'Optional: add any other useful search terms'});
-    setPhase('freeform');
-    setInput('');
+    setInput(''); setPhase('complete');
     const groups = buildKeywordGroups(nextAnswers,routeKeywords), terms = buildSearchTerms(nextAnswers,routeKeywords);
-    const result = {done:false,reason:'Category-specific details recorded. One final optional question follows.',keywordGroups:groups,searchTerms:terms};
+    const result = {done:true,reason:'Category-specific details recorded; no extra free-text fields.',keywordGroups:groups,searchTerms:terms};
     setDecision(result);
-    setDiagnosticLog(previous => [...previous,{event:'category-details-recorded',category:selectedCategory,answers:nextAnswers,formFields:Object.keys(details),nextQuestionId:'freeform',finalOptionalQuestionProvided:true,keywordGroups:groups,searchTerms:terms}]);
+    setDiagnosticLog(previous => [...previous,{event:'category-details-recorded',category:selectedCategory,answers:nextAnswers,formFields:Object.keys(details),nextQuestionId:null,finalOptionalQuestionProvided:false,keywordGroups:groups,searchTerms:terms}]);
   };
   const chooseMachineType = choice => {
     pushHistory();
@@ -240,23 +237,22 @@ export default function SifterMK4() {
         make:details.make, model:details.model, year:details.year, variant:details.variant,
         partNumber:details.partNumber, mileage:details.mileage, fuelType:details.fuelType,
         transmission:details.transmission, colour:details.colour, runningOperating:details.runningOperating,
-        identification:details.otherDetails, machineDescription:details.machineDescription,
+        identification:details.otherDetails,
       } : {
         machineClass:details.machineClass, make:details.make, model:details.model, year:details.year, partNumber:details.partNumber,
         identification:details.otherDetails, colour:details.colour, runningOperating:details.runningOperating,
-        machineDescription:details.machineDescription,
+
       }),
     };
     setAnswers(nextAnswers);
     // Taxonomy is determined by explicit button choices, not seller-entered keywords.
     const nextTaxonomy = taxonomy;
     setTaxonomy(nextTaxonomy);
-    setCurrent({id:'freeform',label:'Anything else you\'d like to add?',placeholder:'Optional: add any other useful search terms'});
-    setPhase('freeform'); setInput('');
+    setPhase('complete'); setInput('');
     const groups = buildKeywordGroups(nextAnswers,routeKeywords), terms = buildSearchTerms(nextAnswers,routeKeywords);
-    const reason = (isCar ? 'Car' : 'Machine') + ' details recorded. One final optional question follows.';
-    setDecision({done:false,reason,keywordGroups:groups,searchTerms:terms});
-    setDiagnosticLog(previous => [...previous,{event:isCar?'car-details-recorded':'machine-details-recorded',answers:nextAnswers,taxonomy:nextTaxonomy,nextQuestionId:'freeform',finalOptionalQuestionProvided:true,keywordGroups:groups,searchTerms:terms}]);
+    const reason = (isCar ? 'Vehicle' : 'Machine') + ' details recorded; no extra free-text fields.';
+    setDecision({done:true,reason,keywordGroups:groups,searchTerms:terms});
+    setDiagnosticLog(previous => [...previous,{event:isCar?'car-details-recorded':'machine-details-recorded',answers:nextAnswers,taxonomy:nextTaxonomy,nextQuestionId:null,finalOptionalQuestionProvided:false,keywordGroups:groups,searchTerms:terms}]);
   };
   const completeGeneralQuestionnaire = event => {
     event?.preventDefault();
@@ -266,7 +262,7 @@ export default function SifterMK4() {
       ['whatIsIt','description'],['whatIsItCalled','title'],['whatIsItUsedFor','use'],
       ['whoMadeIt','make'],['whereMade','origin'],['whenMade','year'],['whatMadeOf','material'],
       ['dimensions','dimensions'],['condition','condition'],['unusual','fault'],
-      ['identifyingMarks','identifyingMarks'],['buyerNotes','freeform'],
+      ['identifyingMarks','identifyingMarks'],
     ];
     for (const [source, target] of map) {
       const value = categoryDetails[source] ?? '';
@@ -303,23 +299,6 @@ export default function SifterMK4() {
     if (phase === 'category-form') return completeCategoryForm(event);
     pushHistory();
     const value = clean(input);
-    if (phase === 'freeform') {
-      const nextAnswers = value ? {...answers,freeform:value} : {...answers}; setAnswers(nextAnswers); setInput(''); setPhase('complete');
-      const groups=buildKeywordGroups(nextAnswers,routeKeywords), terms=buildSearchTerms(nextAnswers,routeKeywords);
-      const result={done:true,reason:value?'Final optional addition recorded; no further questions will be asked.':'Final optional addition skipped; no further questions will be asked.',keywordGroups:groups,searchTerms:terms};
-      setDecision(result);
-      setDiagnosticLog(previous=>{
-        const updated = [...previous];
-        for (let index = updated.length - 1; index >= 0; index--) {
-          if (['category-details-recorded','car-details-recorded','machine-details-recorded'].includes(updated[index].event)) {
-            updated[index] = {...updated[index], finalOptionalQuestionProvided:Boolean(value)};
-            break;
-          }
-        }
-        return [...updated,{event:'final-addition-recorded',questionId:'freeform',answer:value,answerStatus:value?'supplied':'blank-unsupplied',keywordGroups:groups,searchTerms:terms}];
-      });
-      return;
-    }
     const nextAnswers=value?{...answers,[current.id]:value}:{...answers};
     const nextAsked=[...new Set([...askedIds,current.id])];
     const nextCount=structuredCount+1;
@@ -328,9 +307,9 @@ export default function SifterMK4() {
     const groups=buildKeywordGroups(nextAnswers,routeKeywords),terms=buildSearchTerms(nextAnswers,routeKeywords);
     setDiagnosticLog(previous=>[...previous,
       {event:'answer-recorded',questionId:current.id,question:current.label,answer:value,answerStatus:value?'supplied':'blank-unsupplied',structuredCount:nextCount,keywordGroups:groups,searchTerms:terms},
-      {event:result.done?'structured-questions-stopped':'next-question-selected',nextQuestionId:result.done?'freeform':result.question.id,reason:result.reason,keywordGroups:groups,searchTerms:terms},
+      {event:result.done?'structured-questions-stopped':'next-question-selected',nextQuestionId:result.done?null:result.question.id,reason:result.reason,keywordGroups:groups,searchTerms:terms},
     ]);
-    if(result.done){setCurrent({id:'freeform',label:'Anything else you\'d like to add?',placeholder:'Optional: add any other useful search terms'});setPhase('freeform');}
+    if(result.done) setPhase('complete');
     else setCurrent(result.question);
   };
   const reset = () => {
@@ -420,17 +399,16 @@ export default function SifterMK4() {
                ['dimensions','What are its dimensions or size?','Measurements and units, if known'],
                ['condition','What condition is it in?','Optional'],
                ['unusual','Is anything missing, damaged or unusual about it?','Optional'],
-               ['identifyingMarks','Does it have any identifying marks, numbers or labels?','Optional'],
-               ['buyerNotes','What else should a potential buyer know?','Optional']
+               ['identifyingMarks','Does it have any identifying marks, numbers or labels?','Optional']
              ].map(([key,label,placeholder])=><label key={key} className="block text-sm font-semibold">{label}<textarea value={categoryDetails[key]||''} onChange={e=>updateForm(setCategoryDetails,key,e.target.value)} rows={2} placeholder={placeholder} className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-base font-normal"/></label>)}
              <div className="flex justify-end"><button type="submit" className="rounded-full bg-red-600 px-7 py-3 font-semibold text-white">Finish questionnaire</button></div>
            </form>
-          : categoryForm ? <form onSubmit={submitAnswer} className="mt-8 space-y-5 rounded-2xl border bg-muted/20 p-5"><p className="text-base font-bold">{FORM_INSTRUCTION}</p><h2 className="text-xl font-semibold">{selectedCategory}</h2>{[...categoryFormFields,'machineDescription'].map(key=>{if(key==='workingStatus')return <fieldset key="workingStatus" className="block"><legend className="text-sm font-semibold">Working?</legend><div className="mt-2 flex items-center gap-6"><label className="inline-flex cursor-pointer items-center gap-2 text-sm"><input type="radio" name="category-working-status" value="Working" checked={categoryDetails.workingStatus==='Working'} onChange={()=>updateForm(setCategoryDetails,'workingStatus','Working')} className="h-4 w-4 accent-red-600"/>Yes</label><label className="inline-flex cursor-pointer items-center gap-2 text-sm"><input type="radio" name="category-working-status" value="Not working" checked={categoryDetails.workingStatus==='Not working'} onChange={()=>updateForm(setCategoryDetails,'workingStatus','Not working')} className="h-4 w-4 accent-red-600"/>No</label></div></fieldset>;const def=CATEGORY_FIELD_DEFS[key];if(!def)return null;return <label key={key} className="block text-sm font-semibold">{def.label}{key==='machineDescription'?<textarea value={categoryDetails[key]||''} onChange={e=>updateForm(setCategoryDetails,key,e.target.value)} rows={4} placeholder={def.placeholder} className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-base font-normal"/>:<input value={categoryDetails[key]||''} onChange={e=>updateForm(setCategoryDetails,key,e.target.value)} placeholder={def.placeholder} className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-base font-normal outline-none focus:ring-2 focus:ring-ring"/>}</label>})}<div className="flex justify-end"><button type="submit" className="rounded-full bg-red-600 px-7 py-3 font-semibold text-white">Continue</button></div></form>
+          : categoryForm ? <form onSubmit={submitAnswer} className="mt-8 space-y-5 rounded-2xl border bg-muted/20 p-5"><p className="text-base font-bold">{FORM_INSTRUCTION}</p><h2 className="text-xl font-semibold">{selectedCategory}</h2>{categoryFormFields.map(key=>{if(key==='workingStatus')return <fieldset key="workingStatus" className="block"><legend className="text-sm font-semibold">Working?</legend><div className="mt-2 flex items-center gap-6"><label className="inline-flex cursor-pointer items-center gap-2 text-sm"><input type="radio" name="category-working-status" value="Working" checked={categoryDetails.workingStatus==='Working'} onChange={()=>updateForm(setCategoryDetails,'workingStatus','Working')} className="h-4 w-4 accent-red-600"/>Yes</label><label className="inline-flex cursor-pointer items-center gap-2 text-sm"><input type="radio" name="category-working-status" value="Not working" checked={categoryDetails.workingStatus==='Not working'} onChange={()=>updateForm(setCategoryDetails,'workingStatus','Not working')} className="h-4 w-4 accent-red-600"/>No</label></div></fieldset>;const def=CATEGORY_FIELD_DEFS[key];if(!def)return null;return <label key={key} className="block text-sm font-semibold">{def.label}<input value={categoryDetails[key]||''} onChange={e=>updateForm(setCategoryDetails,key,e.target.value)} placeholder={def.placeholder} className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-base font-normal outline-none focus:ring-2 focus:ring-ring"/></label>})}<div className="flex justify-end"><button type="submit" className="rounded-full bg-red-600 px-7 py-3 font-semibold text-white">Continue</button></div></form>
           : machineForm || carForm ? <form onSubmit={submitAnswer} className="mt-8 space-y-5 rounded-2xl border bg-muted/20 p-5">
             <p className="text-base font-bold">{FORM_INSTRUCTION}</p>
             <h2 className="text-xl font-semibold">{carForm?'Vehicle details':'Machine details'}</h2>
-            {carForm ? <>{field('make','Make')}{field('model','Model')}{field('year','Year')}{field('variant','Variant / trim')}{field('partNumber','Part number')}{field('mileage','Mileage')}{field('fuelType','Fuel type')}{field('transmission','Transmission')}{field('colour','Colour')}{field('otherDetails','Other identifying details', 'Registration / engine / useful identifiers',setCarDetails,carDetails)}{operatingField(setCarDetails,carDetails)}<label className="block text-sm font-semibold">Seller description<textarea value={carDetails.machineDescription} onChange={e=>updateForm(setCarDetails,'machineDescription',e.target.value)} rows={4} placeholder="Describe the vehicle in your own words" className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-base font-normal"/></label></>
-              : <>{field('machineClass','Class of machine','Farm, industrial, audio? etc',setMachineDetails,machineDetails)}{field('make','Make')}{field('model','Model')}{field('year','Year')}{field('partNumber','Part number')}{field('otherDetails','Other identifying details','Enter any other identifiers',setMachineDetails,machineDetails)}{field('colour','Colour')}{operatingField(setMachineDetails,machineDetails)}<label className="block text-sm font-semibold">Seller description<textarea value={machineDetails.machineDescription} onChange={e=>updateForm(setMachineDetails,'machineDescription',e.target.value)} rows={4} placeholder="Describe the machine or part in your own words" className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-base font-normal"/></label></>}
+            {carForm ? <>{field('make','Make')}{field('model','Model')}{field('year','Year')}{field('variant','Variant / trim')}{field('partNumber','Part number')}{field('mileage','Mileage')}{field('fuelType','Fuel type')}{field('transmission','Transmission')}{field('colour','Colour')}{field('otherDetails','Other identifying details', 'Registration / engine / useful identifiers',setCarDetails,carDetails)}{operatingField(setCarDetails,carDetails)}</>
+              : <>{field('machineClass','Class of machine','Farm, industrial, audio? etc',setMachineDetails,machineDetails)}{field('make','Make')}{field('model','Model')}{field('year','Year')}{field('partNumber','Part number')}{field('otherDetails','Other identifying details','Enter any other identifiers',setMachineDetails,machineDetails)}{field('colour','Colour')}{operatingField(setMachineDetails,machineDetails)}</>}
             <div className="flex justify-end"><button type="submit" className="rounded-full bg-red-600 px-7 py-3 font-semibold text-white">Continue</button></div>
           </form>
           : <form onSubmit={submitAnswer} className="mt-10"><p className="text-base font-bold">{FORM_INSTRUCTION}</p><h2 className="text-2xl font-semibold leading-tight sm:text-3xl">{current.label}</h2>{freeform&&<p className="mt-3 text-sm text-muted-foreground">Optional. Add further useful search terms or leave blank to finish.</p>}<input autoFocus value={input} onChange={e=>setInput(e.target.value)} placeholder={current.placeholder} className="mt-6 w-full rounded-xl border bg-background px-5 py-5 text-xl outline-none focus:ring-2 focus:ring-ring sm:text-2xl"/><div className="mt-5 flex justify-end"><button type="submit" className="rounded-full bg-red-600 px-7 py-3 font-semibold text-white">{freeform?'Finish':'Submit answer'}</button></div>{decision?.reason&&<p className="mt-5 text-sm text-muted-foreground">{decision.reason}</p>}</form>}

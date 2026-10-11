@@ -88,7 +88,7 @@ const fields = [
 export function getMaxStructuredQuestions(){return MAX_STRUCTURED_QUESTIONS;}
 export function buildKeywordGroups(answers = {}, _routeKeywords = []) {
  const groups=[],seen=new Set();
- const add=(id,label,value)=>{const v=clean(value),k=v.toLowerCase();if(!v||unknown(v)||seen.has(k))return;seen.add(k);groups.push({id,label,value:v});};
+ const add=(id,label,value)=>{const v=id==='description'?String(value??''):clean(value),k=v.toLowerCase();if(!v.trim()||unknown(v)||seen.has(k))return;seen.add(k);groups.push({id,label,value:v});};
  // Route selections control the questionnaire; they are not seller-supplied item keywords.
  fields.forEach(([id,label])=>add(id,label,answers[id]));
  return groups;
@@ -97,7 +97,7 @@ export function buildSearchTerms(answers = {}, routeKeywords = []) {
  const result=[],seen=new Set();
  const add=value=>{const v=clean(value),k=v.toLowerCase();if(!v||unknown(v)||seen.has(k))return;seen.add(k);result.push(v);};
  for(const group of buildKeywordGroups(answers,routeKeywords)){
-  const searchableValue=cleanSearchText(group.value);
+  const searchableValue=group.id==='description'?group.value:cleanSearchText(group.value);
   add(searchableValue);
   for(const word of tokens(searchableValue)) if(!STOP.has(word)&&!GENERIC_WORDS.has(word)) add(word);
  }

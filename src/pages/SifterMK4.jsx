@@ -137,6 +137,7 @@ export default function SifterMK4() {
   const [machineDetails, setMachineDetails] = useState(EMPTY_MACHINE);
   const [carDetails, setCarDetails] = useState(EMPTY_CAR);
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [taxonomy, setTaxonomy] = useState(null);
   const [categoryDetails, setCategoryDetails] = useState({});
   const [decision, setDecision] = useState(null);
   const [diagnosticLog, setDiagnosticLog] = useState([]);
@@ -147,13 +148,13 @@ export default function SifterMK4() {
   const searchTerms = useMemo(() => buildSearchTerms(answers, routeKeywords), [answers, routeKeywords]);
   const pushHistory = () => setHistory(previous => [...previous, {
     route, routeKeywords, answers, askedIds, structuredCount, current, phase, input,
-    machineDetails, carDetails, selectedCategory, categoryDetails, decision, diagnosticLog,
+    machineDetails, carDetails, selectedCategory, taxonomy, categoryDetails, decision, diagnosticLog,
   }]);
   const restore = previous => {
     setRoute(previous.route); setRouteKeywords(previous.routeKeywords); setAnswers(previous.answers);
     setAskedIds(previous.askedIds); setStructuredCount(previous.structuredCount); setCurrent(previous.current);
     setPhase(previous.phase); setInput(previous.input); setMachineDetails(previous.machineDetails);
-    setCarDetails(previous.carDetails); setSelectedCategory(previous.selectedCategory || '');
+    setCarDetails(previous.carDetails); setSelectedCategory(previous.selectedCategory || ''); setTaxonomy(previous.taxonomy || null);
     setCategoryDetails(previous.categoryDetails || {}); setDecision(previous.decision); setDiagnosticLog(previous.diagnosticLog);
     setCopyStatus('');
   };
@@ -165,13 +166,13 @@ export default function SifterMK4() {
   const chooseRoute = choice => {
     pushHistory();
     if (choice === 'machine') {
-      setRoute(choice); setRouteKeywords(['machine']); setPhase('vehicle-type');
-      setDiagnosticLog(previous => [...previous, {event:'route-selected',choice,addedKeywords:['machine'],nextStep:'vehicle-type'}]);
+      setRoute(choice); setRouteKeywords(['machine']); setTaxonomy(null); setPhase('vehicle-type');
+      setDiagnosticLog(previous => [...previous, {event:'route-selected',choice,addedKeywords:[],taxonomy:null,nextStep:'vehicle-type'}]);
     } else if (choice === 'spares') {
-      setRoute(choice); setRouteKeywords(['spares']); setPhase('vehicle-type');
-      setDiagnosticLog(previous => [...previous, {event:'route-selected',choice,addedKeywords:['spares'],nextStep:'vehicle-type'}]);
+      setRoute(choice); setRouteKeywords(['spares']); setTaxonomy(null); setPhase('vehicle-type');
+      setDiagnosticLog(previous => [...previous, {event:'route-selected',choice,addedKeywords:[],taxonomy:null,nextStep:'vehicle-type'}]);
     } else {
-      setRoute(choice); setRouteKeywords([]); setSelectedCategory(''); setCategoryDetails({}); setPhase('category');
+      setRoute(choice); setRouteKeywords([]); setSelectedCategory(''); setTaxonomy(null); setCategoryDetails({}); setPhase('category');
       setCurrent({id:'description',label:'What is it?',placeholder:'Enter the item name or a short description'});
       setDiagnosticLog(previous => [...previous, {event:'route-selected',choice,addedKeywords:[],nextStep:'category'}]);
     }
@@ -181,17 +182,19 @@ export default function SifterMK4() {
     const isOtherNotSure = category === 'Other / not sure';
     const taxonomyCategory = isOtherNotSure ? 'And now for something completely different.' : category;
     setSelectedCategory(taxonomyCategory);
-    setRouteKeywords(isOtherNotSure ? [] : [category]);
+    const nextTaxonomy = {family:taxonomyCategory,path:[taxonomyCategory]};
+    setTaxonomy(nextTaxonomy);
+    setRouteKeywords([]);
     setInput('');
     setCurrent({id:'description',label:'What is it?',placeholder:'Enter the item name or a short description'});
     if (isOtherNotSure) {
       setCategoryDetails({});
       setPhase('general-questionnaire');
-      setDiagnosticLog(previous => [...previous,{event:'general-category-selected',category:taxonomyCategory,buttonLabel:category,addedKeywords:[],nextStep:'general-questionnaire',adaptiveQuestionnaireStarted:false}]);
+      setDiagnosticLog(previous => [...previous,{event:'general-category-selected',category:taxonomyCategory,buttonLabel:category,taxonomy:nextTaxonomy,addedKeywords:[],nextStep:'general-questionnaire',adaptiveQuestionnaireStarted:false}]);
     } else {
       setCategoryDetails({});
       setPhase('category-form');
-      setDiagnosticLog(previous => [...previous,{event:'general-category-selected',category,addedKeywords:[category],nextStep:'category-form',adaptiveQuestionnaireStarted:false,formFields:[...(CATEGORY_FORM_FIELDS[category] || ['type','make','model','condition']).map(key=>key === 'condition' && MACHINE_STATUS_CATEGORIES.has(category) ? 'workingStatus' : key),'machineDescription']}]);
+      setDiagnosticLog(previous => [...previous,{event:'general-category-selected',category,taxonomy:nextTaxonomy,addedKeywords:[],nextStep:'category-form',adaptiveQuestionnaireStarted:false,formFields:[...(CATEGORY_FORM_FIELDS[category] || ['type','make','model','condition']).map(key=>key === 'condition' && MACHINE_STATUS_CATEGORIES.has(category) ? 'workingStatus' : key),'machineDescription']}]);
     }
   };
   const completeCategoryForm = event => {
@@ -210,11 +213,13 @@ export default function SifterMK4() {
   };
   const chooseMachineType = choice => {
     pushHistory();
-    const added = choice === 'car' ? ['Vehicles'] : [];
-    setRouteKeywords(previous => [...previous, ...added]);
+    const family = route === 'spares' ? (choice === 'car' ? 'Parts of vehicles' : 'Parts of other machines') : (choice === 'car' ? 'Vehicles' : 'Other machines');
+    const nextTaxonomy = {family,path:[family]};
+    setTaxonomy(nextTaxonomy);
+    setRouteKeywords([]);
     setRoute(choice === 'car' ? (route === 'spares' ? 'spares-car' : 'car') : (route === 'spares' ? 'spares-machine' : 'machine'));
     setPhase(choice === 'car' ? 'car-form' : 'machine-form');
-    setDiagnosticLog(previous => [...previous, {event:'machine-kind-selected',choice,addedKeywords:added,nextStep:choice === 'car' ? 'car-form' : 'machine-form'}]);
+    setDiagnosticLog(previous => [...previous, {event:'machine-kind-selected',choice,taxonomy:nextTaxonomy,addedKeywords:[],nextStep:choice === 'car' ? 'car-form' : 'machine-form'}]);
   };
   const updateForm = (setter,key,value) => setter(previous => ({...previous,[key]:value}));
   const completeForm = event => {
@@ -234,12 +239,16 @@ export default function SifterMK4() {
         machineDescription:details.machineDescription,
       }),
     };
-    setAnswers(nextAnswers); setCurrent({id:'freeform',label:'Anything else you\'d like to add?',placeholder:'Optional: add any other useful search terms'});
+    setAnswers(nextAnswers);
+    const machineClass = !isCar ? details.machineClass : '';
+    const nextTaxonomy = taxonomy && machineClass ? {...taxonomy,path:[taxonomy.family,machineClass]} : taxonomy;
+    setTaxonomy(nextTaxonomy);
+    setCurrent({id:'freeform',label:'Anything else you\'d like to add?',placeholder:'Optional: add any other useful search terms'});
     setPhase('freeform'); setInput('');
     const groups = buildKeywordGroups(nextAnswers,routeKeywords), terms = buildSearchTerms(nextAnswers,routeKeywords);
     const reason = (isCar ? 'Car' : 'Machine') + ' details recorded. One final optional question follows.';
     setDecision({done:false,reason,keywordGroups:groups,searchTerms:terms});
-    setDiagnosticLog(previous => [...previous,{event:isCar?'car-details-recorded':'machine-details-recorded',answers:nextAnswers,nextQuestionId:'freeform',finalOptionalQuestionProvided:true,keywordGroups:groups,searchTerms:terms}]);
+    setDiagnosticLog(previous => [...previous,{event:isCar?'car-details-recorded':'machine-details-recorded',answers:nextAnswers,taxonomy:nextTaxonomy,nextQuestionId:'freeform',finalOptionalQuestionProvided:true,keywordGroups:groups,searchTerms:terms}]);
   };
   const completeGeneralQuestionnaire = event => {
     event?.preventDefault();
@@ -309,14 +318,14 @@ export default function SifterMK4() {
     setRoute('');setRouteKeywords([]);setAnswers({});setAskedIds([]);setStructuredCount(0);
     setCurrent({id:'description',label:'What is it?',placeholder:'Enter the item name or a short description'});
     setPhase('route');setInput('');setMachineDetails(EMPTY_MACHINE);setCarDetails(EMPTY_CAR);
-    setSelectedCategory('');setCategoryDetails({});
+    setSelectedCategory('');setTaxonomy(null);setCategoryDetails({});
     setDecision(null);setDiagnosticLog([]);setHistory([]);setCopyStatus('');
   };
   const abandon = () => { if (window.confirm('Abandon this test and discard the answers?')) reset(); };
   const diagnostics = JSON.stringify({
-    test:'sifter-mk3-keyword-only',purpose:'Guide sellers to useful search keywords; no taxonomy classification or Registry writes.',
+    test:'sifter-mk4-taxonomy-and-keywords',purpose:'Button choices build explicit taxonomy; seller answers generate search keywords separately. No Registry writes.',
     maxStructuredQuestions:MAX_QUESTIONS,target:'Fewest useful questions; 12 structured questions is the hard ceiling, not the goal.',
-    phase,route,selectedCategory,routeKeywords,structuredCount,currentQuestion:current,destination:'Test page only — no Registry write is performed',
+    phase,route,selectedCategory,taxonomy,routeKeywords,structuredCount,currentQuestion:current,destination:'Test page only — no Registry write is performed',
     answers,askedIds,keywordGroups,searchTerms,outputCounts:{keywordGroups:keywordGroups.length,searchTerms:searchTerms.length},
     generatedOutput:{keywordGroups,searchTerms},lastDecision:decision,log:diagnosticLog,
     navigation:{canGoBack:history.length>0,historyDepth:history.length},
@@ -369,14 +378,14 @@ export default function SifterMK4() {
   );
   const operatingField = (setter,source) => <fieldset><legend className="text-sm font-semibold">Running / operating?</legend><div className="mt-2 flex gap-3">{['Yes','No'].map(choice=><button key={choice} type="button" aria-pressed={source.runningOperating===choice} onClick={()=>updateForm(setter,'runningOperating',choice)} className={'rounded-full border px-6 py-3 font-semibold '+(source.runningOperating===choice?'border-red-600 bg-red-600 text-white':'bg-background hover:border-red-600')}>{choice}</button>)}</div></fieldset>;
   return <div className="min-h-screen bg-background"><div className={`mx-auto flex min-h-screen w-full ${phase==='category'?'w-[80vw] max-w-none':'max-w-5xl'} flex-col px-5 py-8 sm:px-8`}>
-    <header className="mb-10"><p className="text-xs font-mono uppercase tracking-[0.2em] text-muted-foreground">S.O.B.S TEST</p><h1 className="mt-2 font-display text-3xl tracking-tight sm:text-4xl">Sifter MK4 — Keyword generator</h1><p className="mt-3 max-w-2xl text-sm text-muted-foreground">Build useful search keywords. Route choices add keywords only where specified. No taxonomy is assigned and no Registry write is performed.</p></header>
+    <header className="mb-10"><p className="text-xs font-mono uppercase tracking-[0.2em] text-muted-foreground">S.O.B.S TEST</p><h1 className="mt-2 font-display text-3xl tracking-tight sm:text-4xl">Sifter MK4 — Taxonomy and keywords</h1><p className="mt-3 max-w-2xl text-sm text-muted-foreground">Button choices build the item's taxonomy. Seller details generate searchable keywords separately. Test only; no Registry write is performed.</p></header>
     <div className={`grid flex-1 gap-8 ${phase==='category'?'grid-cols-1':'md:grid-cols-[1fr_300px]'}`}>
       <main className={`rounded-2xl border bg-background p-6 shadow-sm sm:p-10 ${phase==='category'?'w-full':''}`}>
         {!complete ? <>
           <div className="flex items-center justify-between gap-4"><span className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">{phase==='route'?'CHOOSE A ROUTE':phase==='vehicle-type'?'MACHINE ROUTE':phase==='category'?'CHOOSE A CATEGORY':categoryForm?'CATEGORY DETAILS':freeform?'OPTIONAL FINAL QUESTION':machineForm?'MACHINE DETAILS':carForm?'CAR DETAILS':'STRUCTURED QUESTION '+(structuredCount+1)+' OF '+MAX_QUESTIONS}</span><span className="rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide">Test only</span></div>
           {phase==='route' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">What are you listing?</h2><div className="mt-6 grid gap-3 sm:grid-cols-3">{[['machine','Machine'],['spares','Part of a machine'],['other','Everything else']].map(([value,label])=><button key={value} type="button" onClick={()=>chooseRoute(value)} className="min-h-16 rounded-xl border border-red-600 bg-red-600 px-4 py-4 text-lg font-semibold text-white transition hover:bg-red-700">{label}</button>)}</div></div>
           : phase==='vehicle-type' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">Is it parts of a vehicle or other machine?</h2><div className="mt-6 grid gap-3 sm:grid-cols-2">{[['car','Vehicles','Adds “Vehicles” and opens the vehicle-specific form'],['machine','Other machine','Opens the existing machine-details form']].map(([value,label,desc])=><button key={value} type="button" onClick={()=>chooseMachineType(value)} className="min-h-16 rounded-xl border border-blue-600 bg-blue-600 px-4 py-4 text-lg font-semibold text-white transition hover:bg-blue-700">{label}</button>)}</div></div>
-          : phase==='category' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">Which category best fits the item?</h2><p className="mt-3 text-sm text-muted-foreground">Choose the closest fit. The category becomes a search keyword, then the sifter asks for useful details.</p><div className="mt-6 grid grid-cols-4 gap-3">{GENERAL_CATEGORIES.map((category,index)=><button key={category} type="button" onClick={()=>chooseGeneralCategory(category)} style={{backgroundColor:GENERAL_CATEGORY_BUTTON_COLORS[index % GENERAL_CATEGORY_BUTTON_COLORS.length]}} className="flex h-16 min-w-0 w-full items-center justify-center overflow-hidden rounded-full px-1 text-center text-sm font-semibold leading-tight text-white transition hover:brightness-95">{category}</button>)}</div></div>
+          : phase==='category' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">Which category best fits the item?</h2><p className="mt-3 text-sm text-muted-foreground">Choose the item's top-level family. The sifter then collects useful searchable details.</p><div className="mt-6 grid grid-cols-4 gap-3">{GENERAL_CATEGORIES.map((category,index)=><button key={category} type="button" onClick={()=>chooseGeneralCategory(category)} style={{backgroundColor:GENERAL_CATEGORY_BUTTON_COLORS[index % GENERAL_CATEGORY_BUTTON_COLORS.length]}} className="flex h-16 min-w-0 w-full items-center justify-center overflow-hidden rounded-full px-1 text-center text-sm font-semibold leading-tight text-white transition hover:brightness-95">{category}</button>)}</div></div>
            : generalQuestionnaire ? <form onSubmit={submitAnswer} className="mt-8 space-y-5 rounded-2xl border bg-muted/20 p-5">
              <p className="text-base font-bold">{FORM_INSTRUCTION}</p>
              {[
@@ -405,10 +414,10 @@ export default function SifterMK4() {
           </form>
           : <form onSubmit={submitAnswer} className="mt-10"><p className="text-base font-bold">{FORM_INSTRUCTION}</p><h2 className="text-2xl font-semibold leading-tight sm:text-3xl">{current.label}</h2>{freeform&&<p className="mt-3 text-sm text-muted-foreground">Optional. Add further useful search terms or leave blank to finish.</p>}<input autoFocus value={input} onChange={e=>setInput(e.target.value)} placeholder={current.placeholder} className="mt-6 w-full rounded-xl border bg-background px-5 py-5 text-xl outline-none focus:ring-2 focus:ring-ring sm:text-2xl"/><div className="mt-5 flex justify-end"><button type="submit" className="rounded-full bg-red-600 px-7 py-3 font-semibold text-white">{freeform?'Finish':'Submit answer'}</button></div>{decision?.reason&&<p className="mt-5 text-sm text-muted-foreground">{decision.reason}</p>}</form>}
           <div className="mt-8 flex flex-wrap justify-between gap-3 border-t pt-5"><button type="button" onClick={goBack} disabled={!history.length} className="rounded-full border px-5 py-2 text-sm font-semibold disabled:opacity-40">Back</button><button type="button" onClick={abandon} className="rounded-full border px-5 py-2 text-sm font-semibold">Abandon test</button></div>
-        </> : <div className="flex min-h-[400px] flex-col justify-center"><p className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">KEYWORDS READY</p><h2 className="mt-4 text-4xl font-semibold tracking-tight">Search terms collected.</h2><div className="mt-8 rounded-xl border bg-muted/20 p-5"><p className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">GENERATED SEARCH TERMS</p><div className="mt-3 flex flex-wrap gap-2">{searchTerms.length?searchTerms.map(term=><span key={term} className="rounded-full border bg-background px-3 py-1 text-sm">{term}</span>):<span className="text-sm text-muted-foreground">No search terms supplied.</span>}</div></div><div className="mt-8 flex flex-wrap gap-3"><button type="button" onClick={goBack} disabled={!history.length} className="rounded-full border px-6 py-3 font-semibold disabled:opacity-40">Back</button><button type="button" onClick={abandon} className="rounded-full border px-6 py-3 font-semibold">Abandon test</button><button type="button" onClick={reset} className="rounded-full border px-6 py-3 font-semibold">Run another test</button></div></div>}
+        </> : <div className="flex min-h-[400px] flex-col justify-center"><p className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">CLASSIFICATION READY</p><h2 className="mt-4 text-4xl font-semibold tracking-tight">Taxonomy and search terms collected.</h2><div className="mt-8 rounded-xl border bg-muted/20 p-5"><p className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">TOP-LEVEL TAXONOMY</p><p className="mt-3 font-semibold">{taxonomy?.family || 'Not assigned'}</p><p className="mt-1 text-sm text-muted-foreground">{taxonomy?.path?.join(' → ') || 'No taxonomy selected'}</p><p className="mt-6 text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">GENERATED SEARCH TERMS</p><div className="mt-3 flex flex-wrap gap-2">{searchTerms.length?searchTerms.map(term=><span key={term} className="rounded-full border bg-background px-3 py-1 text-sm">{term}</span>):<span className="text-sm text-muted-foreground">No search terms supplied.</span>}</div></div><div className="mt-8 flex flex-wrap gap-3"><button type="button" onClick={goBack} disabled={!history.length} className="rounded-full border px-6 py-3 font-semibold disabled:opacity-40">Back</button><button type="button" onClick={abandon} className="rounded-full border px-6 py-3 font-semibold">Abandon test</button><button type="button" onClick={reset} className="rounded-full border px-6 py-3 font-semibold">Run another test</button></div></div>}
       </main>
-      <aside className="rounded-2xl border bg-muted/20 p-5"><p className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">KEYWORDS RECORDED</p><div className="mt-4 space-y-4">{keywordGroups.length?keywordGroups.map(group=><div key={group.id}><p className="text-xs uppercase tracking-wide text-muted-foreground">{group.label}</p><p className="mt-1 break-words font-medium">{group.value}</p></div>):<p className="text-sm text-muted-foreground">No keywords yet.</p>}</div><div className="mt-6 border-t pt-4"><p className="text-xs uppercase tracking-wide text-muted-foreground">Search terms</p><div className="mt-3 flex flex-wrap gap-2">{searchTerms.map(term=><span key={term} className="rounded-full border bg-background px-2 py-1 text-xs">{term}</span>)}</div></div><div className="mt-6 border-t pt-4"><p className="text-xs uppercase tracking-wide text-muted-foreground">Answers recorded</p><div className="mt-3 space-y-3">{Object.entries(answers).map(([key,value])=><div key={key}><p className="text-xs text-muted-foreground">{LABELS[key]||key}</p><p className="mt-1 break-words text-sm">{clean(value)||'Unknown / skipped'}</p></div>)}</div></div></aside>
-      <section className="rounded-2xl border bg-muted/20 p-5 md:col-span-2"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">DIAGNOSTICS</p><p className="mt-2 text-sm text-muted-foreground">Includes route choices, answers, generated keywords, decisions and the event log. No taxonomy output.</p>{copyStatus&&<p className="mt-2 text-sm" role="status">{copyStatus}</p>}</div><button type="button" onClick={copyDiagnostics} className="rounded-full border bg-background px-5 py-2 text-sm font-semibold">Copy diagnostics</button></div><pre className="mt-4 max-h-[420px] overflow-auto whitespace-pre-wrap break-words rounded-xl border bg-background p-4 text-xs leading-relaxed">{diagnostics}</pre></section>
+      <aside className="rounded-2xl border bg-muted/20 p-5"><p className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">TAXONOMY</p><p className="mt-3 font-semibold">{taxonomy?.family || 'Not assigned yet'}</p><p className="mt-1 break-words text-sm text-muted-foreground">{taxonomy?.path?.join(' → ') || 'Choose a button to classify the item'}</p><div className="mt-5 border-t pt-4"><p className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">KEYWORDS RECORDED</p><div className="mt-4 space-y-4">{keywordGroups.length?keywordGroups.map(group=><div key={group.id}><p className="text-xs uppercase tracking-wide text-muted-foreground">{group.label}</p><p className="mt-1 break-words font-medium">{group.value}</p></div>):<p className="text-sm text-muted-foreground">No keywords yet.</p>}</div><div className="mt-6 border-t pt-4"><p className="text-xs uppercase tracking-wide text-muted-foreground">Search terms</p><div className="mt-3 flex flex-wrap gap-2">{searchTerms.map(term=><span key={term} className="rounded-full border bg-background px-2 py-1 text-xs">{term}</span>)}</div></div><div className="mt-6 border-t pt-4"><p className="text-xs uppercase tracking-wide text-muted-foreground">Answers recorded</p><div className="mt-3 space-y-3">{Object.entries(answers).map(([key,value])=><div key={key}><p className="text-xs text-muted-foreground">{LABELS[key]||key}</p><p className="mt-1 break-words text-sm">{clean(value)||'Unknown / skipped'}</p></div>)}</div></div></aside>
+      <section className="rounded-2xl border bg-muted/20 p-5 md:col-span-2"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">DIAGNOSTICS</p><p className="mt-2 text-sm text-muted-foreground">Includes taxonomy, answers, generated keywords, decisions and the event log. Taxonomy and search terms are separate; no Registry write is performed.</p>{copyStatus&&<p className="mt-2 text-sm" role="status">{copyStatus}</p>}</div><button type="button" onClick={copyDiagnostics} className="rounded-full border bg-background px-5 py-2 text-sm font-semibold">Copy diagnostics</button></div><pre className="mt-4 max-h-[420px] overflow-auto whitespace-pre-wrap break-words rounded-xl border bg-background p-4 text-xs leading-relaxed">{diagnostics}</pre></section>
     </div>
   </div></div>;
 }

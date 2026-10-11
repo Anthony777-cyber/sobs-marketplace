@@ -32,6 +32,8 @@ const unknown = value => {
 };
 const fields = [
  ['description','What is it?'],
+ ['machineDescription','Seller description'],
+ ['freeform','Anything else to add'],
  ['vehicleType','Vehicle type'],
  ['machineClass','Class of machine'],
  ['use','What it is used for'],

@@ -219,14 +219,15 @@ export default function SifterMK4() {
     const branch = route === 'spares'
       ? (choice === 'car' ? 'Parts of vehicles' : 'Parts of other machines')
       : (choice === 'car' ? 'Vehicles' : 'Other machines');
-    const leaf = route === 'spares' ? (choice === 'car' ? 'Car parts' : '') : (choice === 'car' ? 'Cars' : '');
+    const leaf = route === 'spares' ? (choice === 'car' ? 'Car parts' : '') : '';
     const path = [root, branch, ...(leaf ? [leaf] : [])];
     const nextTaxonomy = {family:root,path};
     setTaxonomy(nextTaxonomy);
     setRouteKeywords([]);
     setRoute(choice === 'car' ? (route === 'spares' ? 'spares-car' : 'car') : (route === 'spares' ? 'spares-machine' : 'machine'));
-    setPhase(choice === 'car' ? 'car-form' : 'machine-form');
-    setDiagnosticLog(previous => [...previous, {event:'machine-kind-selected',choice,taxonomy:nextTaxonomy,addedKeywords:[],nextStep:choice === 'car' ? 'car-form' : 'machine-form'}]);
+    const nextPhase = choice === 'car' && route !== 'spares' ? 'vehicle-classification' : (choice === 'car' ? 'car-form' : 'machine-form');
+    setPhase(nextPhase);
+    setDiagnosticLog(previous => [...previous, {event:'machine-kind-selected',choice,taxonomy:nextTaxonomy,addedKeywords:[],nextStep:nextPhase}]);
   };
   const updateForm = (setter,key,value) => setter(previous => ({...previous,[key]:value}));
   const completeForm = event => {
@@ -287,6 +288,17 @@ export default function SifterMK4() {
   const submitAnswer = event => {
     event?.preventDefault();
     if (phase === 'general-questionnaire') return completeGeneralQuestionnaire(event);
+    if (phase === 'vehicle-classification') {
+      pushHistory();
+      const vehicleType = clean(input);
+      const root = 'Machines';
+      const path = vehicleType ? [root, 'Vehicles', vehicleType] : [root, 'Vehicles'];
+      const nextTaxonomy = {family:root,path};
+      const nextAnswers = vehicleType ? {...answers,vehicleType} : {...answers};
+      setAnswers(nextAnswers); setTaxonomy(nextTaxonomy); setInput(''); setPhase('car-form');
+      setDiagnosticLog(previous => [...previous,{event:'vehicle-type-recorded',question:'What sort of vehicle is it?',answer:vehicleType,answerStatus:vehicleType?'supplied':'blank-unsupplied',taxonomy:nextTaxonomy,keywordGroups:buildKeywordGroups(nextAnswers,routeKeywords),searchTerms:buildSearchTerms(nextAnswers,routeKeywords),nextStep:'vehicle-form'}]);
+      return;
+    }
     if (phase === 'machine-form' || phase === 'car-form') return completeForm(event);
     if (phase === 'category-form') return completeCategoryForm(event);
     pushHistory();
@@ -374,6 +386,7 @@ export default function SifterMK4() {
   const freeform = phase === 'freeform';
   const machineForm = phase === 'machine-form';
   const carForm = phase === 'car-form';
+  const vehicleClassification = phase === 'vehicle-classification';
   const categoryForm = phase === 'category-form';
   const generalQuestionnaire = phase === 'general-questionnaire';
   const categoryFormFields = (CATEGORY_FORM_FIELDS[selectedCategory] || ['type','make','model','condition']).map(key=>key === 'condition' && MACHINE_STATUS_CATEGORIES.has(selectedCategory) ? 'workingStatus' : key);
@@ -391,7 +404,8 @@ export default function SifterMK4() {
         {!complete ? <>
           <div className="flex items-center justify-between gap-4"><span className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">{phase==='route'?'CHOOSE A ROUTE':phase==='vehicle-type'?'MACHINE ROUTE':phase==='category'?'CHOOSE A CATEGORY':categoryForm?'CATEGORY DETAILS':freeform?'OPTIONAL FINAL QUESTION':machineForm?'MACHINE DETAILS':carForm?'CAR DETAILS':'STRUCTURED QUESTION '+(structuredCount+1)+' OF '+MAX_QUESTIONS}</span><span className="rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide">Test only</span></div>
           {phase==='route' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">What are you listing?</h2><div className="mt-6 grid gap-3 sm:grid-cols-3">{[['machine','Machine'],['spares','Part of a machine'],['other','Everything else']].map(([value,label])=><button key={value} type="button" onClick={()=>chooseRoute(value)} className="min-h-16 rounded-xl border border-red-600 bg-red-600 px-4 py-4 text-lg font-semibold text-white transition hover:bg-red-700">{label}</button>)}</div></div>
-          : phase==='vehicle-type' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">Is it parts of a vehicle or other machine?</h2><div className="mt-6 grid gap-3 sm:grid-cols-2">{[['car','Vehicles','Adds “Vehicles” and opens the vehicle-specific form'],['machine','Other machine','Opens the existing machine-details form']].map(([value,label,desc])=><button key={value} type="button" onClick={()=>chooseMachineType(value)} className="min-h-16 rounded-xl border border-blue-600 bg-blue-600 px-4 py-4 text-lg font-semibold text-white transition hover:bg-blue-700">{label}</button>)}</div></div>
+          : phase==='vehicle-type' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">Is it parts of a vehicle or other machine?</h2><div className="mt-6 grid gap-3 sm:grid-cols-2">{[['car','Vehicles','Adds “Vehicles” and asks the seller to name the vehicle type'],['machine','Other machine','Opens the existing machine-details form']].map(([value,label,desc])=><button key={value} type="button" onClick={()=>chooseMachineType(value)} className="min-h-16 rounded-xl border border-blue-600 bg-blue-600 px-4 py-4 text-lg font-semibold text-white transition hover:bg-blue-700">{label}</button>)}</div></div>
+          : vehicleClassification ? <form onSubmit={submitAnswer} className="mt-10"><p className="text-base font-bold">{FORM_INSTRUCTION}</p><h2 className="text-2xl font-semibold leading-tight sm:text-3xl">What sort of vehicle is it?</h2><p className="mt-3 text-sm text-muted-foreground">Use your own description, such as truck, SUV, kit car or motorcycle.</p><input autoFocus value={input} onChange={e=>setInput(e.target.value)} placeholder="Vehicle type" className="mt-6 w-full rounded-xl border bg-background px-5 py-5 text-xl outline-none focus:ring-2 focus:ring-ring sm:text-2xl"/><div className="mt-5 flex justify-end"><button type="submit" className="rounded-full bg-red-600 px-7 py-3 font-semibold text-white">Continue</button></div></form>
           : phase==='category' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">Which category best fits the item?</h2><p className="mt-3 text-sm text-muted-foreground">Choose the item's top-level family. The sifter then collects useful searchable details.</p><div className="mt-6 grid grid-cols-4 gap-3">{GENERAL_CATEGORIES.map((category,index)=><button key={category} type="button" onClick={()=>chooseGeneralCategory(category)} style={{backgroundColor:GENERAL_CATEGORY_BUTTON_COLORS[index % GENERAL_CATEGORY_BUTTON_COLORS.length]}} className="flex h-16 min-w-0 w-full items-center justify-center overflow-hidden rounded-full px-1 text-center text-sm font-semibold leading-tight text-white transition hover:brightness-95">{category}</button>)}</div></div>
            : generalQuestionnaire ? <form onSubmit={submitAnswer} className="mt-8 space-y-5 rounded-2xl border bg-muted/20 p-5">
              <p className="text-base font-bold">{FORM_INSTRUCTION}</p>
@@ -414,8 +428,8 @@ export default function SifterMK4() {
           : categoryForm ? <form onSubmit={submitAnswer} className="mt-8 space-y-5 rounded-2xl border bg-muted/20 p-5"><p className="text-base font-bold">{FORM_INSTRUCTION}</p><h2 className="text-xl font-semibold">{selectedCategory}</h2>{[...categoryFormFields,'machineDescription'].map(key=>{if(key==='workingStatus')return <fieldset key="workingStatus" className="block"><legend className="text-sm font-semibold">Working?</legend><div className="mt-2 flex items-center gap-6"><label className="inline-flex cursor-pointer items-center gap-2 text-sm"><input type="radio" name="category-working-status" value="Working" checked={categoryDetails.workingStatus==='Working'} onChange={()=>updateForm(setCategoryDetails,'workingStatus','Working')} className="h-4 w-4 accent-red-600"/>Yes</label><label className="inline-flex cursor-pointer items-center gap-2 text-sm"><input type="radio" name="category-working-status" value="Not working" checked={categoryDetails.workingStatus==='Not working'} onChange={()=>updateForm(setCategoryDetails,'workingStatus','Not working')} className="h-4 w-4 accent-red-600"/>No</label></div></fieldset>;const def=CATEGORY_FIELD_DEFS[key];if(!def)return null;return <label key={key} className="block text-sm font-semibold">{def.label}{key==='machineDescription'?<textarea value={categoryDetails[key]||''} onChange={e=>updateForm(setCategoryDetails,key,e.target.value)} rows={4} placeholder={def.placeholder} className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-base font-normal"/>:<input value={categoryDetails[key]||''} onChange={e=>updateForm(setCategoryDetails,key,e.target.value)} placeholder={def.placeholder} className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-base font-normal outline-none focus:ring-2 focus:ring-ring"/>}</label>})}<div className="flex justify-end"><button type="submit" className="rounded-full bg-red-600 px-7 py-3 font-semibold text-white">Continue</button></div></form>
           : machineForm || carForm ? <form onSubmit={submitAnswer} className="mt-8 space-y-5 rounded-2xl border bg-muted/20 p-5">
             <p className="text-base font-bold">{FORM_INSTRUCTION}</p>
-            <h2 className="text-xl font-semibold">{carForm?'Car details':'Machine details'}</h2>
-            {carForm ? <>{field('make','Make')}{field('model','Model')}{field('year','Year')}{field('variant','Variant / trim')}{field('partNumber','Part number')}{field('mileage','Mileage')}{field('fuelType','Fuel type')}{field('transmission','Transmission')}{field('colour','Colour')}{field('otherDetails','Other identifying details', 'Registration / engine / useful identifiers',setCarDetails,carDetails)}{operatingField(setCarDetails,carDetails)}<label className="block text-sm font-semibold">Seller description<textarea value={carDetails.machineDescription} onChange={e=>updateForm(setCarDetails,'machineDescription',e.target.value)} rows={4} placeholder="Describe the car in your own words" className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-base font-normal"/></label></>
+            <h2 className="text-xl font-semibold">{carForm?'Vehicle details':'Machine details'}</h2>
+            {carForm ? <>{field('make','Make')}{field('model','Model')}{field('year','Year')}{field('variant','Variant / trim')}{field('partNumber','Part number')}{field('mileage','Mileage')}{field('fuelType','Fuel type')}{field('transmission','Transmission')}{field('colour','Colour')}{field('otherDetails','Other identifying details', 'Registration / engine / useful identifiers',setCarDetails,carDetails)}{operatingField(setCarDetails,carDetails)}<label className="block text-sm font-semibold">Seller description<textarea value={carDetails.machineDescription} onChange={e=>updateForm(setCarDetails,'machineDescription',e.target.value)} rows={4} placeholder="Describe the vehicle in your own words" className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-base font-normal"/></label></>
               : <>{field('machineClass','Class of machine','Farm, industrial, audio? etc',setMachineDetails,machineDetails)}{field('make','Make')}{field('model','Model')}{field('year','Year')}{field('partNumber','Part number')}{field('otherDetails','Other identifying details','Enter any other identifiers',setMachineDetails,machineDetails)}{field('colour','Colour')}{operatingField(setMachineDetails,machineDetails)}<label className="block text-sm font-semibold">Seller description<textarea value={machineDetails.machineDescription} onChange={e=>updateForm(setMachineDetails,'machineDescription',e.target.value)} rows={4} placeholder="Describe the machine or part in your own words" className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-base font-normal"/></label></>}
             <div className="flex justify-end"><button type="submit" className="rounded-full bg-red-600 px-7 py-3 font-semibold text-white">Continue</button></div>
           </form>

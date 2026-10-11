@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import NavBar from '@/components/NavBar';
-import CategoryQuestionFlow from '@/components/CategoryQuestionFlow';
 import PaymentTier from '@/components/PaymentTier';
 import PaylinkGateway from '@/components/PaylinkGateway';
 import { generateKeyToken } from '@/lib/token';
@@ -15,6 +14,9 @@ const DRAFT_KEY = 'sobs_create_draft';
 
 export default function CreateListing() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const initialSifter = location.state?.sifter || null;
+  const [sifterData, setSifterData] = useState(initialSifter);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
@@ -27,19 +29,6 @@ export default function CreateListing() {
   const [error, setError] = useState('');
   const [sellerId, setSellerId] = useState('');
   const [showGateway, setShowGateway] = useState(false);
-  const [showCategoryFlow, setShowCategoryFlow] = useState(false);
-  const [categoryFlow, setCategoryFlow] = useState({
-    step: 0,
-    complete: false,
-    answers: {
-      type: '',
-      maker: '',
-      model: '',
-      year: '',
-      part: '',
-    },
-    extra: '',
-  });
 
   useEffect(() => {
     const globalKey = sessionStorage.getItem('sobs_global_user_key')?.trim();
@@ -49,8 +38,17 @@ export default function CreateListing() {
       return;
     }
 
+    const sessionToken = sessionStorage.getItem('sobs_seller_session_token')?.trim();
+    if (!sessionToken) {
+      setError('Verified seller session required. Please sign in again.');
+      return;
+    }
+
     fetch('/api/seller/me', {
-      headers: { 'X-SOBS-Global-Key': globalKey },
+      headers: {
+        'X-SOBS-Global-Key': globalKey,
+        'X-SOBS-Seller-Session': sessionToken,
+      },
     })
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
@@ -80,22 +78,61 @@ export default function CreateListing() {
   // Anti-blit persistent form state cache: hydrate the draft on mount so a
   // failed submission, payment loop, or accidental navigation never wipes input.
   useEffect(() => {
+    let savedDraft = {};
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
-      if (!raw) return;
-      const d = JSON.parse(raw);
-      if (typeof d.title === 'string') setTitle(d.title);
-      if (typeof d.description === 'string') setDescription(d.description);
-      if (d.price != null) setPrice(String(d.price));
-        if (typeof d.categoryPath === 'string') {
-        setCategoryPath(d.categoryPath);
-      }
-      if (d.categoryFlow && typeof d.categoryFlow === 'object') {
-        setCategoryFlow(d.categoryFlow);
-      }
-      if (Array.isArray(d.photos)) setPhotos(d.photos);
-      if (d.tier) setTier(d.tier);
+      if (raw) savedDraft = JSON.parse(raw);
     } catch {}
+
+    // Preserve existing payment/photo choices, but use the current Sifter output
+    // in preference to an older unfinished listing draft.
+    if (savedDraft.price != null) setPrice(String(savedDraft.price));
+    if (Array.isArray(savedDraft.photos)) setPhotos(savedDraft.photos);
+    if (savedDraft.tier) setTier(savedDraft.tier);
+
+    const sourceSifter = initialSifter || savedDraft.sifter || null;
+    if (sourceSifter && typeof sourceSifter === 'object') {
+      setSifterData(sourceSifter);
+      const answers = sourceSifter.answers || {};
+      const cleanSifterValue = value => String(value ?? '').trim().replace(/\s+/g, ' ');
+      const groups = Array.isArray(sourceSifter.keywordGroups)
+        ? sourceSifter.keywordGroups
+        : Object.entries(answers)
+            .filter(([, value]) => cleanSifterValue(value))
+            .map(([id, value]) => ({ id, label: id, value: cleanSifterValue(value) }));
+
+      const makeModel = [answers.make, answers.model].map(cleanSifterValue).filter(Boolean).join(' ');
+      const generatedTitle = [
+        answers.title,
+        answers.description,
+        makeModel,
+        answers.type,
+        answers.vehicleType,
+        answers.machineClass,
+      ].map(cleanSifterValue).find(Boolean) || '';
+
+      const detailLines = groups
+        .filter(group => !['description', 'title', 'machineDescription', 'freeform'].includes(group.id))
+        .filter(group => cleanSifterValue(group.value) && cleanSifterValue(group.value) !== generatedTitle)
+        .map(group => `${cleanSifterValue(group.label) || cleanSifterValue(group.id)}: ${cleanSifterValue(group.value)}`);
+      const descriptionParts = [
+        cleanSifterValue(answers.machineDescription),
+        cleanSifterValue(answers.freeform),
+        detailLines.length ? `Item details:\n${detailLines.join('\n')}` : '',
+      ].filter(Boolean);
+
+      const taxonomyPath = Array.isArray(sourceSifter.taxonomy?.path)
+        ? sourceSifter.taxonomy.path.map(cleanSifterValue).filter(Boolean)
+        : [];
+
+      setTitle(generatedTitle);
+      setDescription(descriptionParts.join('\n\n'));
+      setCategoryPath(taxonomyPath.join('/'));
+    } else {
+      if (typeof savedDraft.title === 'string') setTitle(savedDraft.title);
+      if (typeof savedDraft.description === 'string') setDescription(savedDraft.description);
+      if (typeof savedDraft.categoryPath === 'string') setCategoryPath(savedDraft.categoryPath);
+    }
   }, []);
 
   // Freeze every input into the cache until the submission is confirmed server-side.
@@ -111,11 +148,11 @@ export default function CreateListing() {
           categoryPath,
           photos,
           tier,
-          categoryFlow,
+          sifter: sifterData,
         })
       );
     } catch {}
-  }, [title, description, price, currency, categoryPath, photos, tier, categoryFlow]);
+  }, [title, description, price, currency, categoryPath, photos, tier, sifterData]);
 
   const cur = getCurrency(currency);
   const selectedTierAmount = tier && rates
@@ -124,28 +161,6 @@ export default function CreateListing() {
         cur.decimals
       )
     : null;
-
-  const finishCategoryFlow = (flow) => {
-    const clean = (value) => String(value || '').trim().replace(/\s+/g, ' ');
-    const firstCap = (value) => {
-      const text = clean(value);
-      return text ? text.charAt(0).toUpperCase() + text.slice(1) : '';
-    };
-
-    const parts = [
-      firstCap(flow.answers?.type),
-      firstCap(flow.answers?.maker),
-      firstCap(flow.answers?.model),
-      clean(flow.answers?.year),
-      firstCap(flow.answers?.part),
-      clean(flow.extra),
-    ].filter(Boolean);
-
-    setCategoryFlow(flow);
-    setCategoryPath(parts.join('/'));
-    setShowCategoryFlow(false);
-  };
-
 
   const onAddPhoto = (e) => {
     const files = Array.from(e.target.files || []);
@@ -197,6 +212,7 @@ export default function CreateListing() {
         headers: {
           'Content-Type': 'application/json',
           'X-SOBS-Global-Key': globalKey,
+          'X-SOBS-Seller-Session': sessionStorage.getItem('sobs_seller_session_token')?.trim() || '',
         },
         body: JSON.stringify({
           title,
@@ -204,6 +220,7 @@ export default function CreateListing() {
           price: Number(price),
           currency,
           categoryPath,
+          searchTerms: Array.isArray(sifterData?.searchTerms) ? sifterData.searchTerms : [],
           images: photos,
           months: tier.months,
           paymentAmount: tier.amount,
@@ -251,50 +268,30 @@ export default function CreateListing() {
         <p className="mt-1 text-muted-foreground">List it, pick how long it stays up, and you're live.</p>
 
         <div className="mt-8 space-y-6">
-          {!categoryFlow.complete ? (
-            <div className="rounded-xl border p-5">
-              <h2 className="text-lg font-semibold">Let’s get started</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                A few quick questions help buyers find your listing.
-              </p>
-              <button
-                type="button"
-                onClick={() => setShowCategoryFlow(true)}
-                className="mt-4 rounded-full bg-red-600 px-6 py-2.5 font-semibold text-white"
-              >
-                {categoryFlow.step > 0 ? 'Continue' : 'Let’s get started'}
-              </button>
-            </div>
-          ) : (
-            <>
-              <div>
-                <label className="text-sm font-medium">Title <span className="ml-1 text-xs font-normal text-muted-foreground">Keep it brief, Brevity is the soul of wit.</span></label>
-                <input
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Your listing title"
-                  className="mt-1.5 w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowCategoryFlow(true)}
-                  className="mt-2 text-xs text-muted-foreground underline underline-offset-4"
-                >
-                  Review questions
-                </button>
-              </div>
+          <div>
+            <label className="text-sm font-medium">Title <span className="ml-1 text-xs font-normal text-muted-foreground">Keep it brief, Brevity is the soul of wit.</span></label>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Your listing title"
+              className="mt-1.5 w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
 
-              <div>
-                <label className="text-sm font-medium">Description</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={4}
-                  placeholder="Tell buyers anything useful about it..."
-                  className="mt-1.5 w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-            </>
+          <div>
+            <label className="text-sm font-medium">Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={4}
+              placeholder="Tell buyers anything useful about it..."
+              className="mt-1.5 w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          {categoryPath && (
+            <p className="text-sm text-muted-foreground">
+              Registry path: <span className="font-medium text-foreground">{categoryPath.split('/').join(' → ')}</span>
+            </p>
           )}
 
           <div className="grid grid-cols-2 gap-4">
@@ -404,15 +401,6 @@ export default function CreateListing() {
             Reset
           </button>
         </div>
-
-        {showCategoryFlow && (
-          <CategoryQuestionFlow
-            value={categoryFlow}
-            onChange={setCategoryFlow}
-            onFinish={finishCategoryFlow}
-            onClose={() => setShowCategoryFlow(false)}
-          />
-        )}
 
         {showGateway && (
           <PaylinkGateway

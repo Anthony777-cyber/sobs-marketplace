@@ -104,11 +104,11 @@ export default function CreateListing() {
       const makeModel = [answers.make, answers.model].map(cleanSifterValue).filter(Boolean).join(' ');
       const generatedTitle = [
         answers.title,
-        answers.description,
         makeModel,
+        answers.machineClass,
         answers.type,
         answers.vehicleType,
-        answers.machineClass,
+        answers.description,
       ].map(cleanSifterValue).find(Boolean) || '';
 
       const detailLines = groups
@@ -116,6 +116,7 @@ export default function CreateListing() {
         .filter(group => cleanSifterValue(group.value) && cleanSifterValue(group.value) !== generatedTitle)
         .map(group => `${cleanSifterValue(group.label) || cleanSifterValue(group.id)}: ${cleanSifterValue(group.value)}`);
       const descriptionParts = [
+        cleanSifterValue(answers.description) !== generatedTitle ? cleanSifterValue(answers.description) : '',
         cleanSifterValue(answers.machineDescription),
         cleanSifterValue(answers.freeform),
         detailLines.length ? `Item details:\n${detailLines.join('\n')}` : '',

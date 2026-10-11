@@ -207,6 +207,7 @@ function listingSnapshot(row: Record<string, unknown>) {
     currency: row.currency ?? null,
     images: row.images ?? '[]',
     categoryPath: row.categoryPath ?? null,
+    search_terms: row.search_terms ?? '[]',
     duration_months: row.duration_months ?? null,
     payment_amount: row.payment_amount ?? null,
     expires_date: row.expires_date ?? null,
@@ -1145,6 +1146,9 @@ export default {
       const price = Number(body.price);
       const currency = typeof body.currency === 'string' ? body.currency.toUpperCase() : '';
       const categoryPath = typeof body.categoryPath === 'string' ? body.categoryPath.trim() : '';
+      const searchTerms = Array.isArray(body.searchTerms)
+        ? JSON.stringify([...new Set(body.searchTerms.map(String).map(term => term.trim()).filter(Boolean))])
+        : '[]';
       const months = Number(body.months);
       const paymentAmount = Number(body.paymentAmount);
       const images = Array.isArray(body.images) ? body.images.map(String) : [];
@@ -1231,6 +1235,7 @@ export default {
           currency,
           images: JSON.stringify(images),
           categoryPath,
+          search_terms: searchTerms,
           duration_months: months,
           payment_amount: Number.isFinite(paymentAmount) ? paymentAmount : 0,
           expires_date: expiresDate.toISOString(),
@@ -1247,11 +1252,11 @@ export default {
           env.sobs_marketplace
             .prepare(`
               INSERT INTO listings
-                (id, listing_number, listing_alias, title, description, price, currency, images, categoryPath,
+                (id, listing_number, listing_alias, title, description, price, currency, images, categoryPath, search_terms,
                  duration_months, payment_amount, expires_date, flags, status,
                  grey_zone, grey_zone_until, seller_id, key_token,
                  downvote_count, downvoted_by, created_date, updated_date)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'active',
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'active',
                       0, NULL, ?, ?, 0, '[]', ?, ?)
             `)
             .bind(
@@ -1264,6 +1269,7 @@ export default {
               currency,
               JSON.stringify(images),
               categoryPath,
+              searchTerms,
               months,
               Number.isFinite(paymentAmount) ? paymentAmount : 0,
               expiresDate.toISOString(),

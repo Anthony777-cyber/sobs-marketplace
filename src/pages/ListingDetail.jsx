@@ -52,6 +52,21 @@ export default function ListingDetail() {
   }, [listing]);
 
   const images = listing?.images || [];
+  const searchTerms = (() => {
+    const raw = listing?.search_terms;
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw !== 'string') return [];
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.filter(term => typeof term === 'string' && term.trim()) : [];
+    } catch {
+      return [];
+    }
+  })();
+  const registryPath = typeof listing?.categoryPath === 'string' ? listing.categoryPath : '';
+  const registryUrl = registryPath
+    ? '/browse/' + registryPath.split('/').filter(Boolean).map(encodeURIComponent).join('/')
+    : '';
   const cur = getCurrency(listing?.currency);
   const isUnavailable =
     removed || (listing && (listing.grey_zone || new Date(listing.expires_date).getTime() <= Date.now()));
@@ -125,6 +140,21 @@ export default function ListingDetail() {
                 </div>
                 {listing.description && (
                   <p className="mt-4 whitespace-pre-wrap text-muted-foreground">{listing.description}</p>
+                )}
+                {registryPath && (
+                  <div className="mt-5 border-t pt-4">
+                    <p className="text-xs font-mono uppercase tracking-wide text-muted-foreground">Registry classification</p>
+                    <Link to={registryUrl} className="mt-2 inline-block text-sm underline underline-offset-4">
+                      {registryPath.split('/').join(' → ')}
+                    </Link>
+                    {searchTerms.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {searchTerms.map(term => (
+                          <span key={term} className="rounded-full border px-2 py-1 text-xs">{term}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
                 <div className="mt-5">
                   <FlagButton listing={listing} onRemoved={() => setRemoved(true)} />

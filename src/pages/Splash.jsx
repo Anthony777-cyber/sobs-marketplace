@@ -117,11 +117,7 @@ export default function Splash() {
           </div>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
-              to={
-                sessionStorage.getItem('sobs_global_user_key')
-                  ? '/create'
-                  : '/sell-info'
-              }
+              to="/sifter"
               className="inline-flex w-32 items-center justify-center gap-2 rounded-full bg-red-600 px-5 py-2 font-semibold text-white transition-colors hover:bg-red-700"
             >
               Post <ArrowRight className="h-4 w-4" />

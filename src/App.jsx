@@ -33,6 +33,7 @@ import AdaptiveQuestionnaireTest from '@/pages/AdaptiveQuestionnaireTest';
 import SifterMK2 from '@/pages/SifterMK2';
 import SifterMK3 from '@/pages/SifterMK3';
 import SifterMK4 from '@/pages/SifterMK4';
+import SellerSifterPage from '@/pages/SellerSifterPage';
 
 const AuthenticatedApp = () => {
   return (
@@ -53,6 +54,7 @@ const AuthenticatedApp = () => {
       <Route path="/sifter-mk2" element={<SifterMK2 />} />
       <Route path="/sifter-mk3" element={<SifterMK3 />} />
       <Route path="/sifter-mk4" element={<SifterMK4 />} />
+      <Route path="/sifter" element={<SellerSifterPage />} />
       <Route path="/confirmed/:id" element={<Confirmed />} />
       <Route path="/manage" element={<Manage />} />
       <Route path="/manage-listings" element={<GlobalManagementConsole />} />

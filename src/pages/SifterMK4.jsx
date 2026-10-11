@@ -18,7 +18,7 @@ const GENERAL_CATEGORIES = [
   'Clothing, shoes & accessories','Jewellery & watches',"Baby & children's items",'Sports, fitness & recreation',
   'Camping, travel & outdoor leisure','Bicycles & cycling','Boats & water sports','Pet supplies',
   'Mobility & accessibility aids','Health & personal care equipment','Packaging, storage & materials',
-  'Security & specialist equipment','And now for something completely different.',
+  'Security & specialist equipment','Other / not sure',
 ];
 const GENERAL_CATEGORY_BUTTON_COLORS = [
   '#1d4ed8','#c2410c','#475569','#6d28d9','#0e7490','#be123c',
@@ -178,14 +178,16 @@ export default function SifterMK4() {
   };
   const chooseGeneralCategory = category => {
     pushHistory();
-    setSelectedCategory(category);
-    setRouteKeywords(category === 'And now for something completely different.' ? [] : [category]);
+    const isOtherNotSure = category === 'Other / not sure';
+    const taxonomyCategory = isOtherNotSure ? 'And now for something completely different.' : category;
+    setSelectedCategory(taxonomyCategory);
+    setRouteKeywords(isOtherNotSure ? [] : [category]);
     setInput('');
     setCurrent({id:'description',label:'What is it?',placeholder:'Enter the item name or a short description'});
-    if (category === 'And now for something completely different.') {
+    if (isOtherNotSure) {
       setCategoryDetails({});
       setPhase('general-questionnaire');
-      setDiagnosticLog(previous => [...previous,{event:'general-category-selected',category,addedKeywords:[],nextStep:'general-questionnaire',adaptiveQuestionnaireStarted:false}]);
+      setDiagnosticLog(previous => [...previous,{event:'general-category-selected',category:taxonomyCategory,buttonLabel:category,addedKeywords:[],nextStep:'general-questionnaire',adaptiveQuestionnaireStarted:false}]);
     } else {
       setCategoryDetails({});
       setPhase('category-form');

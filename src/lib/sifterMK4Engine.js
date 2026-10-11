@@ -95,10 +95,10 @@ export function buildKeywordGroups(answers = {}, _routeKeywords = []) {
 }
 export function buildSearchTerms(answers = {}, routeKeywords = []) {
  const result=[],seen=new Set();
- const add=value=>{const v=clean(value),k=v.toLowerCase();if(!v||unknown(v)||seen.has(k))return;seen.add(k);result.push(v);};
+ const add=(value,preserve=false)=>{const v=preserve?String(value??''):clean(value),k=v.toLowerCase();if(!v.trim()||unknown(v)||seen.has(k))return;seen.add(k);result.push(v);};
  for(const group of buildKeywordGroups(answers,routeKeywords)){
   const searchableValue=group.id==='description'?group.value:cleanSearchText(group.value);
-  add(searchableValue);
+  add(searchableValue,group.id==='description');
   for(const word of tokens(searchableValue)) if(!STOP.has(word)&&!GENERIC_WORDS.has(word)) add(word);
  }
  return result;

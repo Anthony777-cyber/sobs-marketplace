@@ -259,10 +259,10 @@ export default function SifterMK4() {
     pushHistory();
     const nextAnswers = {};
     const map = [
-      ['whatIsIt','description'],['whatIsItCalled','title'],['whatIsItUsedFor','use'],
+      ['whatIsIt','description'],['sellerDescription','machineDescription'],['whatIsItCalled','title'],['whatIsItUsedFor','use'],
       ['whoMadeIt','make'],['whereMade','origin'],['whenMade','year'],['whatMadeOf','material'],
       ['dimensions','dimensions'],['condition','condition'],['unusual','fault'],
-      ['identifyingMarks','identifyingMarks'],
+      ['identifyingMarks','identifyingMarks'],['buyerNotes','freeform'],
     ];
     for (const [source, target] of map) {
       const value = categoryDetails[source] ?? '';
@@ -389,6 +389,7 @@ export default function SifterMK4() {
              <p className="text-base font-bold">{FORM_INSTRUCTION}</p>
              {[
                ['whatIsIt','What is it?','Enter the item name exactly as you would describe it'],
+               ['sellerDescription','Seller description','Describe this unusual or hard-to-classify item'],
                ['whatIsItCalled','What is it called?','Any other name, if known'],
                ['whatIsItUsedFor','What is it used for?','Optional'],
                ['whoMadeIt','Who made it?','Maker or manufacturer, if known'],
@@ -398,8 +399,9 @@ export default function SifterMK4() {
                ['dimensions','What are its dimensions or size?','Measurements and units, if known'],
                ['condition','What condition is it in?','Optional'],
                ['unusual','Is anything missing, damaged or unusual about it?','Optional'],
-               ['identifyingMarks','Does it have any identifying marks, numbers or labels?','Optional']
-             ].map(([key,label,placeholder])=><label key={key} className="block text-sm font-semibold">{label}<textarea value={categoryDetails[key]||''} onChange={e=>updateForm(setCategoryDetails,key,e.target.value)} rows={2} placeholder={placeholder} className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-base font-normal"/></label>)}
+               ['identifyingMarks','Does it have any identifying marks, numbers or labels?','Optional'],
+               ['buyerNotes','Anything else you\'d like to add?','Optional extra details']
+             ].map(([key,label,placeholder])=><label key={key} className="block text-sm font-semibold">{label}{['sellerDescription','buyerNotes'].includes(key)?<textarea value={categoryDetails[key]||''} onChange={e=>updateForm(setCategoryDetails,key,e.target.value)} rows={4} placeholder={placeholder} className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-base font-normal"/>:<textarea value={categoryDetails[key]||''} onChange={e=>updateForm(setCategoryDetails,key,e.target.value)} rows={2} placeholder={placeholder} className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-base font-normal"/>}</label>)}
              <div className="flex justify-end"><button type="submit" className="rounded-full bg-red-600 px-7 py-3 font-semibold text-white">Finish questionnaire</button></div>
            </form>
           : categoryForm ? <form onSubmit={submitAnswer} className="mt-8 space-y-5 rounded-2xl border bg-muted/20 p-5"><p className="text-base font-bold">{FORM_INSTRUCTION}</p><h2 className="text-xl font-semibold">{selectedCategory}</h2>{categoryFormFields.map(key=>{if(key==='workingStatus')return <fieldset key="workingStatus" className="block"><legend className="text-sm font-semibold">Working?</legend><div className="mt-2 flex items-center gap-6"><label className="inline-flex cursor-pointer items-center gap-2 text-sm"><input type="radio" name="category-working-status" value="Working" checked={categoryDetails.workingStatus==='Working'} onChange={()=>updateForm(setCategoryDetails,'workingStatus','Working')} className="h-4 w-4 accent-red-600"/>Yes</label><label className="inline-flex cursor-pointer items-center gap-2 text-sm"><input type="radio" name="category-working-status" value="Not working" checked={categoryDetails.workingStatus==='Not working'} onChange={()=>updateForm(setCategoryDetails,'workingStatus','Not working')} className="h-4 w-4 accent-red-600"/>No</label></div></fieldset>;const def=CATEGORY_FIELD_DEFS[key];if(!def)return null;return <label key={key} className="block text-sm font-semibold">{def.label}<input value={categoryDetails[key]||''} onChange={e=>updateForm(setCategoryDetails,key,e.target.value)} placeholder={def.placeholder} className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-base font-normal outline-none focus:ring-2 focus:ring-ring"/></label>})}<div className="flex justify-end"><button type="submit" className="rounded-full bg-red-600 px-7 py-3 font-semibold text-white">Continue</button></div></form>

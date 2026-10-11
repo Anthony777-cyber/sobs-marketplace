@@ -32,6 +32,7 @@ const unknown = value => {
 };
 const fields = [
  ['description','What is it?'],
+ ['machineClass','Class of machine'],
  ['use','What it is used for'],
  ['type','Narrower type'],
  ['feature','Feature / distinguishing detail'],

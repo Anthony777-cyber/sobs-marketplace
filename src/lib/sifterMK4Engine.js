@@ -84,8 +84,6 @@ const fields = [
  ['denomination','Denomination / issue'],
  ['runningOperating','Running / operating'],
  ['workingStatus','Working status'],
- ['machineDescription','Seller description'],
- ['freeform','Anything else to add'],
 ];
 export function getMaxStructuredQuestions(){return MAX_STRUCTURED_QUESTIONS;}
 export function buildKeywordGroups(answers = {}, _routeKeywords = []) {

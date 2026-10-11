@@ -6,15 +6,7 @@ const clean = value => String(value ?? '').trim().replace(/\s+/g, ' ');
 const EMPTY_MACHINE = { make:'', model:'', year:'', partNumber:'', otherDetails:'', colour:'', runningOperating:'', machineDescription:'' };
 const EMPTY_CAR = { make:'', model:'', year:'', variant:'', partNumber:'', mileage:'', fuelType:'', transmission:'', colour:'', runningOperating:'', otherDetails:'', machineDescription:'' };
 const FORM_INSTRUCTION = "If you don't know something, don't worry; just leave it blank.";
-const LABELS = {
-  description:'What is it?', title:'What is it called?', use:'What is it used for?',
-  make:'Who made it?', origin:'Where was it made?', year:'When was it made?',
-  material:'What is it made of?', dimensions:'What are its dimensions or size?',
-  condition:'What condition is it in?', fault:'Is anything missing, damaged or unusual about it?',
-  identifyingMarks:'Does it have any identifying marks, numbers or labels?',
-  freeform:'What else should a potential buyer know?',
-  type:'Narrower type', feature:'Feature / distinguishing detail', workingStatus:'Working status'
-};
+const LABELS = { description:'What is it?', title:'What is it called?', use:'What is it used for?', make:'Who made it?', origin:'Where was it made?', year:'When was it made?', material:'What is it made of?', dimensions:'What are its dimensions or size?', condition:'What condition is it in?', fault:'Is anything missing, damaged or unusual about it?', identifyingMarks:'Does it have any identifying marks, numbers or labels?', freeform:'What else should a potential buyer know?', type:'Narrower type', feature:'Feature / distinguishing detail', workingStatus:'Working status' };
 const GENERAL_CATEGORIES = [
   'Home, furniture & interiors','Garden & outdoor','Kitchen & dining','DIY, tools & building supplies',
   'Building & renovation materials','Electrical, lighting & wiring','Computers & IT','Phones & telecommunications',
@@ -26,7 +18,7 @@ const GENERAL_CATEGORIES = [
   'Clothing, shoes & accessories','Jewellery & watches',"Baby & children's items",'Sports, fitness & recreation',
   'Camping, travel & outdoor leisure','Bicycles & cycling','Boats & water sports','Pet supplies',
   'Mobility & accessibility aids','Health & personal care equipment','Packaging, storage & materials',
-  'Security & specialist equipment','Other / not sure',
+  'Security & specialist equipment','And now for something completely different.',
 ];
 const GENERAL_CATEGORY_BUTTON_COLORS = [
   '#1d4ed8','#c2410c','#475569','#6d28d9','#0e7490','#be123c',
@@ -187,10 +179,10 @@ export default function SifterMK4() {
   const chooseGeneralCategory = category => {
     pushHistory();
     setSelectedCategory(category);
-    setRouteKeywords(category === 'Other / not sure' ? [] : [category]);
+    setRouteKeywords(category === 'And now for something completely different.' ? [] : [category]);
     setInput('');
     setCurrent({id:'description',label:'What is it?',placeholder:'Enter the item name or a short description'});
-    if (category === 'Other / not sure') {
+    if (category === 'And now for something completely different.') {
       setCategoryDetails({});
       setPhase('general-questionnaire');
       setDiagnosticLog(previous => [...previous,{event:'general-category-selected',category,addedKeywords:[],nextStep:'general-questionnaire',adaptiveQuestionnaireStarted:false}]);
@@ -383,25 +375,25 @@ export default function SifterMK4() {
           {phase==='route' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">What are you listing?</h2><div className="mt-6 grid gap-3 sm:grid-cols-3">{[['machine','Machine'],['spares','Part of a machine'],['other','Everything else']].map(([value,label])=><button key={value} type="button" onClick={()=>chooseRoute(value)} className="min-h-16 rounded-xl border border-red-600 bg-red-600 px-4 py-4 text-lg font-semibold text-white transition hover:bg-red-700">{label}</button>)}</div></div>
           : phase==='vehicle-type' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">Is it a vehicle or another machine?</h2><div className="mt-6 grid gap-3 sm:grid-cols-2">{[['car','Vehicles','Adds “Vehicles” and opens the vehicle-specific form'],['machine','Other machine','Opens the existing machine-details form']].map(([value,label,desc])=><button key={value} type="button" onClick={()=>chooseMachineType(value)} className="min-h-16 rounded-xl border border-blue-600 bg-blue-600 px-4 py-4 text-lg font-semibold text-white transition hover:bg-blue-700">{label}</button>)}</div></div>
           : phase==='category' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">Which category best fits the item?</h2><p className="mt-3 text-sm text-muted-foreground">Choose the closest fit. The category becomes a search keyword, then the sifter asks for useful details.</p><div className="mt-6 grid grid-cols-4 gap-3">{GENERAL_CATEGORIES.map((category,index)=><button key={category} type="button" onClick={()=>chooseGeneralCategory(category)} style={{backgroundColor:GENERAL_CATEGORY_BUTTON_COLORS[index % GENERAL_CATEGORY_BUTTON_COLORS.length]}} className="flex h-16 min-w-0 w-full items-center justify-center overflow-hidden rounded-full px-1 text-center text-sm font-semibold leading-tight text-white transition hover:brightness-95">{category}</button>)}</div></div>
-          : generalQuestionnaire ? <form onSubmit={submitAnswer} className="mt-8 space-y-5 rounded-2xl border bg-muted/20 p-5">
-            <p className="text-base font-bold">{FORM_INSTRUCTION}</p>
-            <h2 className="text-xl font-semibold">And now for something completely different.</h2>
-            {[
-              ['whatIsIt','What is it?','Enter the item name exactly as you would describe it'],
-              ['whatIsItCalled','What is it called?','Any other name, if known'],
-              ['whatIsItUsedFor','What is it used for?','Optional'],
-              ['whoMadeIt','Who made it?','Maker or manufacturer, if known'],
-              ['whereMade','Where was it made?','Place of manufacture, if known'],
-              ['whenMade','When was it made?','Date or period, if known'],
-              ['whatMadeOf','What is it made of?','Materials, if known'],
-              ['dimensions','What are its dimensions or size?','Measurements and units, if known'],
-              ['condition','What condition is it in?','Optional'],
-              ['unusual','Is anything missing, damaged or unusual about it?','Optional'],
-              ['identifyingMarks','Does it have any identifying marks, numbers or labels?','Optional'],
-              ['buyerNotes','What else should a potential buyer know?','Optional']
-            ].map(([key,label,placeholder])=><label key={key} className="block text-sm font-semibold">{label}<textarea value={categoryDetails[key]||''} onChange={e=>updateForm(setCategoryDetails,key,e.target.value)} rows={2} placeholder={placeholder} className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-base font-normal"/></label>)}
-            <div className="flex justify-end"><button type="submit" className="rounded-full bg-red-600 px-7 py-3 font-semibold text-white">Finish questionnaire</button></div>
-          </form>
+           : generalQuestionnaire ? <form onSubmit={submitAnswer} className="mt-8 space-y-5 rounded-2xl border bg-muted/20 p-5">
+             <p className="text-base font-bold">{FORM_INSTRUCTION}</p>
+             <h2 className="text-xl font-semibold">And now for something completely different.</h2>
+             {[
+               ['whatIsIt','What is it?','Enter the item name exactly as you would describe it'],
+               ['whatIsItCalled','What is it called?','Any other name, if known'],
+               ['whatIsItUsedFor','What is it used for?','Optional'],
+               ['whoMadeIt','Who made it?','Maker or manufacturer, if known'],
+               ['whereMade','Where was it made?','Place of manufacture, if known'],
+               ['whenMade','When was it made?','Date or period, if known'],
+               ['whatMadeOf','What is it made of?','Materials, if known'],
+               ['dimensions','What are its dimensions or size?','Measurements and units, if known'],
+               ['condition','What condition is it in?','Optional'],
+               ['unusual','Is anything missing, damaged or unusual about it?','Optional'],
+               ['identifyingMarks','Does it have any identifying marks, numbers or labels?','Optional'],
+               ['buyerNotes','What else should a potential buyer know?','Optional']
+             ].map(([key,label,placeholder])=><label key={key} className="block text-sm font-semibold">{label}<textarea value={categoryDetails[key]||''} onChange={e=>updateForm(setCategoryDetails,key,e.target.value)} rows={2} placeholder={placeholder} className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-base font-normal"/></label>)}
+             <div className="flex justify-end"><button type="submit" className="rounded-full bg-red-600 px-7 py-3 font-semibold text-white">Finish questionnaire</button></div>
+           </form>
           : categoryForm ? <form onSubmit={submitAnswer} className="mt-8 space-y-5 rounded-2xl border bg-muted/20 p-5"><p className="text-base font-bold">{FORM_INSTRUCTION}</p><h2 className="text-xl font-semibold">{selectedCategory}</h2>{[...categoryFormFields,'machineDescription'].map(key=>{if(key==='workingStatus')return <fieldset key="workingStatus" className="block"><legend className="text-sm font-semibold">Working?</legend><div className="mt-2 flex items-center gap-6"><label className="inline-flex cursor-pointer items-center gap-2 text-sm"><input type="radio" name="category-working-status" value="Working" checked={categoryDetails.workingStatus==='Working'} onChange={()=>updateForm(setCategoryDetails,'workingStatus','Working')} className="h-4 w-4 accent-red-600"/>Yes</label><label className="inline-flex cursor-pointer items-center gap-2 text-sm"><input type="radio" name="category-working-status" value="Not working" checked={categoryDetails.workingStatus==='Not working'} onChange={()=>updateForm(setCategoryDetails,'workingStatus','Not working')} className="h-4 w-4 accent-red-600"/>No</label></div></fieldset>;const def=CATEGORY_FIELD_DEFS[key];if(!def)return null;return <label key={key} className="block text-sm font-semibold">{def.label}{key==='machineDescription'?<textarea value={categoryDetails[key]||''} onChange={e=>updateForm(setCategoryDetails,key,e.target.value)} rows={4} placeholder={def.placeholder} className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-base font-normal"/>:<input value={categoryDetails[key]||''} onChange={e=>updateForm(setCategoryDetails,key,e.target.value)} placeholder={def.placeholder} className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-base font-normal outline-none focus:ring-2 focus:ring-ring"/>}</label>})}<div className="flex justify-end"><button type="submit" className="rounded-full bg-red-600 px-7 py-3 font-semibold text-white">Continue</button></div></form>
           : machineForm || carForm ? <form onSubmit={submitAnswer} className="mt-8 space-y-5 rounded-2xl border bg-muted/20 p-5">
             <p className="text-base font-bold">{FORM_INSTRUCTION}</p>

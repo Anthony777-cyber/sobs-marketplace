@@ -166,11 +166,13 @@ export default function SifterMK4() {
   const chooseRoute = choice => {
     pushHistory();
     if (choice === 'machine') {
-      setRoute(choice); setRouteKeywords(['machine']); setTaxonomy(null); setPhase('vehicle-type');
-      setDiagnosticLog(previous => [...previous, {event:'route-selected',choice,addedKeywords:[],taxonomy:null,nextStep:'vehicle-type'}]);
+      const nextTaxonomy = {family:'Machines',path:['Machines']};
+      setRoute(choice); setRouteKeywords([]); setTaxonomy(nextTaxonomy); setPhase('vehicle-type');
+      setDiagnosticLog(previous => [...previous, {event:'route-selected',choice,addedKeywords:[],taxonomy:nextTaxonomy,nextStep:'vehicle-type'}]);
     } else if (choice === 'spares') {
-      setRoute(choice); setRouteKeywords(['spares']); setTaxonomy(null); setPhase('vehicle-type');
-      setDiagnosticLog(previous => [...previous, {event:'route-selected',choice,addedKeywords:[],taxonomy:null,nextStep:'vehicle-type'}]);
+      const nextTaxonomy = {family:'Parts of machines',path:['Parts of machines']};
+      setRoute(choice); setRouteKeywords([]); setTaxonomy(nextTaxonomy); setPhase('vehicle-type');
+      setDiagnosticLog(previous => [...previous, {event:'route-selected',choice,addedKeywords:[],taxonomy:nextTaxonomy,nextStep:'vehicle-type'}]);
     } else {
       setRoute(choice); setRouteKeywords([]); setSelectedCategory(''); setTaxonomy(null); setCategoryDetails({}); setPhase('category');
       setCurrent({id:'description',label:'What is it?',placeholder:'Enter the item name or a short description'});
@@ -213,8 +215,13 @@ export default function SifterMK4() {
   };
   const chooseMachineType = choice => {
     pushHistory();
-    const family = route === 'spares' ? (choice === 'car' ? 'Parts of vehicles' : 'Parts of other machines') : (choice === 'car' ? 'Vehicles' : 'Other machines');
-    const nextTaxonomy = {family,path:[family]};
+    const root = route === 'spares' ? 'Parts of machines' : 'Machines';
+    const branch = route === 'spares'
+      ? (choice === 'car' ? 'Parts of vehicles' : 'Parts of other machines')
+      : (choice === 'car' ? 'Vehicles' : 'Other machines');
+    const leaf = route === 'spares' ? (choice === 'car' ? 'Car parts' : '') : (choice === 'car' ? 'Cars' : '');
+    const path = [root, branch, ...(leaf ? [leaf] : [])];
+    const nextTaxonomy = {family:root,path};
     setTaxonomy(nextTaxonomy);
     setRouteKeywords([]);
     setRoute(choice === 'car' ? (route === 'spares' ? 'spares-car' : 'car') : (route === 'spares' ? 'spares-machine' : 'machine'));
@@ -240,8 +247,8 @@ export default function SifterMK4() {
       }),
     };
     setAnswers(nextAnswers);
-    const machineClass = !isCar ? details.machineClass : '';
-    const nextTaxonomy = taxonomy && machineClass ? {...taxonomy,path:[taxonomy.family,machineClass]} : taxonomy;
+    // Taxonomy is determined by explicit button choices, not seller-entered keywords.
+    const nextTaxonomy = taxonomy;
     setTaxonomy(nextTaxonomy);
     setCurrent({id:'freeform',label:'Anything else you\'d like to add?',placeholder:'Optional: add any other useful search terms'});
     setPhase('freeform'); setInput('');

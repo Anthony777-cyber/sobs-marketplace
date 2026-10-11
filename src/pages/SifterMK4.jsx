@@ -379,7 +379,6 @@ export default function SifterMK4() {
           : phase==='category' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">Which category best fits the item?</h2><p className="mt-3 text-sm text-muted-foreground">Choose the closest fit. The category becomes a search keyword, then the sifter asks for useful details.</p><div className="mt-6 grid grid-cols-4 gap-3">{GENERAL_CATEGORIES.map((category,index)=><button key={category} type="button" onClick={()=>chooseGeneralCategory(category)} style={{backgroundColor:GENERAL_CATEGORY_BUTTON_COLORS[index % GENERAL_CATEGORY_BUTTON_COLORS.length]}} className="flex h-16 min-w-0 w-full items-center justify-center overflow-hidden rounded-full px-1 text-center text-sm font-semibold leading-tight text-white transition hover:brightness-95">{category}</button>)}</div></div>
            : generalQuestionnaire ? <form onSubmit={submitAnswer} className="mt-8 space-y-5 rounded-2xl border bg-muted/20 p-5">
              <p className="text-base font-bold">{FORM_INSTRUCTION}</p>
-             <h2 className="text-xl font-semibold">And now for something completely different.</h2>
              {[
                ['whatIsIt','What is it?','Enter the item name exactly as you would describe it'],
                ['whatIsItCalled','What is it called?','Any other name, if known'],

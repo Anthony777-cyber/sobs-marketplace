@@ -365,6 +365,7 @@ export default function SifterMK4({ customerMode = false, onContinue }) {
   const handleSifterEnter = event => {
     if (event.key !== 'Enter' || event.target.tagName === 'TEXTAREA' || event.target.type === 'submit') return;
     event.preventDefault();
+
     if (phase === 'machine-form' || phase === 'car-form' || phase === 'category-form') {
       const fields = Array.from(event.currentTarget.querySelectorAll('input:not([type="radio"]):not([type="submit"]), select'))
         .filter(element => !element.disabled && element.tabIndex !== -1);
@@ -372,6 +373,15 @@ export default function SifterMK4({ customerMode = false, onContinue }) {
       if (index >= 0 && index < fields.length - 1) fields[index + 1].focus();
       return;
     }
+
+    if (phase !== 'vehicle-classification') {
+      const value = clean(input);
+      const nextAnswers = value ? { ...answers, [current.id]: value } : { ...answers };
+      const nextAsked = [...new Set([...askedIds, current.id])];
+      const nextDecision = getNextGeneralQuestion(nextAnswers, nextAsked, structuredCount + 1);
+      if (nextDecision.done) return;
+    }
+
     event.currentTarget.requestSubmit();
   };
   const copyDiagnostics = async () => {

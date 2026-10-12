@@ -37,9 +37,10 @@ if (typeof window !== 'undefined') {
   try {
     const expiry = Date.parse(localStorage.getItem('sobs_seller_session_expires_at') || '');
     if (Number.isFinite(expiry)) {
+      // The global management key is tab-session-only, never restored from disk.
+      localStorage.removeItem('sobs_global_user_key');
       const keys = [
         'sobs_seller_id',
-        'sobs_global_user_key',
         'sobs_seller_session_token',
         'sobs_seller_session_expires_at',
       ];

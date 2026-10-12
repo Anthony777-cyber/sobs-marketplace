@@ -31,6 +31,35 @@ import DeleteListing from '@/pages/DeleteListing';
 import RenewListingKey from '@/pages/RenewListingKey';
 import CategoryTest from '@/pages/CategoryTest';
 
+// Restore the seller's existing 24-hour session after a page reload or tab restart.
+// The server remains authoritative and rejects expired/revoked tokens.
+if (typeof window !== 'undefined') {
+  try {
+    const expiry = Date.parse(localStorage.getItem('sobs_seller_session_expires_at') || '');
+    if (Number.isFinite(expiry)) {
+      const keys = [
+        'sobs_seller_id',
+        'sobs_global_user_key',
+        'sobs_seller_session_token',
+        'sobs_seller_session_expires_at',
+      ];
+      if (expiry > Date.now()) {
+        for (const key of keys) {
+          const saved = localStorage.getItem(key);
+          if (saved && !sessionStorage.getItem(key)) sessionStorage.setItem(key, saved);
+        }
+      } else {
+        for (const key of keys) {
+          localStorage.removeItem(key);
+          sessionStorage.removeItem(key);
+        }
+      }
+    }
+  } catch {
+    // Storage can be unavailable in restricted browser contexts.
+  }
+}
+
 const AuthenticatedApp = () => {
   return (
     <Routes>

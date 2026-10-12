@@ -178,19 +178,10 @@ export default function SifterMK4({ customerMode = false, onContinue }) {
 
 
   useEffect(() => {
-    if (!customerMode || !draftReady) return;
-    if (skipDraftSaveOnce.current) {
-      skipDraftSaveOnce.current = false;
-      return;
-    }
-    try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({
-        route, routeKeywords, answers, askedIds, structuredCount, current, phase, input,
-        machineDetails, carDetails, selectedCategory, taxonomy, categoryDetails, decision, diagnosticLog, history,
-      }));
-    } catch {}
-  }, [customerMode, draftReady, route, routeKeywords, answers, askedIds, structuredCount, current, phase, input,
-      machineDetails, carDetails, selectedCategory, taxonomy, categoryDetails, decision, diagnosticLog, history]);
+    if (!customerMode) return;
+    // Customer Sifter answers are session-only; do not write questionnaire state to persistent storage.
+    try { localStorage.removeItem(DRAFT_KEY); } catch {}
+  }, [customerMode]);
 
   const keywordGroups = useMemo(() => buildKeywordGroups(answers, routeKeywords), [answers, routeKeywords]);
   const searchTerms = useMemo(() => buildSearchTerms(answers, routeKeywords), [answers, routeKeywords]);

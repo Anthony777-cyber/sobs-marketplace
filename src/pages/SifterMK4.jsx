@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { buildKeywordGroups, buildSearchTerms, getMaxStructuredQuestions, getNextGeneralQuestion } from '../lib/sifterMK4Engine';
 
 const MAX_QUESTIONS = getMaxStructuredQuestions();
@@ -128,6 +128,7 @@ const CATEGORY_FORM_FIELDS = {
 
 export default function SifterMK4({ customerMode = false, onContinue }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [route, setRoute] = useState('');
   const [routeKeywords, setRouteKeywords] = useState([]);
   const [answers, setAnswers] = useState({});
@@ -149,6 +150,13 @@ export default function SifterMK4({ customerMode = false, onContinue }) {
 
   useEffect(() => {
     if (!customerMode) return;
+    const startFresh = new URLSearchParams(location.search).has('fresh');
+    if (startFresh) {
+      try { localStorage.removeItem(DRAFT_KEY); } catch {}
+      navigate('/sifter-mk4', { replace: true });
+      setDraftReady(true);
+      return;
+    }
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
       if (raw) {

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { buildKeywordGroups, buildSearchTerms, getMaxStructuredQuestions, getNextGeneralQuestion } from '../lib/sifterMK4Engine';
 
@@ -152,6 +152,7 @@ export default function SifterMK4({ customerMode = false, onContinue }) {
     if (!customerMode) return;
     const startFresh = new URLSearchParams(location.search).has('fresh');
     if (startFresh) {
+      skipDraftSaveOnce.current = true;
       try { localStorage.removeItem(DRAFT_KEY); } catch {}
       setRoute('');
       setRouteKeywords([]);
@@ -190,8 +191,14 @@ export default function SifterMK4({ customerMode = false, onContinue }) {
     setDraftReady(true);
   }, [customerMode, location.search]);
 
+  const skipDraftSaveOnce = useRef(false);
+
   useEffect(() => {
     if (!customerMode || !draftReady) return;
+    if (skipDraftSaveOnce.current) {
+      skipDraftSaveOnce.current = false;
+      return;
+    }
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({
         route, routeKeywords, answers, askedIds, structuredCount, current, phase, input,

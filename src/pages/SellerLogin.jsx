@@ -17,10 +17,6 @@ export default function SellerLogin() {
   const [attempts, setAttempts] = useState(0);
   const [error, setError] = useState('');
 
-  const ready =
-    /^\d{16}$/.test(sellerId.trim()) &&
-    /^\d{16}$/.test(loginSecret.trim());
-
   async function handleLogin(event) {
     event.preventDefault();
 

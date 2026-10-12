@@ -153,8 +153,24 @@ export default function SifterMK4({ customerMode = false, onContinue }) {
     const startFresh = new URLSearchParams(location.search).has('fresh');
     if (startFresh) {
       try { localStorage.removeItem(DRAFT_KEY); } catch {}
+      setRoute('');
+      setRouteKeywords([]);
+      setAnswers({});
+      setAskedIds([]);
+      setStructuredCount(0);
+      setCurrent({ id:'description', label:'What is it?', placeholder:'Enter the item name or a short description' });
+      setPhase('route');
+      setInput('');
+      setMachineDetails(EMPTY_MACHINE);
+      setCarDetails(EMPTY_CAR);
+      setSelectedCategory('');
+      setTaxonomy(null);
+      setCategoryDetails({});
+      setDecision(null);
+      setDiagnosticLog([]);
+      setHistory([]);
+      setCopyStatus('');
       navigate('/sifter-mk4', { replace: true });
-      setDraftReady(true);
       return;
     }
     try {

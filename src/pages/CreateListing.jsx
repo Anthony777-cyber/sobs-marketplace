@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import NavBar from '@/components/NavBar';
-import CategoryQuestionFlow from '@/components/CategoryQuestionFlow';
 import PaymentTier from '@/components/PaymentTier';
 import PaylinkGateway from '@/components/PaylinkGateway';
 import { generateKeyToken } from '@/lib/token';
@@ -15,6 +14,8 @@ const DRAFT_KEY = 'sobs_create_draft';
 
 export default function CreateListing() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const sifter = location.state?.sifter || null;
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
@@ -27,19 +28,6 @@ export default function CreateListing() {
   const [error, setError] = useState('');
   const [sellerId, setSellerId] = useState('');
   const [showGateway, setShowGateway] = useState(false);
-  const [showCategoryFlow, setShowCategoryFlow] = useState(false);
-  const [categoryFlow, setCategoryFlow] = useState({
-    step: 0,
-    complete: false,
-    answers: {
-      type: '',
-      maker: '',
-      model: '',
-      year: '',
-      part: '',
-    },
-    extra: '',
-  });
 
   useEffect(() => {
     const globalKey = sessionStorage.getItem('sobs_global_user_key')?.trim();
@@ -83,6 +71,25 @@ export default function CreateListing() {
   // Anti-blit persistent form state cache: hydrate the draft on mount so a
   // failed submission, payment loop, or accidental navigation never wipes input.
   useEffect(() => {
+    if (sifter && typeof sifter === 'object') {
+      const answers = sifter.answers || {};
+      const taxonomy = sifter.taxonomy || {};
+      const values = Object.entries(answers)
+        .filter(([, value]) => String(value ?? '').trim())
+        .map(([key, value]) => {
+          const labels = { description: '', machineDescription: 'Description', freeform: 'Additional details', make: 'Make', model: 'Model', year: 'Year', partNumber: 'Part number', colour: 'Colour', runningOperating: 'Running / operating', workingStatus: 'Working status' };
+          const label = labels[key] ?? key.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase());
+          return label ? `${label}: ${String(value).trim()}` : String(value).trim();
+        });
+      const mainDescription = String(answers.description || answers.machineDescription || '').trim();
+      const itemTitle = [mainDescription, answers.make, answers.model, answers.year, answers.partNumber]
+        .map(value => String(value || '').trim()).filter(Boolean).join(' ').replace(/\\s+/g, ' ');
+      setTitle(itemTitle);
+      setDescription(values.join('\\n'));
+      setCategoryPath(Array.isArray(taxonomy.path) ? taxonomy.path.join(' / ') : String(taxonomy.family || ''));
+      setCategoryFlow({step:0,complete:true,answers:{type:'',maker:'',model:'',year:'',part:''},extra:''});
+      return;
+    }
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
       if (!raw) return;
@@ -90,16 +97,11 @@ export default function CreateListing() {
       if (typeof d.title === 'string') setTitle(d.title);
       if (typeof d.description === 'string') setDescription(d.description);
       if (d.price != null) setPrice(String(d.price));
-        if (typeof d.categoryPath === 'string') {
-        setCategoryPath(d.categoryPath);
-      }
-      if (d.categoryFlow && typeof d.categoryFlow === 'object') {
-        setCategoryFlow(d.categoryFlow);
-      }
+      if (typeof d.categoryPath === 'string') setCategoryPath(d.categoryPath);
       if (Array.isArray(d.photos)) setPhotos(d.photos);
       if (d.tier) setTier(d.tier);
     } catch {}
-  }, []);
+  }, [location.key]);
 
   // Freeze every input into the cache until the submission is confirmed server-side.
   useEffect(() => {
@@ -114,11 +116,10 @@ export default function CreateListing() {
           categoryPath,
           photos,
           tier,
-          categoryFlow,
         })
       );
     } catch {}
-  }, [title, description, price, currency, categoryPath, photos, tier, categoryFlow]);
+  }, [title, description, price, currency, categoryPath, photos, tier]);
 
   const cur = getCurrency(currency);
   const selectedTierAmount = tier && rates
@@ -127,28 +128,6 @@ export default function CreateListing() {
         cur.decimals
       )
     : null;
-
-  const finishCategoryFlow = (flow) => {
-    const clean = (value) => String(value || '').trim().replace(/\s+/g, ' ');
-    const firstCap = (value) => {
-      const text = clean(value);
-      return text ? text.charAt(0).toUpperCase() + text.slice(1) : '';
-    };
-
-    const parts = [
-      firstCap(flow.answers?.type),
-      firstCap(flow.answers?.maker),
-      firstCap(flow.answers?.model),
-      clean(flow.answers?.year),
-      firstCap(flow.answers?.part),
-      clean(flow.extra),
-    ].filter(Boolean);
-
-    setCategoryFlow(flow);
-    setCategoryPath(parts.join('/'));
-    setShowCategoryFlow(false);
-  };
-
 
   const onAddPhoto = (e) => {
     const files = Array.from(e.target.files || []);
@@ -255,51 +234,34 @@ export default function CreateListing() {
         <p className="mt-1 text-muted-foreground">List it, pick how long it stays up, and you're live.</p>
 
         <div className="mt-8 space-y-6">
-          {!categoryFlow.complete ? (
-            <div className="rounded-xl border p-5">
-              <h2 className="text-lg font-semibold">Let’s get started</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                A few quick questions help buyers find your listing.
-              </p>
-              <button
-                type="button"
-                onClick={() => setShowCategoryFlow(true)}
-                className="mt-4 rounded-full bg-red-600 px-6 py-2.5 font-semibold text-white"
-              >
-                {categoryFlow.step > 0 ? 'Continue' : 'Let’s get started'}
-              </button>
-            </div>
-          ) : (
-            <>
-              <div>
-                <label className="text-sm font-medium">Title <span className="ml-1 text-xs font-normal text-muted-foreground">Keep it brief, Brevity is the soul of wit.</span></label>
-                <input
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Your listing title"
-                  className="mt-1.5 w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowCategoryFlow(true)}
-                  className="mt-2 text-xs text-muted-foreground underline underline-offset-4"
-                >
-                  Review questions
-                </button>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium">Description</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={4}
-                  placeholder="Tell buyers anything useful about it..."
-                  className="mt-1.5 w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-            </>
-          )}
+          <div>
+            <label className="text-sm font-medium">Title <span className="ml-1 text-xs font-normal text-muted-foreground">Keep it brief, Brevity is the soul of wit.</span></label>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Your listing title"
+              className="mt-1.5 w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Registry category path</label>
+            <input
+              value={categoryPath}
+              onChange={(e) => setCategoryPath(e.target.value)}
+              placeholder="Set by the Sifter"
+              className="mt-1.5 w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Description and collected details</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={6}
+              placeholder="The Sifter's answers appear here. You can edit them."
+              className="mt-1.5 w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -408,15 +370,6 @@ export default function CreateListing() {
             Reset
           </button>
         </div>
-
-        {showCategoryFlow && (
-          <CategoryQuestionFlow
-            value={categoryFlow}
-            onChange={setCategoryFlow}
-            onFinish={finishCategoryFlow}
-            onClose={() => setShowCategoryFlow(false)}
-          />
-        )}
 
         {showGateway && (
           <PaylinkGateway

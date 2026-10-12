@@ -32,7 +32,6 @@ import CategoryTest from '@/pages/CategoryTest';
 import AdaptiveQuestionnaireTest from '@/pages/AdaptiveQuestionnaireTest';
 import SifterMK2 from '@/pages/SifterMK2';
 import SifterMK3 from '@/pages/SifterMK3';
-import SifterMK4 from '@/pages/SifterMK4';
 import SellerSifterPage from '@/pages/SellerSifterPage';
 import SifterMK4Preview from '@/pages/SifterMK4Preview';
 
@@ -54,7 +53,7 @@ const AuthenticatedApp = () => {
       <Route path="/adaptive-test" element={<AdaptiveQuestionnaireTest />} />
       <Route path="/sifter-mk2" element={<SifterMK2 />} />
       <Route path="/sifter-mk3" element={<SifterMK3 />} />
-      <Route path="/sifter-mk4" element={<SifterMK4 />} />
+      <Route path="/sifter-mk4" element={<SellerSifterPage />} />
       <Route path="/sifter-mk4-preview" element={<SifterMK4Preview />} />
       <Route path="/sifter" element={<SellerSifterPage />} />
       <Route path="/confirmed/:id" element={<Confirmed />} />

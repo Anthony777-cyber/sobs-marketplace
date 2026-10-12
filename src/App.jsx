@@ -12,6 +12,8 @@ import CreateListing from '@/pages/CreateListing';
 import SellInfo from '@/pages/SellInfo';
 import Signup from '@/pages/Signup';
 import SellerLogin from '@/pages/SellerLogin';
+import SifterMK4 from '@/pages/SifterMK4';
+import SellerSifterPage from '@/pages/SellerSifterPage';
 import Listings from '@/pages/Listings';
 import ListingDetail from '@/pages/ListingDetail';
 import Browse from '@/pages/Browse';

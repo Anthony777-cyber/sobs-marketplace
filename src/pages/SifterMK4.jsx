@@ -135,7 +135,7 @@ export default function SifterMK4({ customerMode = false, onContinue }) {
   const [askedIds, setAskedIds] = useState([]);
   const [structuredCount, setStructuredCount] = useState(0);
   const [current, setCurrent] = useState({ id:'description', label:'What is it?', placeholder:'Enter the item name or a short description' });
-  const [phase, setPhase] = useState('route');
+  const [phase, setPhase] = useState(customerMode ? 'splash' : 'route');
   const [input, setInput] = useState('');
   const [machineDetails, setMachineDetails] = useState(EMPTY_MACHINE);
   const [carDetails, setCarDetails] = useState(EMPTY_CAR);
@@ -150,48 +150,32 @@ export default function SifterMK4({ customerMode = false, onContinue }) {
 
   useEffect(() => {
     if (!customerMode) return;
-    const startFresh = new URLSearchParams(location.search).has('fresh');
-    if (startFresh) {
-      skipDraftSaveOnce.current = true;
-      try { localStorage.removeItem(DRAFT_KEY); } catch {}
-      setRoute('');
-      setRouteKeywords([]);
-      setAnswers({});
-      setAskedIds([]);
-      setStructuredCount(0);
-      setCurrent({ id:'description', label:'What is it?', placeholder:'Enter the item name or a short description' });
-      setPhase('route');
-      setInput('');
-      setMachineDetails(EMPTY_MACHINE);
-      setCarDetails(EMPTY_CAR);
-      setSelectedCategory('');
-      setTaxonomy(null);
-      setCategoryDetails({});
-      setDecision(null);
-      setDiagnosticLog([]);
-      setHistory([]);
-      setCopyStatus('');
-      navigate('/sifter-mk4', { replace: true });
-      return;
-    }
-    try {
-      const raw = localStorage.getItem(DRAFT_KEY);
-      if (raw) {
-        const saved = JSON.parse(raw);
-        setRoute(saved.route || ''); setRouteKeywords(saved.routeKeywords || []); setAnswers(saved.answers || {});
-        setAskedIds(saved.askedIds || []); setStructuredCount(saved.structuredCount || 0);
-        setCurrent(saved.current || {id:'description',label:'What is it?',placeholder:'Enter the item name or a short description'});
-        setPhase(saved.phase || 'route'); setInput(saved.input || '');
-        setMachineDetails(saved.machineDetails || EMPTY_MACHINE); setCarDetails(saved.carDetails || EMPTY_CAR);
-        setSelectedCategory(saved.selectedCategory || ''); setTaxonomy(saved.taxonomy || null);
-        setCategoryDetails(saved.categoryDetails || {}); setDecision(saved.decision || null);
-        setDiagnosticLog(saved.diagnosticLog || []); setHistory(saved.history || []);
-      }
-    } catch {}
+    // Customer-facing Sifter sessions always start clean. Never hydrate an old
+    // questionnaire draft, since localStorage survives browser restarts.
+    try { localStorage.removeItem(DRAFT_KEY); } catch {}
+    setRoute('');
+    setRouteKeywords([]);
+    setAnswers({});
+    setAskedIds([]);
+    setStructuredCount(0);
+    setCurrent({ id:'description', label:'What is it?', placeholder:'Enter the item name or a short description' });
+    setPhase('splash');
+    setInput('');
+    setMachineDetails(EMPTY_MACHINE);
+    setCarDetails(EMPTY_CAR);
+    setSelectedCategory('');
+    setTaxonomy(null);
+    setCategoryDetails({});
+    setDecision(null);
+    setDiagnosticLog([]);
+    setHistory([]);
+    setCopyStatus('');
     setDraftReady(true);
-  }, [customerMode, location.search]);
+    if (new URLSearchParams(location.search).has('fresh')) {
+      navigate('/sifter-mk4', { replace: true });
+    }
+  }, [customerMode]);
 
-  const skipDraftSaveOnce = useRef(false);
 
   useEffect(() => {
     if (!customerMode || !draftReady) return;
@@ -454,8 +438,9 @@ export default function SifterMK4({ customerMode = false, onContinue }) {
     <div className={`grid flex-1 gap-8 ${customerMode || phase==='category'?'grid-cols-1':'md:grid-cols-[1fr_300px]'}`}>
       <main className={`rounded-2xl border bg-background p-6 shadow-sm sm:p-10 ${phase==='category'?'w-full':''}`}>
         {!complete ? <>
-          <div className="flex items-center justify-between gap-4"><span className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">{phase==='route'?'CHOOSE A ROUTE':phase==='vehicle-type'?'MACHINE ROUTE':phase==='category'?'CHOOSE A CATEGORY':categoryForm?'CATEGORY DETAILS':machineForm?'MACHINE DETAILS':carForm?'CAR DETAILS':'STRUCTURED QUESTION '+(structuredCount+1)+' OF '+MAX_QUESTIONS}</span>{customerMode ? (phase==='route' ? <button type="button" onClick={()=>navigate('/')} className="rounded-full border px-4 py-2 text-sm font-semibold">Exit</button> : null) : <span className="rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide">Test only</span>}</div>
-          {phase==='route' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">What are you listing?</h2><div className="mt-6 grid gap-3 sm:grid-cols-3">{[['machine','Machine'],['spares','Part of a machine'],['other','Everything else']].map(([value,label])=><button key={value} type="button" onClick={()=>chooseRoute(value)} className="min-h-16 rounded-xl border border-red-600 bg-red-600 px-4 py-4 text-lg font-semibold text-white transition hover:bg-red-700">{label}</button>)}</div></div>
+          <div className="flex items-center justify-between gap-4"><span className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">{phase==='splash'?'SIFTER START':phase==='route'?'CHOOSE A ROUTE':phase==='vehicle-type'?'MACHINE ROUTE':phase==='category'?'CHOOSE A CATEGORY':categoryForm?'CATEGORY DETAILS':machineForm?'MACHINE DETAILS':carForm?'CAR DETAILS':'STRUCTURED QUESTION '+(structuredCount+1)+' OF '+MAX_QUESTIONS}</span>{customerMode ? (phase==='route' ? <button type="button" onClick={()=>navigate('/')} className="rounded-full border px-4 py-2 text-sm font-semibold">Exit</button> : null) : <span className="rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide">Test only</span>}</div>
+          {phase==='splash' ? <div className="mx-auto mt-10 max-w-2xl text-center"><h2 className="text-3xl font-semibold sm:text-4xl">S.O.B.S Sifter</h2><p className="mt-4 text-base text-muted-foreground">The more precisely we identify your item, the sooner the right buyer finds it and you sell it.</p><div className="mt-8 flex justify-center gap-3"><button type="button" onClick={()=>setPhase('route')} className="rounded-full bg-red-600 px-7 py-3 font-semibold text-white">Start</button><button type="button" onClick={()=>navigate('/')} className="rounded-full border px-7 py-3 font-semibold">Exit</button></div></div>
+          : phase==='route' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">What are you listing?</h2><div className="mt-6 grid gap-3 sm:grid-cols-3">{[['machine','Machine'],['spares','Part of a machine'],['other','Everything else']].map(([value,label])=><button key={value} type="button" onClick={()=>chooseRoute(value)} className="min-h-16 rounded-xl border border-red-600 bg-red-600 px-4 py-4 text-lg font-semibold text-white transition hover:bg-red-700">{label}</button>)}</div></div>
           : phase==='vehicle-type' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">Is it parts of a vehicle or other machine?</h2><div className="mt-6 grid gap-3 sm:grid-cols-2">{[['car','Vehicles','Adds “Vehicles” and asks the seller to name the vehicle type'],['machine','Other machine','Opens the existing machine-details form']].map(([value,label,desc])=><button key={value} type="button" onClick={()=>chooseMachineType(value)} className="min-h-16 rounded-xl border border-blue-600 bg-blue-600 px-4 py-4 text-lg font-semibold text-white transition hover:bg-blue-700">{label}</button>)}</div></div>
           : vehicleClassification ? <form onSubmit={submitAnswer} onKeyDown={e => { if (e.key !== 'Enter' || e.target.tagName === 'TEXTAREA' || e.target.type === 'submit') return; e.preventDefault(); if (phase === 'machine-form' || phase === 'car-form' || phase === 'category-form') { const fields = Array.from(e.currentTarget.querySelectorAll('input:not([type="radio"]):not([type="submit"]), select')).filter(el => !el.disabled && el.tabIndex !== -1); const index = fields.indexOf(e.target); if (index >= 0 && index < fields.length - 1) fields[index + 1].focus(); return; } e.currentTarget.requestSubmit(); }} className="mt-10"><p className="text-base font-bold">{FORM_INSTRUCTION}</p><h2 className="text-2xl font-semibold leading-tight sm:text-3xl">What sort of vehicle is it?</h2><p className="mt-3 text-sm text-muted-foreground">Use your own description, such as truck, SUV, kit car or motorcycle.</p><div className="mt-6 flex items-start gap-2"><input autoFocus value={input} onChange={e=>setInput(e.target.value)} placeholder="Vehicle type" className="w-full rounded-xl border bg-background px-5 py-5 text-xl outline-none focus:ring-2 focus:ring-ring sm:text-2xl"/><button type="button" tabIndex={-1} aria-label="Clear vehicle type" onClick={()=>clearInputAnswer('vehicleType')} className="rounded-full border px-2.5 py-2 text-sm font-bold">×</button></div><div className="mt-5 flex justify-end"><button type="submit" className="rounded-full bg-red-600 px-7 py-3 font-semibold text-white">Continue</button></div></form>
           : phase==='category' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">Which category best fits the item?</h2><p className="mt-3 text-sm text-muted-foreground">Choose the item's top-level family. The sifter then collects useful searchable details.</p><div className="mt-6 grid grid-cols-4 gap-3">{GENERAL_CATEGORIES.map((category,index)=><button key={category} type="button" onClick={()=>chooseGeneralCategory(category)} style={{backgroundColor:GENERAL_CATEGORY_BUTTON_COLORS[index % GENERAL_CATEGORY_BUTTON_COLORS.length]}} className="flex h-16 min-w-0 w-full items-center justify-center overflow-hidden rounded-full px-1 text-center text-sm font-semibold leading-tight text-white transition hover:brightness-95">{category}</button>)}</div></div>

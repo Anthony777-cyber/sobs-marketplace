@@ -38,6 +38,7 @@ const AuthenticatedApp = () => {
       {/* Add your page Route elements here */}
       <Route path="/" element={<Splash />} />
       <Route path="/create" element={<CreateListing />} />
+      <Route path="/sifter-mk4" element={<SellerSifterPage />} />
       <Route path="/sell-info" element={<SellInfo />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/seller-login" element={<SellerLogin />} />

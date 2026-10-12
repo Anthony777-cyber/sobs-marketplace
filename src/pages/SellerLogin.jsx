@@ -24,7 +24,18 @@ export default function SellerLogin() {
   async function handleLogin(event) {
     event.preventDefault();
 
-    if (!ready || status === 'logging-in' || attempts >= 5) {
+    if (status === 'logging-in' || attempts >= 5) {
+      return;
+    }
+
+    // Read actual form values so browser password-manager autofill works
+    // even when it does not trigger React's controlled-input onChange.
+    const formData = new FormData(event.currentTarget);
+    const enteredSellerId = String(formData.get('username') || sellerId).replace(/\D/g, '').trim();
+    const enteredSecret = String(formData.get('password') || loginSecret).replace(/\D/g, '').trim();
+
+    if (!/^\d{16}$/.test(enteredSellerId) || !/^\d{16}$/.test(enteredSecret)) {
+      setError('Enter your 16-digit S.O.B.S ID and login secret.');
       return;
     }
 
@@ -38,8 +49,8 @@ export default function SellerLogin() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          sellerId: sellerId.trim(),
-          loginSecret: loginSecret.trim(),
+          sellerId: enteredSellerId,
+          loginSecret: enteredSecret,
         }),
       });
 
@@ -58,13 +69,13 @@ export default function SellerLogin() {
         return;
       }
 
-      sessionStorage.setItem('sobs_seller_id', sellerId.trim());
-      sessionStorage.setItem('sobs_global_user_key', sellerId.trim());
+      sessionStorage.setItem('sobs_seller_id', enteredSellerId);
+      sessionStorage.setItem('sobs_global_user_key', enteredSellerId);
       sessionStorage.setItem('sobs_seller_session_token', data.sessionToken);
       sessionStorage.setItem('sobs_seller_session_expires_at', data.expiresAt);
       // Keep only the expiring session credentials, never the login secret.
-      localStorage.setItem('sobs_seller_id', sellerId.trim());
-      localStorage.setItem('sobs_global_user_key', sellerId.trim());
+      localStorage.setItem('sobs_seller_id', enteredSellerId);
+      localStorage.setItem('sobs_global_user_key', enteredSellerId);
       localStorage.setItem('sobs_seller_session_token', data.sessionToken);
       localStorage.setItem('sobs_seller_session_expires_at', data.expiresAt);
 
@@ -176,7 +187,7 @@ export default function SellerLogin() {
 
           <button
             type="submit"
-            disabled={!ready || status === 'logging-in' || attempts >= 5}
+            disabled={status === 'logging-in' || attempts >= 5}
             className={BUTTON_CLASS}
           >
             {status === 'logging-in' ? 'Logging in...' : 'Log in'}

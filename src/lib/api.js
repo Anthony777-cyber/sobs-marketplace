@@ -35,6 +35,10 @@ export async function sellerLogout() {
   sessionStorage.removeItem('sobs_global_user_key');
   sessionStorage.removeItem('sobs_seller_session_token');
   sessionStorage.removeItem('sobs_seller_session_expires_at');
+  localStorage.removeItem('sobs_seller_id');
+  localStorage.removeItem('sobs_global_user_key');
+  localStorage.removeItem('sobs_seller_session_token');
+  localStorage.removeItem('sobs_seller_session_expires_at');
 }
 
 export async function getManageListing(keyToken) {

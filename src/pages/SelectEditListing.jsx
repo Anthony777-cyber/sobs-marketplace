@@ -61,11 +61,9 @@ export default function SelectEditListing() {
               key={listing.id}
               className="flex items-center gap-8 rounded-xl border border-white/15 p-5"
             >
-              <div>
-                <p className="font-display text-xl">
-                  #{listing.listing_number}
-                </p>
-                <p className="text-white/70">{listing.title}</p>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-white break-words">{listing.title}</p>
+                <p className="mt-1 text-sm text-white/60">#{listing.listing_number}</p>
               </div>
 
               <button
@@ -76,7 +74,7 @@ export default function SelectEditListing() {
                   );
                   navigate('/manage/edit-key');
                 }}
-                className="rounded-full bg-white px-5 py-2.5 font-semibold text-black"
+                className="ml-auto shrink-0 rounded-full bg-white px-5 py-2.5 font-semibold text-black"
               >
                 Edit
               </button>

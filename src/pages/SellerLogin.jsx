@@ -62,6 +62,11 @@ export default function SellerLogin() {
       sessionStorage.setItem('sobs_global_user_key', sellerId.trim());
       sessionStorage.setItem('sobs_seller_session_token', data.sessionToken);
       sessionStorage.setItem('sobs_seller_session_expires_at', data.expiresAt);
+      // Keep only the expiring session credentials, never the login secret.
+      localStorage.setItem('sobs_seller_id', sellerId.trim());
+      localStorage.setItem('sobs_global_user_key', sellerId.trim());
+      localStorage.setItem('sobs_seller_session_token', data.sessionToken);
+      localStorage.setItem('sobs_seller_session_expires_at', data.expiresAt);
 
       setStatus('success');
     } catch {
@@ -123,7 +128,7 @@ export default function SellerLogin() {
           Use your S.O.B.S ID and your separate login secret.
         </p>
 
-        <form onSubmit={handleLogin} className="mt-8 space-y-5">
+        <form onSubmit={handleLogin} autoComplete="on" className="mt-8 space-y-5">
           <div>
             <label className="mb-1 block text-sm font-medium">
               Your S.O.B.S ID

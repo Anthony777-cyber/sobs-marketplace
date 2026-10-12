@@ -10,13 +10,36 @@ export default function GlobalManagementConsole() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!sessionStorage.getItem('sobs_seller_session_token')) navigate('/seller-login', { replace: true });
-  }, [navigate]);
-
-  useEffect(() => {
-    if (!sessionStorage.getItem('sobs_seller_session_token')) {
+    const sellerSession = sessionStorage.getItem('sobs_seller_session_token');
+    if (!sellerSession) {
       navigate('/seller-login', { replace: true });
+      return;
     }
+
+    const savedKey = sessionStorage.getItem('sobs_global_user_key');
+    if (!savedKey) return;
+
+    let cancelled = false;
+    fetch('/api/manage/global/verify', {
+      method: 'POST',
+      headers: {
+        'X-SOBS-Global-Key': savedKey,
+        'X-SOBS-Seller-Session': sellerSession,
+      },
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error('Key verification failed');
+        if (!cancelled) {
+          sessionStorage.removeItem('sobs_global_listing_id');
+          sessionStorage.removeItem('sobs_global_listing_number');
+          navigate('/manage/console', { replace: true });
+        }
+      })
+      .catch(() => {
+        sessionStorage.removeItem('sobs_global_user_key');
+      });
+
+    return () => { cancelled = true; };
   }, [navigate]);
 
   async function handleSubmit(event) {
@@ -40,7 +63,7 @@ export default function GlobalManagementConsole() {
       if (!res.ok) throw new Error(data?.error || 'Wrong key');
 
       sessionStorage.setItem('sobs_global_user_key', code);
-      localStorage.setItem('sobs_global_user_key', code);
+      localStorage.removeItem('sobs_global_user_key');
       sessionStorage.removeItem('sobs_global_listing_id');
       sessionStorage.removeItem('sobs_global_listing_number');
 
@@ -53,6 +76,7 @@ export default function GlobalManagementConsole() {
 
       if (nextAttempts >= MAX_ATTEMPTS) {
         sessionStorage.removeItem('sobs_global_user_key');
+        localStorage.removeItem('sobs_global_user_key');
       }
     }
   }

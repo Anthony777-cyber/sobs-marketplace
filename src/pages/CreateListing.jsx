@@ -83,11 +83,10 @@ export default function CreateListing() {
         });
       const mainDescription = String(answers.description || answers.machineDescription || '').trim();
       const itemTitle = [mainDescription, answers.make, answers.model, answers.year, answers.partNumber]
-        .map(value => String(value || '').trim()).filter(Boolean).join(' ').replace(/\\s+/g, ' ');
+        .map(value => String(value || '').trim()).filter(Boolean).join(' ').replace(/\s+/g, ' ');
       setTitle(itemTitle);
-      setDescription(values.join('\\n'));
+      setDescription(values.join('\n'));
       setCategoryPath(Array.isArray(taxonomy.path) ? taxonomy.path.join(' / ') : String(taxonomy.family || ''));
-      setCategoryFlow({step:0,complete:true,answers:{type:'',maker:'',model:'',year:'',part:''},extra:''});
       return;
     }
     try {

@@ -50,7 +50,10 @@ export default function CreateListing() {
     }
 
     fetch('/api/seller/me', {
-      headers: { 'X-SOBS-Global-Key': globalKey },
+      headers: {
+        'X-SOBS-Global-Key': globalKey,
+        'X-SOBS-Seller-Session': sessionStorage.getItem('sobs_seller_session_token') || '',
+      },
     })
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
@@ -197,6 +200,7 @@ export default function CreateListing() {
         headers: {
           'Content-Type': 'application/json',
           'X-SOBS-Global-Key': globalKey,
+          'X-SOBS-Seller-Session': sessionStorage.getItem('sobs_seller_session_token') || '',
         },
         body: JSON.stringify({
           title,

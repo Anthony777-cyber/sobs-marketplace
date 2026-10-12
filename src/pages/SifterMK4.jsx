@@ -172,7 +172,7 @@ export default function SifterMK4({ customerMode = false, onContinue }) {
       }
     } catch {}
     setDraftReady(true);
-  }, [customerMode]);
+  }, [customerMode, location.search]);
 
   useEffect(() => {
     if (!customerMode || !draftReady) return;

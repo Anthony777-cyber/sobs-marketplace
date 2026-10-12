@@ -46,9 +46,11 @@ export default function ManagementConsole() {
   }, [globalKey, navigate]);
 
   const logout = () => {
+    // Exit the console without clearing the verified management key.
+    // sessionStorage keeps access for this browser tab and clears on tab/browser-session end.
     sessionStorage.removeItem(KEY_STORAGE);
-    sessionStorage.removeItem(GLOBAL_KEY_STORAGE);
-    localStorage.removeItem(GLOBAL_KEY_STORAGE);
+    sessionStorage.removeItem('sobs_global_listing_id');
+    sessionStorage.removeItem('sobs_global_listing_number');
     navigate('/', { replace: true });
   };
 

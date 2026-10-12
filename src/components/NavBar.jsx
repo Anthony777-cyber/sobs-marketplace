@@ -23,7 +23,7 @@ export default function NavBar() {
           </span>
         </Link>
         <div className="flex items-center gap-3">
-          {pathname !== '/create' && <Link to="/create" className="inline-flex w-32 items-center justify-center rounded-full bg-red-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700">Post</Link>}
+          {pathname !== '/create' && <Link to="/sifter-mk4" onClick={() => { try { localStorage.removeItem('sobs_sifter_mk4_draft'); } catch {} }} className="inline-flex w-32 items-center justify-center rounded-full bg-red-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700">Post</Link>}
           {pathname !== '/browse' && <Link to="/browse" className="inline-flex w-32 items-center justify-center rounded-full bg-orange-500 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-orange-600">Listings</Link>}
           {pathname !== '/categories' && <Link to="/categories" className="inline-flex w-32 items-center justify-center rounded-full bg-yellow-400 px-5 py-2 text-sm font-semibold text-black shadow-sm transition-colors hover:bg-yellow-500">Index</Link>}
         </div>

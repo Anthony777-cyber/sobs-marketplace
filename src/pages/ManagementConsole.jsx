@@ -48,6 +48,7 @@ export default function ManagementConsole() {
   const logout = () => {
     sessionStorage.removeItem(KEY_STORAGE);
     sessionStorage.removeItem(GLOBAL_KEY_STORAGE);
+    localStorage.removeItem(GLOBAL_KEY_STORAGE);
     navigate('/', { replace: true });
   };
 

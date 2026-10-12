@@ -235,6 +235,7 @@ export default function CreateListing() {
       }
 
       localStorage.removeItem(DRAFT_KEY);
+      localStorage.removeItem('sobs_sifter_mk4_draft');
       navigate(`/confirmed/${data.listing.id}`, {
         state: { keyToken: data.listing.keyToken, listingNumber: data.listing.listingNumber },
       });

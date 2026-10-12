@@ -40,6 +40,7 @@ export default function GlobalManagementConsole() {
       if (!res.ok) throw new Error(data?.error || 'Wrong key');
 
       sessionStorage.setItem('sobs_global_user_key', code);
+      localStorage.setItem('sobs_global_user_key', code);
       sessionStorage.removeItem('sobs_global_listing_id');
       sessionStorage.removeItem('sobs_global_listing_number');
 

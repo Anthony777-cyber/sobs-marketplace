@@ -118,9 +118,11 @@ export default function Splash() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               to={
-                sessionStorage.getItem('sobs_global_user_key')
-                  ? '/create'
-                  : '/sell-info'
+                sessionStorage.getItem('sobs_global_user_key') && sessionStorage.getItem('sobs_seller_session_token')
+                  ? '/sifter-mk4'
+                  : sessionStorage.getItem('sobs_global_user_key')
+                    ? '/seller-login'
+                    : '/sell-info'
               }
               className="inline-flex w-32 items-center justify-center gap-2 rounded-full bg-red-600 px-5 py-2 font-semibold text-white transition-colors hover:bg-red-700"
             >

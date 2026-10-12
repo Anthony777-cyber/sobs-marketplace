@@ -154,8 +154,11 @@ export default function CreateListing() {
   const removePhoto = (i) => setPhotos(photos.filter((_, idx) => idx !== i));
 
   const resetListing = () => {
-    localStorage.removeItem(DRAFT_KEY);
-    window.location.reload();
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+      localStorage.removeItem('sobs_sifter_mk4_draft');
+    } catch {}
+    navigate('/sifter-mk4?fresh=1', { replace: true });
   };
 
   const submit = () => {

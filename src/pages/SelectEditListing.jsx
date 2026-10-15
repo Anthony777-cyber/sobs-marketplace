@@ -31,7 +31,7 @@ export default function SelectEditListing() {
     return (
       <div className="min-h-screen bg-black text-white">
         <NavBar />
-        <div className="mx-auto max-w-xl px-4 pt-[15vh] pb-12">
+        <div className="mx-auto w-[90vw] max-w-none px-4 pt-[15vh] pb-12">
           <Loader2 className="h-5 w-5 animate-spin" />
         </div>
       </div>
@@ -41,7 +41,7 @@ export default function SelectEditListing() {
   return (
     <div className="min-h-screen bg-black text-white">
       <NavBar />
-      <div className="mx-auto max-w-2xl px-4 pt-[15vh] pb-12">
+      <div className="mx-auto w-[90vw] max-w-none px-4 pt-[15vh] pb-12">
         <div className="mb-8 flex items-start justify-between gap-4">
           <h1 className="font-display text-3xl tracking-tight">
             Edit Listing
@@ -55,11 +55,11 @@ export default function SelectEditListing() {
           </button>
         </div>
 
-        <div className="mt-8 space-y-3">
+        <div className="mt-8 grid grid-cols-[repeat(10,minmax(0,1fr))] gap-2">
           {listings.map((listing) => (
             <div
               key={listing.id}
-              className="flex items-center gap-8 rounded-xl border border-white/15 p-5"
+              className="flex min-w-0 flex-col items-start gap-3 rounded-xl border border-white/15 p-3"
             >
               <div className="min-w-0 flex-1">
                 <p className="font-semibold text-white break-words">{listing.title}</p>
@@ -74,7 +74,7 @@ export default function SelectEditListing() {
                   );
                   navigate('/manage/edit-key');
                 }}
-                className="ml-auto shrink-0 rounded-full bg-white px-5 py-2.5 font-semibold text-black"
+                className="shrink-0 rounded-full bg-white px-5 py-2.5 font-semibold text-black"
               >
                 Edit
               </button>

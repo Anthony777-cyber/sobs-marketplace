@@ -60,7 +60,7 @@ export default function ViewSellerListings() {
     return (
       <div className="min-h-screen bg-black text-white">
         <NavBar />
-        <div className="mx-auto max-w-xl px-4 pt-[25vh] pb-12">
+        <div className="mx-auto w-[90%] px-4 py-8">
           <Loader2 className="h-5 w-5 animate-spin" />
         </div>
       </div>
@@ -71,7 +71,7 @@ export default function ViewSellerListings() {
     <div className="min-h-screen bg-black text-white">
       <NavBar />
 
-      <div className="mx-auto max-w-xl px-4 pt-[25vh] pb-12">
+      <div className="mx-auto w-[90%] px-4 py-8">
         <div className="mb-6 flex items-start justify-between gap-4">
           <h1 className="font-display text-3xl tracking-tight">Your Listings</h1>
           <button
@@ -87,7 +87,7 @@ export default function ViewSellerListings() {
         </p>
 
         {listings.length > 0 ? (
-          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {listings.map((listing) => (
               <div key={listing.id}>
                 <ListingCard listing={listing} backTo="/manage/view-listings" useDirectImages />

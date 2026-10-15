@@ -10,6 +10,8 @@ import { useCurrency } from '@/lib/CurrencyContext';
 import { Image as ImageIcon, Loader2, Plus, X } from 'lucide-react';
 
 const MAX_PHOTOS = 3;
+const MAX_DESCRIPTION_WORDS = 500;
+const countWords = (text) => text.trim() ? text.trim().split(/\s+/).length : 0;
 const DRAFT_KEY = 'sobs_create_draft';
 
 export default function CreateListing() {
@@ -74,18 +76,6 @@ export default function CreateListing() {
     if (sifter && typeof sifter === 'object') {
       const answers = sifter.answers || {};
       const taxonomy = sifter.taxonomy || {};
-      const values = Object.entries(answers)
-        .filter(([, value]) => String(value ?? '').trim())
-        .map(([key, value]) => {
-          const labels = { description: '', machineDescription: 'Description', freeform: 'Additional details', make: 'Make', model: 'Model', year: 'Year', partNumber: 'Part number', colour: 'Colour', runningOperating: 'Running / operating', workingStatus: 'Working status' };
-          const label = labels[key] ?? key.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase());
-          return label ? `${label}: ${String(value).trim()}` : String(value).trim();
-        });
-      const mainDescription = String(answers.description || answers.machineDescription || '').trim();
-      const itemTitle = [mainDescription, answers.make, answers.model, answers.year, answers.partNumber]
-        .map(value => String(value || '').trim()).filter(Boolean).join(' ').replace(/\s+/g, ' ');
-      setTitle(itemTitle);
-      setDescription(values.join('\n'));
       setCategoryPath(Array.isArray(taxonomy.path) ? taxonomy.path.join(' / ') : String(taxonomy.family || ''));
       return;
     }
@@ -212,7 +202,11 @@ export default function CreateListing() {
     }
   };
 
-  const canSubmit = sellerId && title && price && tier && categoryPath.trim() && !submitting;
+  const descriptionWordCount = countWords(description);
+  const canSubmit = sellerId && title && price && tier && categoryPath.trim()
+    && photos.length > 0
+    && descriptionWordCount <= MAX_DESCRIPTION_WORDS
+    && !submitting;
 
   const gbpEquivalent = (() => {
     const amount = Number(price);
@@ -232,8 +226,7 @@ export default function CreateListing() {
     <div className="min-h-screen bg-background">
       <NavBar />
       <div className="mx-auto max-w-2xl px-4 py-10">
-        <h1 className="font-display text-3xl tracking-tight">Post your junk</h1>
-        <p className="mt-1 text-muted-foreground">List it, pick how long it stays up, and you're live.</p>
+        <h1 className="font-display text-3xl tracking-tight">NOW FILL IN YOUR TITLE AND DESCRIPTION</h1>
 
         <div className="mt-8 space-y-6">
           <div>
@@ -241,28 +234,26 @@ export default function CreateListing() {
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              required
               placeholder="Your listing title"
               className="mt-1.5 w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
           <div>
-            <label className="text-sm font-medium">Registry category path</label>
-            <input
-              value={categoryPath}
-              onChange={(e) => setCategoryPath(e.target.value)}
-              placeholder="Set by the Sifter"
-              className="mt-1.5 w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Description and collected details</label>
+            <label className="text-sm font-medium">Description</label>
             <textarea
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => {
+                const next = e.target.value;
+                if (countWords(next) <= MAX_DESCRIPTION_WORDS) setDescription(next);
+              }}
               rows={6}
-              placeholder="The Sifter's answers appear here. You can edit them."
+              placeholder="Describe your item in your own words."
               className="mt-1.5 w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring"
             />
+            <p className="mt-1 text-xs text-muted-foreground">
+              {descriptionWordCount} / {MAX_DESCRIPTION_WORDS} words
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -274,8 +265,9 @@ export default function CreateListing() {
                 step="0.01"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
+                required
                 placeholder="0"
-                className="mt-1.5 w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring"
+                className="mt-1.5 w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               />
               {price && (
                 <p className="mt-1 text-xs text-muted-foreground">

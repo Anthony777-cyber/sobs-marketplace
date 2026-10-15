@@ -9,7 +9,7 @@ import { ArrowLeft, Copy, Loader2 } from 'lucide-react';
 import { getCurrency, formatAmount } from '@/lib/currency';
 import { formatExpiryDate } from '@/lib/format';
 import { setHead } from '@/lib/head';
-import { getListing } from '@/lib/api';
+import { getListing, getGlobalSellerListings } from '@/lib/api';
 
 function formatPublicListingNumber(value) {
   const digits = String(value ?? '').padStart(16, '0');
@@ -30,6 +30,20 @@ export default function ListingDetail() {
     (async () => {
       try {
         const l = await getListing(id);
+        if (backTo === '/manage/view-listings' && location.state?.managedListing?.key_token) { l.key_token = location.state.managedListing.key_token; }
+        if (backTo === '/manage/view-listings') {
+          const globalKey = sessionStorage.getItem('sobs_global_user_key');
+          if (globalKey) {
+            const data = await getGlobalSellerListings(globalKey);
+            const managed = (data.listings || []).find(
+              item =>
+                String(item.id) === String(id) ||
+                String(item.listing_alias) === String(l.listing_alias) ||
+                String(item.listing_number) === String(l.listing_number)
+            );
+            if (managed) l.key_token = managed.key_token;
+          }
+        }
         if (l.grey_zone || new Date(l.expires_date).getTime() <= Date.now()) {
           setRemoved(true);
         }
@@ -106,7 +120,7 @@ export default function ListingDetail() {
                 <h1 className="font-display text-2xl tracking-tight">{listing.title}</h1>
 
                 <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>Listing {formatPublicListingNumber(listing.listing_alias)}</span>
+                  <span>{backTo === '/manage/view-listings' ? 'Public Listing Code: ' : 'Listing '}{formatPublicListingNumber(listing.listing_alias)}</span>
                   <button
                     type="button"
                     onClick={async () => {
@@ -123,6 +137,9 @@ export default function ListingDetail() {
                     {copied ? 'Copied' : 'Copy'}
                   </button>
                 </div>
+                {backTo === '/manage/view-listings' && (listing.key_token || location.state?.managedListing?.key_token) && (
+                  <div className="mt-2 text-sm">Management Code: {listing.key_token || location.state?.managedListing?.key_token}</div>
+                )}
                 {listing.description && (
                   <p className="mt-4 whitespace-pre-wrap text-muted-foreground">{listing.description}</p>
                 )}
@@ -147,3 +164,6 @@ export default function ListingDetail() {
     </div>
   );
 }
+
+
+

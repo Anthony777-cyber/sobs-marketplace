@@ -741,7 +741,8 @@ export default {
           SELECT
             id,
             listing_number,
-            listing_alias,
+            listing_alias,
+            key_token,
             title,
             description,
             price,
@@ -890,7 +891,8 @@ export default {
           SELECT
             id,
             listing_number,
-            listing_alias,
+            listing_alias,
+            key_token,
             title,
             description,
             price,

@@ -84,7 +84,7 @@ export default function ListingCard({ listing, onRemoved, backTo, useDirectImage
       <div className="p-4">
         <Link
           to={`/listings/${listing.id}`}
-          state={backTo ? { backTo } : undefined}
+          state={backTo ? { backTo, managedListing: listing } : undefined}
           className="block truncate font-medium text-white hover:text-white hover:underline"
         >
           {listing.title}

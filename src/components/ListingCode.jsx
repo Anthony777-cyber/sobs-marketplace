@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Copy } from 'lucide-react';
 
-export default function ListingCode({ label, value, copyValue = value, className = 'text-xs' }) {
+export default function ListingCode({ label, value, copyValue = value, className = 'text-xs', compact = false }) {
   const [copied, setCopied] = useState(false);
   if (value == null || value === '') return null;
 
@@ -18,7 +18,7 @@ export default function ListingCode({ label, value, copyValue = value, className
             setTimeout(() => setCopied(false), 1200);
           } catch {}
         }}
-        className="inline-flex items-center gap-1 rounded border border-white/30 px-2 py-1 hover:bg-white/10"
+        className={`inline-flex items-center gap-1 rounded-full border ${compact ? 'border-white py-0' : 'border-white/30 py-1'} px-2 hover:bg-white/10`}
         title={`Copy ${label || 'code'}`}
       >
         <Copy className="h-3 w-3" />

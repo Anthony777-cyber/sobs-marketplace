@@ -11,6 +11,9 @@ node_modules
 dist
 dist-ssr
 *.local
+.dev.vars
+.wrangler/local-dev-state/
+.wrangler/state/v3/d1/miniflare-D1DatabaseObject/3898e3ab40074086fc94b6eaa1bffa197c6d4463eb3ab6e7802a3483462b0a89.sqlite*
 
 # Editor directories and files
 .vscode/*

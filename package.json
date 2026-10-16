@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:worker": "wrangler dev --config wrangler.local.jsonc --local --persist-to .wrangler/local-dev-state",
+    "dev:db": "wrangler d1 migrations apply sobs_marketplace --local --config wrangler.local.jsonc --persist-to .wrangler/local-dev-state",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview"
@@ -33,6 +35,11 @@
     "tailwindcss": "^3.4.17",
     "typescript": "~6.0.2",
     "vite": "^8.3.0",
-    "world_countries_lists": "^3.3.0"
+    "world_countries_lists": "^3.3.0",
+    "wrangler": "^4.151.0"
+  },
+  "allowScripts": {
+    "workerd@1.20261012.1": true,
+    "esbuild@0.28.2": true
   }
 }

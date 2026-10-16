@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import NavBar from '@/components/NavBar';
 import { deleteGlobalListing, verifyGlobalListingKey } from '@/lib/api';
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import ListingCode from '@/components/ListingCode';
 import { getListingManagementCode, PRIVATE_LISTING_CODE_LABEL } from '@/lib/listing-codes';
 
@@ -69,15 +69,6 @@ export default function DeleteListing() {
       <NavBar />
 
       <div className="mx-auto max-w-2xl px-4 pt-[15vh] pb-12">
-        <button
-          type="button"
-          onClick={cancel}
-          className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/20 px-5 py-2.5 font-semibold hover:border-white/40"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Cancel
-        </button>
-
         <div className="rounded-xl border border-white/15 p-6">
           <div className="flex items-center gap-3">
             <Trash2 className="h-6 w-6 text-red-500" />
@@ -102,11 +93,11 @@ export default function DeleteListing() {
                 </div>
               )}
 
-              <div className="mt-6 flex gap-3">
+              <div className="mt-6 flex gap-2">
                 <button
                   type="button"
                   onClick={() => setStage(2)}
-                  className="rounded-full bg-red-600 px-6 py-3 font-semibold text-black hover:bg-red-500"
+                  className="inline-flex w-20 items-center justify-center rounded-full bg-red-600 px-3 py-1 text-center text-sm font-medium text-black hover:bg-red-500"
                 >
                   Yes
                 </button>
@@ -114,7 +105,7 @@ export default function DeleteListing() {
                 <button
                   type="button"
                   onClick={cancel}
-                  className="rounded-full border border-white/20 px-6 py-3 font-semibold hover:border-white/40"
+                  className="inline-flex w-20 justify-center rounded-full border-2 border-white px-3 py-1 text-sm font-medium hover:border-white/40"
                 >
                   Cancel
                 </button>
@@ -147,12 +138,12 @@ export default function DeleteListing() {
                 <p className="mt-3 text-sm text-red-400">{error}</p>
               )}
 
-              <div className="mt-6 flex gap-3">
+              <div className="mt-6 flex gap-2">
                 <button
                   type="button"
                   onClick={checkListingId}
                   disabled={attempts >= 5}
-                  className="rounded-full bg-white px-6 py-3 font-semibold text-black hover:bg-white/90"
+                  className="inline-flex w-20 items-center justify-center rounded-full bg-white px-3 py-1 text-center text-sm font-medium text-black hover:bg-white/90"
                 >
                   Continue
                 </button>
@@ -160,7 +151,7 @@ export default function DeleteListing() {
                 <button
                   type="button"
                   onClick={cancel}
-                  className="rounded-full border border-white/20 px-6 py-3 font-semibold hover:border-white/40"
+                  className="inline-flex rounded-full border-2 border-white px-3 py-1 text-sm font-medium hover:border-white/40"
                 >
                   Cancel
                 </button>
@@ -191,12 +182,12 @@ export default function DeleteListing() {
                 <p className="mt-4 text-sm text-red-400">{error}</p>
               )}
 
-              <div className="mt-8 flex gap-3">
+              <div className="mt-8 flex gap-2">
                 <button
                   type="button"
                   disabled={deleting}
                   onClick={permanentlyDelete}
-                  className="rounded-full bg-red-600 px-6 py-3 font-semibold text-black hover:bg-red-500 disabled:opacity-50"
+                  className="inline-flex min-w-[12rem] items-center justify-center rounded-full bg-red-600 px-3 py-1 text-center text-sm font-medium text-black hover:bg-red-500 disabled:opacity-50"
                 >
                   {deleting ? 'Deleting…' : 'Yes, permanently delete'}
                 </button>
@@ -205,7 +196,7 @@ export default function DeleteListing() {
                   type="button"
                   disabled={deleting}
                   onClick={cancel}
-                  className="rounded-full border border-white/20 px-6 py-3 font-semibold hover:border-white/40"
+                  className="inline-flex rounded-full border-2 border-white px-3 py-1 text-sm font-medium hover:border-white/40"
                 >
                   Cancel
                 </button>
@@ -220,7 +211,7 @@ export default function DeleteListing() {
               <button
                 type="button"
                 onClick={() => navigate('/manage/view-listings', { replace: true })}
-                className="mt-8 rounded-full bg-white px-6 py-3 font-semibold text-black hover:bg-white/90"
+                className="mt-6 inline-flex rounded-full bg-white px-3 py-1 text-sm font-medium text-black hover:bg-white/90"
               >
                 Return to View Listings
               </button>

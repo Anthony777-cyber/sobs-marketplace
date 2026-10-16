@@ -63,13 +63,13 @@ export default function SelectRenewListing({ preview = false }) {
     <div className="min-h-screen bg-black text-white">
       <NavBar />
       <div className="mx-auto w-[90vw] max-w-none px-4 pt-[15vh] pb-12">
-        <div className="mb-6 flex items-start justify-between gap-4">
+        <div className="mb-6 flex flex-wrap items-center gap-16">
           <h1 className="font-display text-3xl tracking-tight">Renew Listing</h1>
           <button
             onClick={() => navigate('/manage/console')}
-            className="inline-flex items-center gap-2 rounded-full bg-red-600 px-5 py-2.5 font-semibold text-black hover:bg-red-500"
+            className="inline-flex shrink-0 items-center gap-1 rounded-full bg-red-600 px-3 py-1 text-sm font-medium text-black hover:bg-red-500"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-3.5 w-3.5" />
             Exit
           </button>
         </div>
@@ -79,7 +79,7 @@ export default function SelectRenewListing({ preview = false }) {
           <div className="mt-8 grid grid-cols-[repeat(10,minmax(0,1fr))] gap-2">
             {listings.map((listing) => (
               <div key={listing.id} className="min-w-0 w-full">
-                <ListingCard listing={listing} backTo="/manage/renew-listings" useDirectImages showPublicNumber={false} showManagementCode />
+                <ListingCard listing={listing} backTo="/manage/renew-listings" useDirectImages showPublicNumber={false} contentClassName="py-4" />
                 <button
                   type="button"
                   onClick={() => {

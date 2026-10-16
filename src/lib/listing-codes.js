@@ -1,4 +1,4 @@
-export const PRIVATE_LISTING_CODE_LABEL = 'Individual Listing Management Code:';
+export const PRIVATE_LISTING_CODE_LABEL = 'Management code:';
 
 export function getListingManagementCode(listing) {
   return listing?.key_token

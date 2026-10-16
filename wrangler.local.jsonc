@@ -1,0 +1,26 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sobs-marketplace-local",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-09-18",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  },
+  "kv_namespaces": [
+    { "binding": "SOBS_CHATS", "id": "local-sobs-chats" },
+    { "binding": "SOBS_LISTINGS", "id": "local-sobs-listings" }
+  ],
+  "d1_databases": [
+    {
+      "binding": "sobs_marketplace",
+      "database_name": "sobs-marketplace-local",
+      "database_id": "local-sobs-marketplace",
+      "migrations_dir": "migrations-local"
+    }
+  ],
+  "r2_buckets": [
+    { "binding": "SOBS_LISTING_HISTORY", "bucket_name": "sobs-listing-history-local" }
+  ]
+}

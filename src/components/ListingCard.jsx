@@ -12,7 +12,7 @@ function formatPublicListingNumber(value) {
   return digits.match(/.{1,4}/g)?.join(' ') ?? digits;
 }
 
-export default function ListingCard({ listing, onRemoved, backTo, useDirectImages = false, showPublicNumber = true, showManagementCode = false }) {
+export default function ListingCard({ listing, onRemoved, backTo, useDirectImages = false, showPublicNumber = true, showManagementCode = false, contentClassName = 'p-4' }) {
   const [galleryOpen, setGalleryOpen] = useState(false);
   const images = (() => {
     let raw = [];
@@ -66,11 +66,11 @@ export default function ListingCard({ listing, onRemoved, backTo, useDirectImage
           <div className="flex h-full items-center justify-center text-sm text-white">No image</div>
         )}
       </div>
-      <div className="p-4">
+      <div className={contentClassName}>
         <Link
           to={`/listings/${listing.id}`}
           state={backTo ? { backTo, managedListing: listing } : undefined}
-          className="block truncate font-medium text-white hover:text-white hover:underline"
+          className="block truncate text-left font-medium text-white hover:text-white hover:underline"
         >
           {listing.title}
         </Link>

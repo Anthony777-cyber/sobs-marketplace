@@ -53,17 +53,46 @@ All shown in your own currency.` ,
   },
 ];
 
+const FONT_CHOICES = {
+  inter: { label: 'Inter', family: "'Inter', ui-sans-serif, system-ui, sans-serif" },
+  lato: { label: 'Lato', family: "'Lato', sans-serif" },
+  sourceSans: { label: 'Source Sans 3', family: "'Source Sans 3', sans-serif" },
+  montserrat: { label: 'Montserrat', family: "'Montserrat', sans-serif" },
+  nunito: { label: 'Nunito Sans', family: "'Nunito Sans', sans-serif" },
+  roboto: { label: 'Roboto', family: "'Roboto', sans-serif" },
+  raleway: { label: 'Raleway', family: "'Raleway', sans-serif" },
+  oswald: { label: 'Oswald', family: "'Oswald', sans-serif" },
+  lora: { label: 'Lora', family: "'Lora', serif" },
+  merriweather: { label: 'Merriweather', family: "'Merriweather', serif" },
+  playfair: { label: 'Playfair Display', family: "'Playfair Display', serif" },
+  robotoSlab: { label: 'Roboto Slab', family: "'Roboto Slab', serif" },
+  display: { label: 'Archivo Black', family: "'Archivo Black', ui-sans-serif, system-ui, sans-serif" },
+};
+
+const FONT_STYLESHEET_URL = 'https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Lato:ital,wght@0,400;0,700;1,400;1,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Nunito+Sans:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&family=Roboto:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&family=Raleway:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Oswald:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Merriweather:ital,wght@0,400;0,700;1,400;1,700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Roboto+Slab:wght@400;500;600;700&display=swap';
+
 export default function Splash() {
+  const [previewFont, setPreviewFont] = React.useState('inter');
+
+  React.useEffect(() => {
+    if (!import.meta.env.DEV) return undefined;
+    const stylesheet = document.createElement('link');
+    stylesheet.rel = 'stylesheet';
+    stylesheet.href = FONT_STYLESHEET_URL;
+    document.head.appendChild(stylesheet);
+    return () => stylesheet.remove();
+  }, []);
+
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
       <header className="mx-auto flex max-w-5xl items-center justify-between px-4 py-5">
         <div className="flex flex-col leading-none">
           <span className="font-display text-7xl tracking-tight sm:text-8xl">S<span className="font-sans font-bold">.</span>O<span className="font-sans font-bold">.</span>B<span className="font-sans font-bold">.</span>S</span>
           <span className="mt-1 grid w-full grid-cols-4 items-center text-xs font-semibold text-white sm:text-sm">
-            <span className="text-center">SELL</span>
-            <span className="text-center">OLD</span>
-            <span className="text-center">BROKEN</span>
-            <span className="text-center">STUFF</span>
+            <span className="relative -left-[12%] text-center">SELL</span>
+            <span className="relative -left-[2%] text-center">OLD</span>
+            <span className="relative left-[8%] text-center">BROKEN</span>
+            <span className="relative left-[13%] text-center">STUFF</span>
           </span>
         </div>
         <div className="flex items-center gap-3">
@@ -89,30 +118,49 @@ export default function Splash() {
       </header>
 
       <section className="mx-auto max-w-5xl px-4 pb-0 pt-1 sm:pt-2">
+          {import.meta.env.DEV && (
+            <div className="mb-4 flex justify-end">
+              <label className="flex items-center gap-2 text-sm text-white/70">
+                Preview font
+                <select
+                  value={previewFont}
+                  onChange={(event) => setPreviewFont(event.target.value)}
+                  className="rounded border border-white/30 bg-neutral-900 px-2 py-1 text-white"
+                >
+                  {Object.entries(FONT_CHOICES).map(([value, font]) => (
+                    <option key={value} value={value}>{font.label}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
           <div className="flex items-center gap-8">
             <h1 className="font-display text-2xl leading-tight tracking-tight sm:text-4xl">
               List it, chat it, sell it.
             </h1>
           </div>
-          <div className="relative left-0 w-[calc(100vw-24rem)]">
-          <p className="mt-5 w-full text-lg leading-relaxed text-white sm:text-xl text-left">
-            S∙O∙B∙S∙ is the ultra-searchable directory of EVERYTHING.
+          <div
+            className={`w-full ${import.meta.env.DEV ? 'splash-font-preview' : ''}`}
+            style={import.meta.env.DEV ? { '--splash-preview-font': FONT_CHOICES[previewFont].family } : undefined}
+          >
+          <p className="mt-5 w-full text-lg leading-relaxed text-white sm:text-xl text-justify text-pretty">
+            S∙O∙B∙S∙ is the ultra-searchable directory of <strong className="text-xl font-bold sm:text-2xl">EVERYTHING</strong>.
           </p>
 
-          <p className="w-full text-lg leading-relaxed text-white sm:text-xl text-left">
-            Junk, spares, repair machines or cars, rare parts, collectables, art, Pokemon cards, your precious collection of Coca-Cola bottle tops. So long as it's legal, we don't discriminate. Anything you think is worth the listing fee. For instance, you're in a band and want to advertise your next three months' gigs for a buck, cool. Or the next year, or however long you want. This is a repository of information as well as things.
+          <p className="w-full text-lg leading-relaxed text-white sm:text-xl text-justify text-pretty">
+            Junk, spares or repair machines or cars, or good ones too,<br /> rare parts, collectables, art, Pokemon cards,<br /> your precious collection of Coca-Cola bottle tops.<br /> So long as it's legal, we don't discriminate.<br /> Anything that you think is worth the listing fee.<br /> <br /> For instance, you're in a band and want to advertise<br /> your next three months' gigs for a buck, cool.<br /> Or the next year, or however long you want.<br /> This is a repository of information as well as things.<br /> <br />
           </p>
 
-          <p className="w-full text-lg leading-relaxed text-white sm:text-xl text-left">
-            We don't do free ads. If it's not worth the few bucks it costs to advertise,<br />we're quite happy to let Gumtree or Facebook bottom-feed off it.
+          <p className="w-full text-lg leading-relaxed text-white sm:text-xl text-justify text-pretty">
+            We don't do <em className="font-serif font-semibold">free ads</em>. As if it's not worth the few bucks it costs to list it,<br />then we're quite happy to let Gumtree or Facebook bottom-feed off it.
           </p>
 
-          <p className="w-full text-lg leading-relaxed text-white sm:text-xl text-left">
-            To browsers and buyers, we offer <strong className="font-extrabold">ZERO FRICTION ENTRY<br />NO sign up, NO passwords, NO cookies, NO ads.</strong>
+          <p className="w-full text-lg leading-relaxed text-white sm:text-xl text-justify text-pretty">
+            <span className="text-yellow-400">To browsers and buyers, we offer</span> <strong className="font-extrabold"><span className="text-yellow-400">ZERO-FRICTION ENTRY:</span><br /><span className="text-red-500">NO sign-up, NO passwords, NO cookies, NO ads.</span></strong>
           </p>
 
-          <p className="w-full text-lg leading-relaxed text-white sm:text-xl text-left">
-            To sellers, we offer worldwide advertising dirt cheap, bulk uploads for the pros, and best of all,<br />unlike eBay, we don't take a cut of your sale profits.
+          <p className="w-full text-lg leading-relaxed text-white sm:text-xl text-justify text-pretty">
+            To sellers, we offer worldwide advertising dirt cheap,<br /> bulk uploads for the pros, and best of all,<br />unlike eBay, we don't take a cut of your profit.
           </p>
           </div>
           <div className="mt-8 flex flex-wrap gap-3">

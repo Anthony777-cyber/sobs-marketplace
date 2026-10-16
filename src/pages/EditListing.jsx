@@ -13,6 +13,8 @@ import { getListingManagementCode, PRIVATE_LISTING_CODE_LABEL } from '@/lib/list
 const KEY_STORAGE = 'sobs_management_key';
 const GLOBAL_KEY_STORAGE = 'sobs_global_user_key';
 const MAX_PHOTOS = 3;
+const MAX_DESCRIPTION_WORDS = 500;
+const countWords = (text) => text.trim() ? text.trim().split(/\s+/).length : 0;
 
 export default function EditListing() {
   const navigate = useNavigate();
@@ -28,6 +30,7 @@ export default function EditListing() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
   const [photos, setPhotos] = useState([]);
+  const descriptionWordCount = countWords(description);
 
   useEffect(() => {
     setHead('Edit Listing — S.O.B.S.', 'Edit your S.O.B.S. listing.');
@@ -148,13 +151,13 @@ export default function EditListing() {
       <NavBar />
 
       <div className="mx-auto max-w-xl px-4 pt-[15vh] pb-12">
-        <div className="mb-6 flex items-start justify-between gap-4">
+        <div className="mb-6 flex flex-wrap items-center gap-16">
           <h1 className="font-display text-3xl tracking-tight">Edit Listing</h1>
           <button
             onClick={() => navigate('/manage/console')}
-            className="inline-flex items-center gap-2 rounded-full bg-red-600 px-5 py-2.5 font-semibold text-black hover:bg-red-500"
+            className="inline-flex shrink-0 items-center gap-1 rounded-full bg-red-600 px-3 py-1 text-sm font-medium text-black hover:bg-red-500"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-3.5 w-3.5" />
             Exit
           </button>
         </div>
@@ -188,10 +191,16 @@ export default function EditListing() {
             <label className="text-sm font-medium">Description</label>
             <textarea
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => {
+                const next = e.target.value;
+                if (countWords(next) <= MAX_DESCRIPTION_WORDS) setDescription(next);
+              }}
               rows={6}
               className="mt-1.5 w-full rounded-lg border border-white/20 bg-black px-3 py-2.5 outline-none focus:ring-2 focus:ring-white/40"
             />
+            <p className="mt-1 text-xs text-white/60">
+              {descriptionWordCount} / {MAX_DESCRIPTION_WORDS} words
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

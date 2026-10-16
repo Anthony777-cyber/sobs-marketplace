@@ -53,3 +53,8 @@
 /* Hide scrollbar while preserving scrolling */
 html, body { scrollbar-width: none; }
 html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0; height: 0; }
+
+.splash-font-preview,
+.splash-font-preview * {
+  font-family: var(--splash-preview-font) !important;
+}

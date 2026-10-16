@@ -20,8 +20,13 @@ function formatPublicListingNumber(value) {
 
 export default function ListingDetail() {
   const location = useLocation();
-  const backTo = location.state?.backTo || '/browse';
-  const isManagementView = backTo.startsWith('/manage/');
+  const requestedBackTo = location.state?.backTo || '/browse';
+  const requestedManagementView = requestedBackTo.startsWith('/manage/');
+  const [isOwnedListing, setIsOwnedListing] = useState(false);
+  const isManagementView = requestedManagementView || isOwnedListing;
+  const backTo = requestedManagementView
+    ? requestedBackTo
+    : isOwnedListing ? '/manage/console' : requestedBackTo;
   const { id } = useParams();
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -29,24 +34,30 @@ export default function ListingDetail() {
   const [galleryIndex, setGalleryIndex] = useState(null);
 
   useEffect(() => {
+    setIsOwnedListing(false);
     (async () => {
       try {
         const l = await getListing(id);
-        const stateManagementCode = getListingManagementCode(location.state?.managedListing);
-        if (isManagementView && stateManagementCode) { l.key_token = stateManagementCode; }
-        if (isManagementView) {
-          const globalKey = sessionStorage.getItem('sobs_global_user_key');
-          if (globalKey) {
+        let managedListing = requestedManagementView ? location.state?.managedListing : null;
+        const globalKey = sessionStorage.getItem('sobs_global_user_key');
+        if (globalKey && sessionStorage.getItem('sobs_seller_session_token')) {
+          try {
             const data = await getGlobalSellerListings(globalKey);
-            const managed = (data.listings || []).find(
+            const ownedListing = (data.listings || []).find(
               item =>
                 String(item.id) === String(id) ||
                 String(item.listing_alias) === String(l.listing_alias) ||
                 String(item.listing_number) === String(l.listing_number)
             );
-            if (managed) l.key_token = getListingManagementCode(managed);
+            if (ownedListing) {
+              managedListing = ownedListing;
+              if (!requestedManagementView) setIsOwnedListing(true);
+            }
+          } catch {
+            // A public listing remains viewable if the optional ownership check fails.
           }
         }
+        if (managedListing) l.key_token = getListingManagementCode(managedListing);
         if (l.grey_zone || new Date(l.expires_date).getTime() <= Date.now()) {
           setRemoved(true);
         }
@@ -57,7 +68,7 @@ export default function ListingDetail() {
         setLoading(false);
       }
     })();
-  }, [id]);
+  }, [id, location.state, requestedManagementView]);
 
   useEffect(() => {
     if (!listing) return;
@@ -77,7 +88,7 @@ export default function ListingDetail() {
     <div className="min-h-screen bg-background">
       <NavBar />
       <div className="mx-auto max-w-3xl px-4 py-8">
-        <Link to={backTo} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <Link to={backTo} className="inline-flex items-center gap-1 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">
           <ArrowLeft className="h-4 w-4" /> Back to listings
         </Link>
 
@@ -104,7 +115,7 @@ export default function ListingDetail() {
           </div>
         ) : (
           <div className="mt-6 space-y-6">
-            <div className="overflow-hidden rounded-xl border bg-card">
+            <div className="overflow-hidden rounded-xl border border-white bg-card">
               {images.length > 0 && (
                 <div className="grid grid-cols-3 gap-1 bg-muted">
                   {images.map((src, i) => (
@@ -120,7 +131,14 @@ export default function ListingDetail() {
                 </div>
               )}
               <div className="p-5">
-                <h1 className="font-display text-2xl tracking-tight">{listing.title}</h1>
+                <div className="flex items-start justify-between gap-4">
+                  <h1 className="min-w-0 flex-1 font-display text-2xl tracking-tight">{listing.title}</h1>
+                  {!isManagementView && (
+                    <div className="shrink-0">
+                      <FlagButton listing={listing} onRemoved={() => setRemoved(true)} />
+                    </div>
+                  )}
+                </div>
 
                 <div className="mt-3">
                   <ListingCode
@@ -128,27 +146,29 @@ export default function ListingDetail() {
                     value={formatPublicListingNumber(listing.listing_alias)}
                     copyValue={String(listing.listing_alias).padStart(16, '0')}
                     className="text-sm"
+                    compact
                   />
                 </div>
                 {isManagementView && (
-                  <div className="mt-2">
+                  <div className="mt-0">
                     <ListingCode
                       label={PRIVATE_LISTING_CODE_LABEL}
                       value={getListingManagementCode(listing) || getListingManagementCode(location.state?.managedListing)}
                       className="text-sm"
+                      compact
                     />
                   </div>
                 )}
-                {listing.description && (
-                  <p className="mt-4 whitespace-pre-wrap text-muted-foreground">{listing.description}</p>
-                )}
-                <div className="mt-5">
-                  <FlagButton listing={listing} onRemoved={() => setRemoved(true)} />
-                </div>
               </div>
             </div>
 
-            <ChatThread listingId={listing.id} />
+            {listing.description && (
+              <div className="rounded-xl border border-white bg-card p-5">
+                <p className="whitespace-pre-wrap text-white">{listing.description}</p>
+              </div>
+            )}
+
+            {!isManagementView && <ChatThread listingId={listing.id} />}
           </div>
         )}
       </div>

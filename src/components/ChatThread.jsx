@@ -40,8 +40,8 @@ export default function ChatThread({ listingId }) {
   };
 
   return (
-    <div className="flex flex-col rounded-xl border bg-card">
-      <div className="border-b p-3 text-sm font-medium">Chat with the seller</div>
+    <div className="flex flex-col rounded-xl border border-white bg-card">
+      <div className="border-b border-white p-3 text-sm font-medium">Chat with the seller</div>
       <div className="max-h-80 min-h-48 space-y-2 overflow-y-auto p-3">
         {messages.length === 0 && (
           <p className="py-8 text-center text-sm text-muted-foreground">No messages yet. Start the conversation!</p>
@@ -54,13 +54,13 @@ export default function ChatThread({ listingId }) {
         ))}
         <div ref={endRef} />
       </div>
-      <div className="flex gap-2 border-t p-3">
+      <div className="flex gap-2 border-t border-white p-3">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && send()}
           placeholder="Type a message..."
-          className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+          className="flex-1 rounded-lg border border-white bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
         />
         <button
           onClick={send}

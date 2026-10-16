@@ -24,9 +24,7 @@ export default function ListingDetail() {
   const requestedManagementView = requestedBackTo.startsWith('/manage/');
   const [isOwnedListing, setIsOwnedListing] = useState(false);
   const isManagementView = requestedManagementView || isOwnedListing;
-  const backTo = requestedManagementView
-    ? requestedBackTo
-    : isOwnedListing ? '/manage/console' : requestedBackTo;
+  const backTo = requestedBackTo;
   const { id } = useParams();
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -133,7 +131,7 @@ export default function ListingDetail() {
               <div className="p-5">
                 <div className="flex items-start justify-between gap-4">
                   <h1 className="min-w-0 flex-1 font-display text-2xl tracking-tight">{listing.title}</h1>
-                  {!isManagementView && (
+                  {!requestedManagementView && (
                     <div className="shrink-0">
                       <FlagButton listing={listing} onRemoved={() => setRemoved(true)} />
                     </div>
@@ -183,6 +181,7 @@ export default function ListingDetail() {
     </div>
   );
 }
+
 
 
 

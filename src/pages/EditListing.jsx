@@ -7,6 +7,8 @@ import { useCurrency } from '@/lib/CurrencyContext';
 import { setHead } from '@/lib/head';
 import { getManageListing, updateListing, getGlobalManageListing, updateGlobalListing } from '@/lib/api';
 import { Loader2, ArrowLeft, Plus, X } from 'lucide-react';
+import ListingCode from '@/components/ListingCode';
+import { getListingManagementCode, PRIVATE_LISTING_CODE_LABEL } from '@/lib/listing-codes';
 
 const KEY_STORAGE = 'sobs_management_key';
 const GLOBAL_KEY_STORAGE = 'sobs_global_user_key';
@@ -164,6 +166,9 @@ export default function EditListing() {
           <p className="mt-1 font-display text-2xl">
             #{listing.listing_number}
           </p>
+          <div className="mt-2">
+            <ListingCode label={PRIVATE_LISTING_CODE_LABEL} value={getListingManagementCode(listing)} />
+          </div>
           <p className="mt-1 text-sm text-white/60">
             Expires: {formatUkDate(listing.expires_date)}
           </p>

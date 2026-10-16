@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import { sellerLogout } from '@/lib/api';
 
 const INPUT_CLASS =
   'w-full rounded-lg border-2 border-white bg-black px-3 py-2.5 text-white outline-none placeholder:text-gray-400 focus:ring-0';
 
 const BUTTON_CLASS =
-  'rounded-full bg-red-600 px-6 py-2.5 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40';
+  'rounded-full bg-red-600 px-5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed disabled:opacity-40';
 
 export default function SellerLogin() {
   const navigate = useNavigate();
 
   const [sellerId, setSellerId] = useState('');
   const [loginSecret, setLoginSecret] = useState('');
+  const [showLoginSecret, setShowLoginSecret] = useState(false);
   const [status, setStatus] = useState('idle');
   const [attempts, setAttempts] = useState(0);
   const [error, setError] = useState('');
@@ -114,7 +116,7 @@ export default function SellerLogin() {
                 await sellerLogout();
                 setStatus('idle');
               }}
-              className="rounded-full border border-foreground/30 px-6 py-2.5 font-semibold transition-colors hover:bg-foreground/5"
+              className={BUTTON_CLASS}
             >
               Log out
             </button>
@@ -137,13 +139,17 @@ export default function SellerLogin() {
 
         <form onSubmit={handleLogin} autoComplete="on" className="mt-8 space-y-5">
           <div>
-            <label className="mb-1 block text-sm font-medium">
+            <label htmlFor="seller-login-username" className="mb-1 block text-sm font-medium">
               Your S.O.B.S ID
             </label>
             <input
+              id="seller-login-username"
               name="username"
+              type="text"
               inputMode="numeric"
               autoComplete="username"
+              autoCapitalize="off"
+              spellCheck={false}
               maxLength={16}
               value={sellerId}
               onChange={(e) => {
@@ -156,23 +162,36 @@ export default function SellerLogin() {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">
+            <label htmlFor="seller-login-password" className="mb-1 block text-sm font-medium">
               Login secret
             </label>
-            <input
-              name="password"
-              type="password"
-              inputMode="numeric"
-              autoComplete="current-password"
-              maxLength={16}
-              value={loginSecret}
-              onChange={(e) => {
-                setLoginSecret(e.target.value.replace(/\D/g, ''));
-                setError('');
-              }}
-              placeholder="16-digit login secret"
-              className={INPUT_CLASS}
-            />
+            <div className="relative">
+              <input
+                id="seller-login-password"
+                name="password"
+                type={showLoginSecret ? 'text' : 'password'}
+                inputMode="numeric"
+                autoComplete="current-password"
+                maxLength={16}
+                value={loginSecret}
+                onChange={(e) => {
+                  setLoginSecret(e.target.value.replace(/\D/g, ''));
+                  setError('');
+                }}
+                placeholder="16-digit login secret"
+                className={`${INPUT_CLASS} pr-12`}
+              />
+              <button
+                type="button"
+                aria-label={showLoginSecret ? 'Hide login secret' : 'Show login secret'}
+                aria-controls="seller-login-password"
+                aria-pressed={showLoginSecret}
+                onClick={() => setShowLoginSecret((visible) => !visible)}
+                className="absolute inset-y-0 right-3 flex items-center text-gray-300 hover:text-white"
+              >
+                {showLoginSecret ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}
+              </button>
+            </div>
           </div>
 
           {error && (
@@ -181,23 +200,38 @@ export default function SellerLogin() {
             </p>
           )}
 
-          <button
-            type="submit"
-            disabled={status === 'logging-in' || attempts >= 5}
-            className={BUTTON_CLASS}
-          >
-            {status === 'logging-in' ? 'Logging in...' : 'Log in'}
-          </button>
-        </form>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="submit"
+              disabled={status === 'logging-in' || attempts >= 5}
+              className={BUTTON_CLASS}
+            >
+              {status === 'logging-in' ? 'Logging in...' : 'Log in'}
+            </button>
 
-        <div className="mt-8">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-full border border-foreground/30 px-6 py-2.5 font-semibold transition-colors hover:bg-foreground/5"
-          >
-            Back
-          </Link>
-        </div>
+            <Link
+              to="/"
+              className="inline-flex items-center justify-center rounded-full border-2 border-white px-5 py-1.5 text-sm font-medium transition-colors hover:bg-foreground/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            >
+              Back
+            </Link>
+
+            <button
+              type="button"
+              onClick={async () => {
+                await sellerLogout();
+                setSellerId('');
+                setLoginSecret('');
+                setStatus('idle');
+                setAttempts(0);
+                setError('');
+              }}
+              className={BUTTON_CLASS}
+            >
+              Log out
+            </button>
+          </div>
+        </form>
       </main>
     </div>
   );

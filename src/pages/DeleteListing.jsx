@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import NavBar from '@/components/NavBar';
 import { deleteGlobalListing, verifyGlobalListingKey } from '@/lib/api';
 import { ArrowLeft, Trash2 } from 'lucide-react';
+import ListingCode from '@/components/ListingCode';
+import { getListingManagementCode, PRIVATE_LISTING_CODE_LABEL } from '@/lib/listing-codes';
 
 export default function DeleteListing() {
   const navigate = useNavigate();
@@ -89,6 +91,16 @@ export default function DeleteListing() {
               <h2 className="text-xl font-semibold">
                 Are you sure you want to delete this listing?
               </h2>
+
+              {listing && (
+                <div className="mt-4 space-y-2 rounded-xl border border-white/15 p-4">
+                  <p className="font-medium text-white">{listing.title}</p>
+                  <ListingCode
+                    label={PRIVATE_LISTING_CODE_LABEL}
+                    value={getListingManagementCode(listing)}
+                  />
+                </div>
+              )}
 
               <div className="mt-6 flex gap-3">
                 <button

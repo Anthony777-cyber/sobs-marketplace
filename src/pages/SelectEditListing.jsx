@@ -1,16 +1,21 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NavBar from '@/components/NavBar';
-import { getGlobalSellerListings } from '@/lib/api';
+import ListingCard from '@/components/ListingCard';
+import { getGlobalSellerListings, getListing } from '@/lib/api';
+import { DEV_PREVIEW_LISTINGS } from '@/lib/dev-preview-listings';
 import { Loader2, ArrowLeft } from 'lucide-react';
 
-export default function SelectEditListing() {
+export default function SelectEditListing({ preview = false }) {
   const navigate = useNavigate();
+  const isPreview = import.meta.env.DEV && preview;
   const globalKey = sessionStorage.getItem('sobs_global_user_key');
-  const [listings, setListings] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [listings, setListings] = useState(isPreview ? DEV_PREVIEW_LISTINGS : []);
+  const [loading, setLoading] = useState(!isPreview);
 
   useEffect(() => {
+    if (isPreview) return;
+
     if (!sessionStorage.getItem('sobs_seller_session_token')) {
       navigate('/seller-login', { replace: true });
       return;
@@ -22,10 +27,26 @@ export default function SelectEditListing() {
     }
 
     getGlobalSellerListings(globalKey)
-      .then((data) => setListings(data.listings || []))
+      .then(async (data) => {
+        const privateListings = data.listings || [];
+        const listingsWithPublicImages = await Promise.all(
+          privateListings.map(async (listing) => {
+            try {
+              const publicListing = await getListing(listing.id);
+              return {
+                ...listing,
+                images: publicListing.images || listing.images,
+              };
+            } catch {
+              return listing;
+            }
+          })
+        );
+        setListings(listingsWithPublicImages);
+      })
       .catch(() => navigate('/manage/console', { replace: true }))
       .finally(() => setLoading(false));
-  }, [globalKey, navigate]);
+  }, [globalKey, isPreview, navigate]);
 
   if (loading) {
     return (
@@ -42,7 +63,7 @@ export default function SelectEditListing() {
     <div className="min-h-screen bg-black text-white">
       <NavBar />
       <div className="mx-auto w-[90vw] max-w-none px-4 pt-[15vh] pb-12">
-        <div className="mb-8 flex items-start justify-between gap-4">
+        <div className="mb-6 flex items-start justify-between gap-4">
           <h1 className="font-display text-3xl tracking-tight">
             Edit Listing
           </h1>
@@ -54,33 +75,34 @@ export default function SelectEditListing() {
             Exit
           </button>
         </div>
+        <p className="mt-1 text-muted-foreground">Listings available to edit.</p>
 
-        <div className="mt-8 grid grid-cols-[repeat(10,minmax(0,1fr))] gap-2">
-          {listings.map((listing) => (
-            <div
-              key={listing.id}
-              className="flex min-w-0 flex-col items-start gap-3 rounded-xl border border-white/15 p-3"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold text-white break-words">{listing.title}</p>
-                <p className="mt-1 text-sm text-white/60">#{listing.listing_number}</p>
+        {listings.length > 0 ? (
+          <div className="mt-8 grid grid-cols-[repeat(10,minmax(0,1fr))] gap-2">
+            {listings.map((listing) => (
+              <div key={listing.id} className="min-w-0 w-full">
+                <ListingCard listing={listing} backTo="/manage/edit-listings" useDirectImages showPublicNumber={false} showManagementCode />
+                <button
+                  type="button"
+                  onClick={() => {
+                    sessionStorage.setItem(
+                      'sobs_global_listing_number',
+                      String(listing.listing_number)
+                    );
+                    navigate('/manage/edit-key');
+                  }}
+                  className="mt-2 rounded-full bg-red-600 px-2 py-1 text-xs font-semibold text-white hover:bg-red-700"
+                >
+                  Edit
+                </button>
               </div>
-
-              <button
-                onClick={() => {
-                  sessionStorage.setItem(
-                    'sobs_global_listing_number',
-                    String(listing.listing_number)
-                  );
-                  navigate('/manage/edit-key');
-                }}
-                className="shrink-0 rounded-full bg-white px-5 py-2.5 font-semibold text-black"
-              >
-                Edit
-              </button>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-8 rounded-xl border border-dashed py-20 text-center">
+            <p className="font-medium">No listings yet</p>
+          </div>
+        )}
 
       </div>
     </div>

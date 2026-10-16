@@ -90,7 +90,7 @@ export default function ViewSellerListings() {
           <div className="mt-8 grid grid-cols-[repeat(10,minmax(0,1fr))] gap-2">
             {listings.map((listing) => (
               <div key={listing.id} className="min-w-0 w-full">
-                <ListingCard listing={listing} backTo="/manage/view-listings" useDirectImages showPublicNumber={false} />
+                <ListingCard listing={listing} backTo="/manage/view-listings" useDirectImages showPublicNumber={false} showManagementCode />
                 <button
                   type="button"
                   onClick={() => handleDelete(listing)}

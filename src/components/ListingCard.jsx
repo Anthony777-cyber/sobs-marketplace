@@ -2,18 +2,18 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Image } from '@/components/ui/image';
 import FullScreenGallery from '@/components/FullScreenGallery';
-import { Copy } from 'lucide-react';
 import { getCurrency, formatAmount } from '@/lib/currency';
 import { formatExpiryDate } from '@/lib/format';
+import { getListingManagementCode, PRIVATE_LISTING_CODE_LABEL } from '@/lib/listing-codes';
+import ListingCode from '@/components/ListingCode';
 
 function formatPublicListingNumber(value) {
   const digits = String(value ?? '').padStart(16, '0');
   return digits.match(/.{1,4}/g)?.join(' ') ?? digits;
 }
 
-export default function ListingCard({ listing, onRemoved, backTo, useDirectImages = false, showPublicNumber = true }) {
+export default function ListingCard({ listing, onRemoved, backTo, useDirectImages = false, showPublicNumber = true, showManagementCode = false }) {
   const [galleryOpen, setGalleryOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
   const images = (() => {
     let raw = [];
 
@@ -43,23 +43,8 @@ export default function ListingCard({ listing, onRemoved, backTo, useDirectImage
   return (
     <div className="overflow-hidden rounded-xl border bg-card transition-all hover:shadow-md">
       {showPublicNumber && (
-        <div className="flex items-center gap-2 px-4 pt-3 text-xs text-white">
-          <span>{formatPublicListingNumber(listing.listing_alias)}</span>
-          <button
-            type="button"
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(String(listing.listing_alias).padStart(16, '0'));
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1200);
-              } catch {}
-            }}
-            className="inline-flex items-center gap-1 rounded border border-white/30 px-2 py-1 hover:bg-white/10"
-            title="Copy listing number"
-          >
-            <Copy className="h-3 w-3" />
-            {copied ? 'Copied' : 'Copy'}
-          </button>
+        <div className="px-4 pt-3">
+          <ListingCode value={formatPublicListingNumber(listing.listing_alias)} copyValue={String(listing.listing_alias).padStart(16, '0')} />
         </div>
       )}
       <div className="aspect-square w-full bg-muted">
@@ -92,6 +77,11 @@ export default function ListingCard({ listing, onRemoved, backTo, useDirectImage
         <div className="mt-2 text-sm font-semibold text-white">
           {formatAmount(listing.price, cur)}
         </div>
+        {showManagementCode && (
+          <div className="mt-3">
+            <ListingCode label={PRIVATE_LISTING_CODE_LABEL} value={getListingManagementCode(listing)} />
+          </div>
+        )}
       </div>
       {galleryOpen && images.length > 0 && (
         <FullScreenGallery images={images} startIndex={0} onClose={() => setGalleryOpen(false)} />

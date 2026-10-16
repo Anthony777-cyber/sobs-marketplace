@@ -5,11 +5,13 @@ import FlagButton from '@/components/FlagButton';
 import ChatThread from '@/components/ChatThread';
 import FullScreenGallery from '@/components/FullScreenGallery';
 import { Image } from '@/components/ui/image';
-import { ArrowLeft, Copy, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { getCurrency, formatAmount } from '@/lib/currency';
 import { formatExpiryDate } from '@/lib/format';
 import { setHead } from '@/lib/head';
 import { getListing, getGlobalSellerListings } from '@/lib/api';
+import ListingCode from '@/components/ListingCode';
+import { getListingManagementCode, PRIVATE_LISTING_CODE_LABEL } from '@/lib/listing-codes';
 
 function formatPublicListingNumber(value) {
   const digits = String(value ?? '').padStart(16, '0');
@@ -19,19 +21,20 @@ function formatPublicListingNumber(value) {
 export default function ListingDetail() {
   const location = useLocation();
   const backTo = location.state?.backTo || '/browse';
+  const isManagementView = backTo.startsWith('/manage/');
   const { id } = useParams();
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [removed, setRemoved] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(null);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
         const l = await getListing(id);
-        if (backTo === '/manage/view-listings' && location.state?.managedListing?.key_token) { l.key_token = location.state.managedListing.key_token; }
-        if (backTo === '/manage/view-listings') {
+        const stateManagementCode = getListingManagementCode(location.state?.managedListing);
+        if (isManagementView && stateManagementCode) { l.key_token = stateManagementCode; }
+        if (isManagementView) {
           const globalKey = sessionStorage.getItem('sobs_global_user_key');
           if (globalKey) {
             const data = await getGlobalSellerListings(globalKey);
@@ -41,7 +44,7 @@ export default function ListingDetail() {
                 String(item.listing_alias) === String(l.listing_alias) ||
                 String(item.listing_number) === String(l.listing_number)
             );
-            if (managed) l.key_token = managed.key_token;
+            if (managed) l.key_token = getListingManagementCode(managed);
           }
         }
         if (l.grey_zone || new Date(l.expires_date).getTime() <= Date.now()) {
@@ -119,26 +122,22 @@ export default function ListingDetail() {
               <div className="p-5">
                 <h1 className="font-display text-2xl tracking-tight">{listing.title}</h1>
 
-                <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>{backTo === '/manage/view-listings' ? 'Public Listing Code: ' : 'Listing '}{formatPublicListingNumber(listing.listing_alias)}</span>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        await navigator.clipboard.writeText(String(listing.listing_alias).padStart(16, '0'));
-                        setCopied(true);
-                        setTimeout(() => setCopied(false), 1200);
-                      } catch {}
-                    }}
-                    className="inline-flex items-center gap-1 rounded border px-2 py-1 hover:text-foreground"
-                    title="Copy listing number"
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                    {copied ? 'Copied' : 'Copy'}
-                  </button>
+                <div className="mt-3">
+                  <ListingCode
+                    label={isManagementView ? 'Public Listing Code:' : 'Listing'}
+                    value={formatPublicListingNumber(listing.listing_alias)}
+                    copyValue={String(listing.listing_alias).padStart(16, '0')}
+                    className="text-sm"
+                  />
                 </div>
-                {backTo === '/manage/view-listings' && (listing.key_token || location.state?.managedListing?.key_token) && (
-                  <div className="mt-2 text-sm">Management Code: {listing.key_token || location.state?.managedListing?.key_token}</div>
+                {isManagementView && (
+                  <div className="mt-2">
+                    <ListingCode
+                      label={PRIVATE_LISTING_CODE_LABEL}
+                      value={getListingManagementCode(listing) || getListingManagementCode(location.state?.managedListing)}
+                      className="text-sm"
+                    />
+                  </div>
                 )}
                 {listing.description && (
                   <p className="mt-4 whitespace-pre-wrap text-muted-foreground">{listing.description}</p>

@@ -71,6 +71,13 @@ const AuthenticatedApp = () => {
       <Route path="/sell-info" element={<SellInfo />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/seller-login" element={<SellerLogin />} />
+      {import.meta.env.DEV && (
+        <>
+          <Route path="/dev/seller-login-preview" element={<SellerLogin />} />
+          <Route path="/dev/manage/edit-listings" element={<SelectEditListing preview />} />
+          <Route path="/dev/manage/renew-listings" element={<SelectRenewListing preview />} />
+        </>
+      )}
       <Route path="/listings" element={<Listings />} />
       <Route path="/listings/:id" element={<ListingDetail />} />
       <Route path="/rules" element={<Rules />} />

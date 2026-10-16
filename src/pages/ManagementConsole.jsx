@@ -5,6 +5,8 @@ import { formatUkDate } from '@/lib/format';
 import { getManageListing, getGlobalManageListing } from '@/lib/api';
 import { setHead } from '@/lib/head';
 import { Loader2, Pencil, RefreshCw, ExternalLink, LogOut } from 'lucide-react';
+import ListingCode from '@/components/ListingCode';
+import { getListingManagementCode, PRIVATE_LISTING_CODE_LABEL } from '@/lib/listing-codes';
 
 const KEY_STORAGE = 'sobs_management_key';
 const GLOBAL_KEY_STORAGE = 'sobs_global_user_key';
@@ -189,6 +191,9 @@ export default function ManagementConsole() {
           <h2 className="mt-1 font-display text-2xl">
             #{listing.listing_number}
           </h2>
+          <div className="mt-2">
+            <ListingCode label={PRIVATE_LISTING_CODE_LABEL} value={getListingManagementCode(listing)} />
+          </div>
           <p className="mt-1 text-white/80">{listing.title}</p>
           <p className="mt-2 text-sm text-white/50">
             Expires: {formatUkDate(listing.expires_date)}
@@ -223,7 +228,9 @@ export default function ManagementConsole() {
           </button>
 
           <button
-            onClick={() => navigate(`/listings/${listing.id}`)}
+            onClick={() => navigate(`/listings/${listing.id}`, {
+              state: { backTo: '/manage/view-listings', managedListing: listing },
+            })}
             className="flex items-center gap-3 rounded-xl border border-white/15 p-5 text-left hover:border-white/40"
           >
             <ExternalLink className="h-5 w-5" />

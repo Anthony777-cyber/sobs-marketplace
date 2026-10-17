@@ -4,7 +4,7 @@ import NavBar from '@/components/NavBar';
 import { formatUkDate } from '@/lib/format';
 import { getManageListing, getGlobalManageListing } from '@/lib/api';
 import { setHead } from '@/lib/head';
-import { Loader2, Pencil, RefreshCw, ExternalLink, LogOut } from 'lucide-react';
+import { Loader2, Pencil, RefreshCw, ExternalLink, LogOut, MessageCircle } from 'lucide-react';
 import ListingCode from '@/components/ListingCode';
 import { getListingManagementCode, PRIVATE_LISTING_CODE_LABEL } from '@/lib/listing-codes';
 
@@ -128,7 +128,7 @@ export default function ManagementConsole() {
               <Pencil className="absolute left-8 h-10 w-10" />
               <span className="relative left-6 w-full">
                 <span className="block font-semibold">Edit Listing</span>
-                <span className="mt-1 block text-sm text-white/50">
+                <span className="mt-1 block text-sm text-white">
                   Select a listing to edit.
                 </span>
               </span>
@@ -141,7 +141,7 @@ export default function ManagementConsole() {
               <RefreshCw className="absolute left-8 h-10 w-10" />
               <span className="relative left-6 w-full text-center">
                 <span className="block font-semibold">Renew Listing</span>
-                <span className="mt-1 block text-sm text-white/50">
+                <span className="mt-1 block text-sm text-white">
                   Select a listing to renew.
                 </span>
               </span>
@@ -154,8 +154,21 @@ export default function ManagementConsole() {
               <ExternalLink className="absolute left-8 h-10 w-10" />
               <span className="relative left-6 w-full">
                 <span className="block font-semibold">View Listing</span>
-                <span className="mt-1 block text-sm text-white/50">
+                <span className="mt-1 block text-sm text-white">
                   Select a listing to view.
+                </span>
+              </span>
+            </button>
+
+            <button
+              onClick={() => navigate('/manage/chats')}
+              className="relative flex items-center justify-center rounded-xl border-4 border-white p-5 text-center hover:border-white"
+            >
+              <MessageCircle className="absolute left-8 h-10 w-10" />
+              <span className="relative left-6 w-full">
+                <span className="block font-semibold">Chat</span>
+                <span className="mt-1 block text-sm text-white">
+                  Read all your buyer chats here.
                 </span>
               </span>
             </button>
@@ -187,7 +200,7 @@ export default function ManagementConsole() {
         </div>
 
         <div className="mt-8 rounded-xl border-4 border-white p-5 text-center">
-          <p className="relative left-6 font-mono text-xs uppercase tracking-[0.2em] text-white/40">
+          <p className="relative left-6 font-mono text-xs uppercase tracking-[0.2em] text-white">
             Listing
           </p>
           <h2 className="relative left-6 mt-1 font-display text-2xl">
@@ -196,8 +209,8 @@ export default function ManagementConsole() {
           <div className="relative left-6 mt-2">
             <ListingCode label={PRIVATE_LISTING_CODE_LABEL} value={getListingManagementCode(listing)} className="text-xs justify-center" />
           </div>
-          <p className="relative left-6 mt-1 text-white/80">{listing.title}</p>
-          <p className="relative left-6 mt-2 text-sm text-white/50">
+          <p className="relative left-6 mt-1 text-white">{listing.title}</p>
+          <p className="relative left-6 mt-2 text-sm text-white">
             Expires: {formatUkDate(listing.expires_date)}
           </p>
         </div>
@@ -210,7 +223,7 @@ export default function ManagementConsole() {
             <Pencil className="absolute left-8 h-10 w-10" />
             <span className="relative left-6 w-full">
               <span className="block font-semibold">Edit Listing</span>
-              <span className="mt-1 block text-sm text-white/50">
+              <span className="mt-1 block text-sm text-white">
                 Change title, description, price or currency.
               </span>
             </span>
@@ -223,7 +236,7 @@ export default function ManagementConsole() {
             <RefreshCw className="absolute left-8 h-10 w-10" />
             <span className="relative left-6 w-full">
               <span className="block font-semibold">Renew Listing</span>
-              <span className="mt-1 block text-sm text-white/50">
+              <span className="mt-1 block text-sm text-white">
                 Extend the listing duration.
               </span>
             </span>
@@ -238,7 +251,7 @@ export default function ManagementConsole() {
             <ExternalLink className="absolute left-8 h-10 w-10" />
             <span className="relative left-6 w-full">
               <span className="block font-semibold">View Listing</span>
-              <span className="mt-1 block text-sm text-white/50">
+              <span className="mt-1 block text-sm text-white">
                 Open the public listing.
               </span>
             </span>
@@ -246,10 +259,10 @@ export default function ManagementConsole() {
 
           <div className="rounded-xl border-4 border-white p-5 text-center">
             <p className="relative left-6 font-semibold">Listing Status</p>
-            <p className="relative left-6 mt-1 text-sm text-white/50">
+            <p className="relative left-6 mt-1 text-sm text-white">
               {listing.active ? 'Active' : 'Inactive'}
             </p>
-            <p className="relative left-6 mt-1 text-sm text-white/40">
+            <p className="relative left-6 mt-1 text-sm text-white">
               Expires {formatUkDate(listing.expires_date)}
             </p>
           </div>

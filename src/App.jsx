@@ -15,6 +15,7 @@ import SellerLogin from '@/pages/SellerLogin';
 import SellerSifterPage from '@/pages/SellerSifterPage';
 import Listings from '@/pages/Listings';
 import ListingDetail from '@/pages/ListingDetail';
+import ChatPage from '@/pages/ChatPage';
 import Browse from '@/pages/Browse';
 import Directory from '@/pages/Directory';
 import Confirmed from '@/pages/Confirmed';
@@ -80,6 +81,8 @@ const AuthenticatedApp = () => {
       )}
       <Route path="/listings" element={<Listings />} />
       <Route path="/listings/:id" element={<ListingDetail />} />
+      <Route path="/chat/:listingId" element={<ChatPage />} />
+      <Route path="/manage/chats" element={<ChatPage sellerMode />} />
       <Route path="/rules" element={<Rules />} />
       <Route path="/browse/*" element={<Browse />} />
       <Route path="/categories" element={<Directory />} />

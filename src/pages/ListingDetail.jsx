@@ -5,7 +5,7 @@ import FlagButton from '@/components/FlagButton';
 import ChatThread from '@/components/ChatThread';
 import FullScreenGallery from '@/components/FullScreenGallery';
 import { Image } from '@/components/ui/image';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, X } from 'lucide-react';
 import { getCurrency, formatAmount } from '@/lib/currency';
 import { formatExpiryDate } from '@/lib/format';
 import { setHead } from '@/lib/head';
@@ -30,6 +30,7 @@ export default function ListingDetail() {
   const [loading, setLoading] = useState(true);
   const [removed, setRemoved] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(null);
+  const [chatOpen, setChatOpen] = useState(false);
 
   useEffect(() => {
     setIsOwnedListing(false);
@@ -86,9 +87,20 @@ export default function ListingDetail() {
     <div className="min-h-screen bg-background">
       <NavBar />
       <div className="mx-auto max-w-3xl px-4 py-8">
-        <Link to={backTo} className="inline-flex items-center gap-1 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">
-          <ArrowLeft className="h-4 w-4" /> Back to listings
-        </Link>
+        <div className="mb-6 flex items-center justify-between gap-3">
+          <Link to={backTo} className="inline-flex items-center gap-1 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">
+            <ArrowLeft className="h-4 w-4" /> Back to listings
+          </Link>
+          {!loading && listing && !isUnavailable && (
+            <button
+              type="button"
+              onClick={() => setChatOpen(true)}
+              className="inline-flex h-7 w-20 items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700"
+            >
+              <span className="text-sm leading-none font-medium">Chat</span>
+            </button>
+          )}
+        </div>
 
         {loading ? (
           <div className="flex justify-center py-20">
@@ -171,6 +183,31 @@ export default function ListingDetail() {
         )}
       </div>
 
+      {chatOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          onClick={() => setChatOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Chat"
+            className="relative w-full max-w-lg rounded-xl bg-card p-4 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              aria-label="Close chat"
+              onClick={() => setChatOpen(false)}
+              className="absolute right-3 top-3 rounded-full p-2 text-white hover:bg-white/10"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <div className="mb-4 pr-10 text-lg font-semibold">Chat</div>
+            <ChatThread listingId={listing.id} />
+          </div>
+        </div>
+      )}
       {galleryIndex !== null && images.length > 0 && (
         <FullScreenGallery
           images={images}

@@ -106,6 +106,12 @@ const AuthenticatedApp = () => {
 
 
 function App() {
+  useEffect(() => {
+    const handlePageHide = () => { void import('@/lib/api').then(({ sellerLogout }) => sellerLogout()); };
+    window.addEventListener('pagehide', handlePageHide);
+    return () => window.removeEventListener('pagehide', handlePageHide);
+  }, []);
+
   const enterFullscreen = () => {
     const tryFullscreen = () => {
       if (!document.fullscreenElement) {

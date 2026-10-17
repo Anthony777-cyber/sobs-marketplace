@@ -22,7 +22,7 @@ export default function SellerLogin() {
   async function handleLogin(event) {
     event.preventDefault();
 
-    if (status === 'logging-in' || attempts >= 5) {
+    if (status === 'logging-in' || attempts >= 25) {
       return;
     }
 
@@ -59,7 +59,7 @@ export default function SellerLogin() {
         setAttempts(nextAttempts);
         setError(
 
-          data?.locked || nextAttempts >= 5
+          data?.locked || nextAttempts >= 25
             ? 'Too many attempts. Restart S.O.B.S. to try again.'
             : (data?.error || 'Login failed. Check your S.O.B.S ID and login secret.')
         );
@@ -114,6 +114,7 @@ export default function SellerLogin() {
               type="button"
               onClick={async () => {
                 await sellerLogout();
+                window.close();
                 setStatus('idle');
               }}
               className={BUTTON_CLASS}
@@ -203,7 +204,7 @@ export default function SellerLogin() {
           <div className="flex flex-wrap gap-3">
             <button
               type="submit"
-              disabled={status === 'logging-in' || attempts >= 5}
+              disabled={status === 'logging-in' || attempts >= 25}
               className={BUTTON_CLASS}
             >
               {status === 'logging-in' ? 'Logging in...' : 'Log in'}
@@ -220,6 +221,7 @@ export default function SellerLogin() {
               type="button"
               onClick={async () => {
                 await sellerLogout();
+                window.close();
                 setSellerId('');
                 setLoginSecret('');
                 setStatus('idle');

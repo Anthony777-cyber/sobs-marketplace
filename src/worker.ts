@@ -153,6 +153,35 @@ function generateSellerSecret(): string {
   return Array.from(digits, (byte) => String(byte % 10)).join('');
 }
 
+async function createSellerSession(env: Env, sellerId: string) {
+  const sessionTokenBytes = crypto.getRandomValues(new Uint8Array(32));
+  const sessionToken = Array.from(
+    sessionTokenBytes,
+    (byte) => byte.toString(16).padStart(2, '0')
+  ).join('');
+  const sessionTokenHash = await hashTicket(sessionToken);
+  const sessionId = crypto.randomUUID();
+  const createdAt = new Date();
+  const expiresAt = new Date(createdAt.getTime() + 24 * 60 * 60 * 1000);
+
+  await env.sobs_marketplace
+    .prepare(`
+      INSERT INTO seller_sessions
+        (id, seller_id, token_hash, created_at, expires_at)
+      VALUES (?, ?, ?, ?, ?)
+    `)
+    .bind(
+      sessionId,
+      sellerId,
+      sessionTokenHash,
+      createdAt.toISOString(),
+      expiresAt.toISOString()
+    )
+    .run();
+
+  return { sessionToken, expiresAt: expiresAt.toISOString() };
+}
+
 async function generateListingAlias(
   id: string,
   keyToken: string,
@@ -316,6 +345,86 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
+    // S.O.B.S text chat: buyers use a random browser token; sellers must have a verified session.
+    const buyerChatMatch = url.pathname.match(/^\/api\/chat\/([^/]+)$/);
+    if (buyerChatMatch && (request.method === 'GET' || request.method === 'POST')) {
+      const listingId = decodeURIComponent(buyerChatMatch[1]);
+      let body: any = {};
+      if (request.method === 'POST') {
+        try { body = await request.json(); } catch { return json({ error: 'Invalid JSON.' }, 400); }
+      }
+      const token = String(request.method === 'GET' ? url.searchParams.get('token') || '' : body.token || '').trim();
+      if (token.length < 32 || token.length > 200) return json({ error: 'Invalid chat token.' }, 400);
+      const listing = await env.sobs_marketplace.prepare(
+        'SELECT id, seller_id, title FROM listings WHERE id = ? LIMIT 1'
+      ).bind(listingId).first() as { id: string; seller_id: string; title: string } | null;
+      if (!listing) return json({ error: 'Listing not found.' }, 404);
+      const tokenHash = await hashTicket(token);
+      if (request.method === 'POST') {
+        const messageText = String(body.message || '').trim();
+        if (!messageText || messageText.length > 4000) return json({ error: 'Message must be between 1 and 4000 characters.' }, 400);
+        const now = new Date().toISOString();
+        const conversationId = crypto.randomUUID();
+        await env.sobs_marketplace.prepare(`
+          INSERT INTO chat_conversations (id, listing_id, seller_id, buyer_token_hash, buyer_name, created_at, updated_at)
+          VALUES (?, ?, ?, ?, 'Buyer', ?, ?)
+          ON CONFLICT(listing_id, buyer_token_hash) DO UPDATE SET updated_at = excluded.updated_at
+        `).bind(conversationId, listing.id, listing.seller_id, tokenHash, now, now).run();
+        const conversation = await env.sobs_marketplace.prepare(
+          'SELECT id FROM chat_conversations WHERE listing_id = ? AND buyer_token_hash = ? LIMIT 1'
+        ).bind(listing.id, tokenHash).first() as { id: string } | null;
+        if (!conversation) return json({ error: 'Could not open conversation.' }, 500);
+        await env.sobs_marketplace.prepare(
+          'INSERT INTO chat_messages (id, conversation_id, sender_role, message_text, created_at) VALUES (?, ?, \'buyer\', ?, ?)'
+        ).bind(crypto.randomUUID(), conversation.id, messageText, now).run();
+        await env.sobs_marketplace.prepare('UPDATE chat_conversations SET updated_at = ? WHERE id = ?').bind(now, conversation.id).run();
+      }
+      const conversation = await env.sobs_marketplace.prepare(
+        'SELECT id FROM chat_conversations WHERE listing_id = ? AND buyer_token_hash = ? LIMIT 1'
+      ).bind(listing.id, tokenHash).first() as { id: string } | null;
+      const messages = conversation ? await env.sobs_marketplace.prepare(
+        'SELECT id, sender_role AS sender, message_text AS message, created_at FROM chat_messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT 500'
+      ).bind(conversation.id).all() : { results: [] };
+      return json({ listing: { id: listing.id, title: listing.title }, messages: messages.results || [] });
+    }
+
+    const sellerChatCollection = url.pathname === '/api/seller/chats';
+    const sellerChatDetail = url.pathname.match(/^\/api\/seller\/chats\/([^/]+)$/);
+    if ((sellerChatCollection || sellerChatDetail) && ['GET', 'POST'].includes(request.method)) {
+      const seller = await getVerifiedSessionSeller(env, request);
+      if (!seller) return json({ error: 'Verified seller login required.' }, 401);
+      if (sellerChatCollection && request.method === 'GET') {
+        const rows = await env.sobs_marketplace.prepare(`
+          SELECT c.id AS conversation_id, c.listing_id, l.title AS listing_title,
+                 c.buyer_name, c.created_at, c.updated_at,
+                 (SELECT m.message_text FROM chat_messages m WHERE m.conversation_id = c.id ORDER BY m.created_at DESC LIMIT 1) AS last_message,
+                 (SELECT m.sender_role FROM chat_messages m WHERE m.conversation_id = c.id ORDER BY m.created_at DESC LIMIT 1) AS last_sender
+          FROM chat_conversations c JOIN listings l ON l.id = c.listing_id
+          WHERE c.seller_id = ? ORDER BY c.updated_at DESC LIMIT 200
+        `).bind(seller.id).all();
+        return json({ conversations: rows.results || [] });
+      }
+      const conversationId = decodeURIComponent((sellerChatDetail as RegExpMatchArray)[1]);
+      const conversation = await env.sobs_marketplace.prepare(
+        'SELECT id, listing_id FROM chat_conversations WHERE id = ? AND seller_id = ? LIMIT 1'
+      ).bind(conversationId, seller.id).first() as { id: string; listing_id: string } | null;
+      if (!conversation) return json({ error: 'Conversation not found.' }, 404);
+      if (request.method === 'POST') {
+        let body: any;
+        try { body = await request.json(); } catch { return json({ error: 'Invalid JSON.' }, 400); }
+        const messageText = String(body.message || '').trim();
+        if (!messageText || messageText.length > 4000) return json({ error: 'Message must be between 1 and 4000 characters.' }, 400);
+        const now = new Date().toISOString();
+        await env.sobs_marketplace.prepare(
+          'INSERT INTO chat_messages (id, conversation_id, sender_role, message_text, created_at) VALUES (?, ?, \'seller\', ?, ?)'
+        ).bind(crypto.randomUUID(), conversation.id, messageText, now).run();
+        await env.sobs_marketplace.prepare('UPDATE chat_conversations SET updated_at = ? WHERE id = ?').bind(now, conversation.id).run();
+      }
+      const messages = await env.sobs_marketplace.prepare(
+        'SELECT id, sender_role AS sender, message_text AS message, created_at FROM chat_messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT 500'
+      ).bind(conversation.id).all();
+      return json({ listingId: conversation.listing_id, messages: messages.results || [] });
+    }
     if (url.pathname === '/api/entry-ticket' && request.method === 'POST') {
       const ticket = crypto.randomUUID() + crypto.randomUUID();
       const ticketHash = await hashTicket(ticket);
@@ -520,11 +629,11 @@ export default {
         } | null;
 
       const suppliedHash = await hashTicket(loginSecret);
-
       if (
         !/^\d{16}$/.test(globalUserKey) ||
         !/^\d{16}$/.test(loginSecret) ||
-        !seller?.login_secret_hash ||
+        !seller ||
+        !seller.login_secret_hash ||
         suppliedHash !== seller.login_secret_hash
       ) {
         const failedAttempts = await recordAuthFailure(env, attemptKey);
@@ -541,37 +650,8 @@ export default {
 
       await clearAuthFailures(env, attemptKey);
 
-      const sessionTokenBytes = crypto.getRandomValues(new Uint8Array(32));
-      const sessionToken = Array.from(
-        sessionTokenBytes,
-        (byte) => byte.toString(16).padStart(2, '0')
-      ).join('');
-
-      const sessionTokenHash = await hashTicket(sessionToken);
-      const sessionId = crypto.randomUUID();
-      const createdAt = new Date();
-      const expiresAt = new Date(createdAt.getTime() + 24 * 60 * 60 * 1000);
-
-      await env.sobs_marketplace
-        .prepare(`
-          INSERT INTO seller_sessions
-            (id, seller_id, token_hash, created_at, expires_at)
-          VALUES (?, ?, ?, ?, ?)
-        `)
-        .bind(
-          sessionId,
-          seller.id,
-          sessionTokenHash,
-          createdAt.toISOString(),
-          expiresAt.toISOString()
-        )
-        .run();
-
-      return json({
-        success: true,
-        sessionToken,
-        expiresAt: expiresAt.toISOString(),
-      });
+      const session = await createSellerSession(env, seller.id);
+      return json({ success: true, ...session });
     }
 
     const sellerListingsMatch = url.pathname.match(/^\/api\/manage\/sellers\/([^/]+)\/listings$/);
@@ -741,7 +821,7 @@ export default {
           SELECT
             id,
             listing_number,
-            listing_alias,
+            listing_alias,
             key_token,
             title,
             description,
@@ -891,7 +971,7 @@ export default {
           SELECT
             id,
             listing_number,
-            listing_alias,
+            listing_alias,
             key_token,
             title,
             description,

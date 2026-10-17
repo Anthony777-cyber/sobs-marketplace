@@ -19,6 +19,47 @@ export default function SellerLogin() {
   const [attempts, setAttempts] = useState(0);
   const [error, setError] = useState('');
 
+  function storeSellerSession(enteredSellerId, data) {
+    sessionStorage.setItem('sobs_seller_id', enteredSellerId);
+    // The console key is the seller's S.O.B.S. ID; the login secret remains separate.
+    sessionStorage.setItem('sobs_global_user_key', enteredSellerId);
+    sessionStorage.setItem('sobs_seller_session_token', data.sessionToken);
+    sessionStorage.setItem('sobs_seller_session_expires_at', data.expiresAt);
+    // Keep only the expiring seller session credentials, never either secret.
+    localStorage.setItem('sobs_seller_id', enteredSellerId);
+    if (import.meta.env.DEV) {
+      localStorage.setItem('sobs_global_user_key', enteredSellerId);
+    } else {
+      localStorage.removeItem('sobs_global_user_key');
+    }
+    localStorage.setItem('sobs_seller_session_token', data.sessionToken);
+    localStorage.setItem('sobs_seller_session_expires_at', data.expiresAt);
+  }
+
+  async function handleLocalDevelopmentLogin() {
+    if (!import.meta.env.DEV || status === 'logging-in') return;
+
+    setStatus('logging-in');
+    setError('');
+
+    try {
+      const response = await fetch('/api/seller/dev-login', { method: 'POST' });
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok || !data?.success || !data?.sellerId || !data?.sessionToken) {
+        setError(data?.error || 'Local development login is unavailable.');
+        setStatus('error');
+        return;
+      }
+
+      storeSellerSession(data.sellerId, data);
+      setStatus('success');
+    } catch {
+      setError('Could not connect to the local development server.');
+      setStatus('error');
+    }
+  }
+
   async function handleLogin(event) {
     event.preventDefault();
 
@@ -26,8 +67,6 @@ export default function SellerLogin() {
       return;
     }
 
-    // Read actual form values so browser password-manager autofill works
-    // even when it does not trigger React's controlled-input onChange.
     const formData = new FormData(event.currentTarget);
     const enteredSellerId = String(formData.get('username') || sellerId).replace(/\D/g, '').trim();
     const enteredSecret = String(formData.get('password') || loginSecret).replace(/\D/g, '').trim();
@@ -57,6 +96,7 @@ export default function SellerLogin() {
       if (!response.ok || !data?.success || !data?.sessionToken) {
         const nextAttempts = attempts + 1;
         setAttempts(nextAttempts);
+        setLoginSecret('');
         setError(
 
           data?.locked || nextAttempts >= 5
@@ -67,16 +107,7 @@ export default function SellerLogin() {
         return;
       }
 
-      sessionStorage.setItem('sobs_seller_id', enteredSellerId);
-      sessionStorage.setItem('sobs_global_user_key', enteredSellerId);
-      sessionStorage.setItem('sobs_seller_session_token', data.sessionToken);
-      sessionStorage.setItem('sobs_seller_session_expires_at', data.expiresAt);
-      // Keep only the expiring session credentials, never the login secret.
-      localStorage.setItem('sobs_seller_id', enteredSellerId);
-      localStorage.setItem('sobs_global_user_key', enteredSellerId);
-      localStorage.setItem('sobs_seller_session_token', data.sessionToken);
-      localStorage.setItem('sobs_seller_session_expires_at', data.expiresAt);
-
+      storeSellerSession(enteredSellerId, data);
       setStatus('success');
     } catch {
       setError('Could not connect to S.O.B.S. Please try again.');
@@ -208,6 +239,17 @@ export default function SellerLogin() {
             >
               {status === 'logging-in' ? 'Logging in...' : 'Log in'}
             </button>
+
+            {import.meta.env.DEV && (
+              <button
+                type="button"
+                onClick={handleLocalDevelopmentLogin}
+                disabled={status === 'logging-in'}
+                className={BUTTON_CLASS}
+              >
+                {status === 'logging-in' ? 'Logging in...' : 'Local development login'}
+              </button>
+            )}
 
             <Link
               to="/"

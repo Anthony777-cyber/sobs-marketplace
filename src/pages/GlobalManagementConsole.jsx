@@ -86,16 +86,16 @@ export default function GlobalManagementConsole() {
       <div className="mx-auto max-w-xl">
         <h1 className="text-3xl font-bold">Manage Listings</h1>
 
-        <form onSubmit={handleSubmit} className="mt-8">
+        <form onSubmit={handleSubmit} autoComplete="on" className="mt-8">
           <p className="font-semibold">
             Input user code to open management console
           </p>
 
           <input
-            type="password"
+            type="text"
             inputMode="numeric"
-            name="password"
-            autoComplete="current-password"
+            name="username"
+            autoComplete="username"
             value={userKey}
             onChange={(event) => {
               setUserKey(event.target.value);

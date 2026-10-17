@@ -78,7 +78,9 @@ export default function ManagementConsole() {
       } else if (action === 'renew') {
         navigate('/manage/renew');
       } else if (action === 'view') {
-        navigate(`/listings/${selected.id}`);
+        navigate(`/listings/${selected.id}`, {
+          state: { backTo: '/manage/console', managedListing: selected },
+        });
       }
     } catch {
       window.alert('Listing not found.');
@@ -104,27 +106,27 @@ export default function ManagementConsole() {
         <NavBar />
 
         <div className="mx-auto max-w-2xl px-4 pt-[15vh] pb-12">
-          <div className="mb-6 flex items-start justify-between gap-4">
+          <div className="mb-6 flex items-center justify-between gap-4">
             <h1 className="font-display text-3xl tracking-tight">
               Management Console
             </h1>
 
             <button
               onClick={logout}
-              className="inline-flex items-center gap-2 rounded-full bg-red-600 px-5 py-2.5 font-semibold text-black hover:bg-red-500"
+              className="inline-flex shrink-0 items-center gap-1 rounded-full bg-red-600 px-3 py-1 text-sm font-medium text-black hover:bg-red-500"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-3.5 w-3.5" />
               Exit
             </button>
           </div>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          <div className="mt-10 grid gap-3 sm:grid-cols-2">
             <button
               onClick={() => navigate('/manage/edit-listings')}
-              className="flex items-center gap-3 rounded-xl border border-white/15 p-5 text-left hover:border-white/40"
+              className="relative flex items-center justify-center rounded-xl border-4 border-white p-5 text-center hover:border-white"
             >
-              <Pencil className="h-5 w-5" />
-              <span>
+              <Pencil className="absolute left-8 h-10 w-10" />
+              <span className="relative left-6 w-full">
                 <span className="block font-semibold">Edit Listing</span>
                 <span className="mt-1 block text-sm text-white/50">
                   Select a listing to edit.
@@ -134,10 +136,10 @@ export default function ManagementConsole() {
 
             <button
               onClick={() => navigate('/manage/renew-listings')}
-              className="flex items-center gap-3 rounded-xl border border-white/15 p-5 text-left hover:border-white/40"
+              className="relative flex items-center justify-center rounded-xl border-4 border-white p-5 text-center hover:border-white"
             >
-              <RefreshCw className="h-5 w-5" />
-              <span>
+              <RefreshCw className="absolute left-8 h-10 w-10" />
+              <span className="relative left-6 w-full text-center">
                 <span className="block font-semibold">Renew Listing</span>
                 <span className="mt-1 block text-sm text-white/50">
                   Select a listing to renew.
@@ -147,10 +149,10 @@ export default function ManagementConsole() {
 
             <button
               onClick={() => navigate('/manage/view-listings')}
-              className="flex items-center gap-3 rounded-xl border border-white/15 p-5 text-left hover:border-white/40"
+              className="relative flex items-center justify-center rounded-xl border-4 border-white p-5 text-center hover:border-white"
             >
-              <ExternalLink className="h-5 w-5" />
-              <span>
+              <ExternalLink className="absolute left-8 h-10 w-10" />
+              <span className="relative left-6 w-full">
                 <span className="block font-semibold">View Listing</span>
                 <span className="mt-1 block text-sm text-white/50">
                   Select a listing to view.
@@ -170,32 +172,32 @@ export default function ManagementConsole() {
       <NavBar />
 
       <div className="mx-auto max-w-2xl px-4 pt-[15vh] pb-12">
-        <div className="mb-6 flex items-start justify-between gap-4">
+        <div className="mb-6 flex items-center justify-between gap-4">
           <h1 className="font-display text-3xl tracking-tight">
             Management Console
           </h1>
 
           <button
             onClick={logout}
-            className="inline-flex items-center gap-2 rounded-full bg-red-600 px-5 py-2.5 font-semibold text-black hover:bg-red-500"
+            className="inline-flex shrink-0 items-center gap-1 rounded-full bg-red-600 px-3 py-1 text-sm font-medium text-black hover:bg-red-500"
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-3.5 w-3.5" />
             Exit
           </button>
         </div>
 
-        <div className="mt-8 rounded-xl border border-white/15 p-5">
-          <p className="font-mono text-xs uppercase tracking-[0.2em] text-white/40">
+        <div className="mt-8 rounded-xl border-4 border-white p-5 text-center">
+          <p className="relative left-6 font-mono text-xs uppercase tracking-[0.2em] text-white/40">
             Listing
           </p>
-          <h2 className="mt-1 font-display text-2xl">
+          <h2 className="relative left-6 mt-1 font-display text-2xl">
             #{listing.listing_number}
           </h2>
-          <div className="mt-2">
-            <ListingCode label={PRIVATE_LISTING_CODE_LABEL} value={getListingManagementCode(listing)} />
+          <div className="relative left-6 mt-2">
+            <ListingCode label={PRIVATE_LISTING_CODE_LABEL} value={getListingManagementCode(listing)} className="text-xs justify-center" />
           </div>
-          <p className="mt-1 text-white/80">{listing.title}</p>
-          <p className="mt-2 text-sm text-white/50">
+          <p className="relative left-6 mt-1 text-white/80">{listing.title}</p>
+          <p className="relative left-6 mt-2 text-sm text-white/50">
             Expires: {formatUkDate(listing.expires_date)}
           </p>
         </div>
@@ -203,10 +205,10 @@ export default function ManagementConsole() {
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
           <button
             onClick={() => navigate('/manage/edit')}
-            className="flex items-center gap-3 rounded-xl border border-white/15 p-5 text-left hover:border-white/40"
+            className="relative flex items-center justify-center rounded-xl border-4 border-white p-5 text-center hover:border-white"
           >
-            <Pencil className="h-5 w-5" />
-            <span>
+            <Pencil className="absolute left-8 h-10 w-10" />
+            <span className="relative left-6 w-full">
               <span className="block font-semibold">Edit Listing</span>
               <span className="mt-1 block text-sm text-white/50">
                 Change title, description, price or currency.
@@ -216,10 +218,10 @@ export default function ManagementConsole() {
 
           <button
             onClick={() => navigate('/manage/renew')}
-            className="flex items-center gap-3 rounded-xl border border-white/15 p-5 text-left hover:border-white/40"
+            className="relative flex items-center justify-center rounded-xl border-4 border-white p-5 text-center hover:border-white"
           >
-            <RefreshCw className="h-5 w-5" />
-            <span>
+            <RefreshCw className="absolute left-8 h-10 w-10" />
+            <span className="relative left-6 w-full">
               <span className="block font-semibold">Renew Listing</span>
               <span className="mt-1 block text-sm text-white/50">
                 Extend the listing duration.
@@ -231,10 +233,10 @@ export default function ManagementConsole() {
             onClick={() => navigate(`/listings/${listing.id}`, {
               state: { backTo: '/manage/view-listings', managedListing: listing },
             })}
-            className="flex items-center gap-3 rounded-xl border border-white/15 p-5 text-left hover:border-white/40"
+            className="relative flex items-center justify-center rounded-xl border-4 border-white p-5 text-center hover:border-white"
           >
-            <ExternalLink className="h-5 w-5" />
-            <span>
+            <ExternalLink className="absolute left-8 h-10 w-10" />
+            <span className="relative left-6 w-full">
               <span className="block font-semibold">View Listing</span>
               <span className="mt-1 block text-sm text-white/50">
                 Open the public listing.
@@ -242,12 +244,12 @@ export default function ManagementConsole() {
             </span>
           </button>
 
-          <div className="rounded-xl border border-white/15 p-5">
-            <p className="font-semibold">Listing Status</p>
-            <p className="mt-1 text-sm text-white/50">
+          <div className="rounded-xl border-4 border-white p-5 text-center">
+            <p className="relative left-6 font-semibold">Listing Status</p>
+            <p className="relative left-6 mt-1 text-sm text-white/50">
               {listing.active ? 'Active' : 'Inactive'}
             </p>
-            <p className="mt-1 text-sm text-white/40">
+            <p className="relative left-6 mt-1 text-sm text-white/40">
               Expires {formatUkDate(listing.expires_date)}
             </p>
           </div>

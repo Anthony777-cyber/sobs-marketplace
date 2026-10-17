@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import NavBar from '@/components/NavBar';
 import FlagButton from '@/components/FlagButton';
 import ChatThread from '@/components/ChatThread';
 import FullScreenGallery from '@/components/FullScreenGallery';
 import { Image } from '@/components/ui/image';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, MessageCircle, X } from 'lucide-react';
 import { getCurrency, formatAmount } from '@/lib/currency';
 import { formatExpiryDate } from '@/lib/format';
 import { setHead } from '@/lib/head';
@@ -30,6 +30,7 @@ export default function ListingDetail() {
   const [loading, setLoading] = useState(true);
   const [removed, setRemoved] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(null);
+  const [chatOpen, setChatOpen] = useState(false);
 
   useEffect(() => {
     setIsOwnedListing(false);
@@ -72,7 +73,7 @@ export default function ListingDetail() {
     if (!listing) return;
     const cat = listing.categoryPath || '';
     setHead(
-      `${listing.title}${cat ? ' — ' + cat : ''} | S.O.B.S.`,
+      `${listing.title}${cat ? ' â€” ' + cat : ''} | S.O.B.S.`,
       `${listing.title}${cat ? ' in ' + cat : ''}. ${(listing.description || '').slice(0, 120)}`.slice(0, 160)
     );
   }, [listing]);
@@ -114,7 +115,19 @@ export default function ListingDetail() {
         ) : (
           <div className="mt-6 space-y-6">
             <div className="overflow-hidden rounded-xl border border-white bg-card">
-              {images.length > 0 && (
+              <div className="flex justify-end p-3">
+              {!isManagementView && (
+                <button
+                  type="button"
+                  onClick={() => setChatOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Chat with seller
+                </button>
+              )}
+            </div>
+            {images.length > 0 && (
                 <div className="grid grid-cols-3 gap-1 bg-muted">
                   {images.map((src, i) => (
                     <button
@@ -171,6 +184,31 @@ export default function ListingDetail() {
         )}
       </div>
 
+      {chatOpen && !isManagementView && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          onClick={() => setChatOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Chat with seller"
+            className="relative w-full max-w-lg rounded-xl bg-card p-4 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              aria-label="Close chat"
+              onClick={() => setChatOpen(false)}
+              className="absolute right-3 top-3 rounded-full p-2 text-white hover:bg-white/10"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <div className="mb-4 pr-10 text-lg font-semibold">Chat with seller</div>
+            <ChatThread listingId={listing.id} />
+          </div>
+        </div>
+      )}
       {galleryIndex !== null && images.length > 0 && (
         <FullScreenGallery
           images={images}
@@ -181,6 +219,7 @@ export default function ListingDetail() {
     </div>
   );
 }
+
 
 
 

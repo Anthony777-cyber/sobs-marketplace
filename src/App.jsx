@@ -30,6 +30,7 @@ import ViewSellerListings from '@/pages/ViewSellerListings';
 import DeleteListing from '@/pages/DeleteListing';
 import RenewListingKey from '@/pages/RenewListingKey';
 import CategoryTest from '@/pages/CategoryTest';
+import ChatPage from '@/pages/ChatPage';
 
 // Restore the seller's existing 24-hour session after a page reload or tab restart.
 // The server remains authoritative and rejects expired/revoked tokens.
@@ -37,8 +38,16 @@ if (typeof window !== 'undefined') {
   try {
     const expiry = Date.parse(localStorage.getItem('sobs_seller_session_expires_at') || '');
     if (Number.isFinite(expiry)) {
-      // The global management key is tab-session-only, never restored from disk.
-      localStorage.removeItem('sobs_global_user_key');
+      // In local development, restore the user ID used to access the console.
+      // Production continues to keep this key tab-session-only.
+      if (import.meta.env.DEV) {
+        const savedKey = localStorage.getItem('sobs_global_user_key');
+        if (savedKey && !sessionStorage.getItem('sobs_global_user_key')) {
+          sessionStorage.setItem('sobs_global_user_key', savedKey);
+        }
+      } else {
+        localStorage.removeItem('sobs_global_user_key');
+      }
       const keys = [
         'sobs_seller_id',
         'sobs_seller_session_token',
@@ -80,6 +89,8 @@ const AuthenticatedApp = () => {
       )}
       <Route path="/listings" element={<Listings />} />
       <Route path="/listings/:id" element={<ListingDetail />} />
+      <Route path="/chat/:listingId" element={<ChatPage />} />
+      <Route path="/manage/chats" element={<ChatPage sellerMode />} />
       <Route path="/rules" element={<Rules />} />
       <Route path="/browse/*" element={<Browse />} />
       <Route path="/categories" element={<Directory />} />

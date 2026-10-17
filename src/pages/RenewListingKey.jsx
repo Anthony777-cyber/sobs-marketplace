@@ -36,7 +36,16 @@ export default function RenewListingKey() {
       <NavBar />
 
       <div className="mx-auto max-w-xl px-4 pt-[15vh] pb-12">
-        <h1 className="font-display text-3xl tracking-tight">Renew Listing</h1>
+        <div className="mb-6 flex flex-wrap items-center gap-16">
+          <h1 className="font-display text-3xl tracking-tight">Renew Listing</h1>
+          <button
+            onClick={() => navigate('/manage/console')}
+            className="inline-flex shrink-0 items-center gap-1 rounded-full bg-red-600 px-3 py-1 text-sm font-medium text-black hover:bg-red-500"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Exit
+          </button>
+        </div>
 
         <form onSubmit={handleSubmit} className="mt-8">
           <p className="font-semibold">Enter your listing key</p>
@@ -65,13 +74,6 @@ export default function RenewListingKey() {
           )}
         </form>
 
-        <button
-          onClick={() => navigate('/manage/console')}
-          className="mt-8 inline-flex items-center gap-2 rounded-full bg-red-600 px-5 py-2.5 font-semibold text-black hover:bg-red-500"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Exit
-        </button>
       </div>
     </div>
   );

@@ -46,14 +46,14 @@ export default function EditListingKey() {
       <NavBar />
 
       <div className="mx-auto max-w-xl pt-[15vh] pb-12">
-        <div className="mb-6 flex items-start justify-between gap-4">
+        <div className="mb-6 flex flex-wrap items-center gap-16">
           <p className="font-semibold">Enter your listing key</p>
           <button
             type="button"
             onClick={() => navigate('/manage/console')}
-            className="inline-flex items-center gap-2 rounded-full bg-red-600 px-5 py-2.5 font-semibold text-black hover:bg-red-500"
+            className="inline-flex shrink-0 items-center gap-1 rounded-full bg-red-600 px-3 py-1 text-sm font-medium text-black hover:bg-red-500"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-3.5 w-3.5" />
             Exit
           </button>
         </div>

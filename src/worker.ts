@@ -104,8 +104,8 @@ async function clearAuthFailures(env: Env, attemptKey: string) {
 async function clearAccountAuthFailures(env: Env, globalUserKey: string) {
   const accountKey = await hashSha256(globalUserKey);
   await env.sobs_marketplace
-    .prepare('DELETE FROM seller_login_attempts WHERE attempt_key LIKE ?')
-    .bind(`${accountKey}:%`)
+    .prepare('DELETE FROM seller_login_attempts WHERE substr(attempt_key, 1, 65) = ?')
+    .bind(`${accountKey}:`)
     .run();
 }
 

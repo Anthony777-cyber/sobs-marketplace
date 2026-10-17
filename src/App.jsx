@@ -108,7 +108,13 @@ const AuthenticatedApp = () => {
 
 function App() {
   useEffect(() => {
-    const handlePageHide = () => { void sellerLogout(); };
+    const handlePageHide = () => {
+      // Clear management credentials when this browser document session ends.
+      // This also prevents restored tabs from reviving the management key.
+      sessionStorage.removeItem('sobs_global_user_key');
+      sessionStorage.removeItem('sobs_management_key');
+      void sellerLogout();
+    };
     window.addEventListener('pagehide', handlePageHide);
     return () => window.removeEventListener('pagehide', handlePageHide);
   }, []);

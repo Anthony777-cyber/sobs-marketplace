@@ -18,7 +18,8 @@ async function hashTicket(ticket: string): Promise<string> {
   return hashSha256(ticket);
 }
 
-const MAX_AUTH_ATTEMPTS = 25;
+const MAX_AUTH_ATTEMPTS = 5;
+const MAX_SELLER_LOGIN_ATTEMPTS = 25;
 const AUTH_LOCKOUT_MS = 10 * 60 * 1000;
 
 function requestIp(request: Request): string {
@@ -34,6 +35,11 @@ async function getAuthAttemptKey(
   request: Request,
   ...parts: string[]
 ): Promise<string> {
+  if (scope === 'seller-login' && parts[0]) {
+    const accountKey = await hashSha256(parts[0]);
+    const ipKey = await hashSha256(requestIp(request));
+    return `${accountKey}:${ipKey}`;
+  }
   return hashSha256([scope, requestIp(request), ...parts].join(':'));
 }
 
@@ -55,7 +61,7 @@ async function getAuthLock(env: Env, attemptKey: string) {
   return row.locked_until > new Date().toISOString() ? row : null;
 }
 
-async function recordAuthFailure(env: Env, attemptKey: string): Promise<number> {
+async function recordAuthFailure(env: Env, attemptKey: string, maxAttempts = MAX_AUTH_ATTEMPTS): Promise<number> {
   const row = await env.sobs_marketplace
     .prepare(`
       SELECT failed_attempts
@@ -68,7 +74,7 @@ async function recordAuthFailure(env: Env, attemptKey: string): Promise<number> 
 
   const failedAttempts = Number(row?.failed_attempts || 0) + 1;
   const lockedUntil =
-    failedAttempts >= MAX_AUTH_ATTEMPTS
+    failedAttempts >= maxAttempts
       ? new Date(Date.now() + AUTH_LOCKOUT_MS).toISOString()
       : null;
 
@@ -92,6 +98,14 @@ async function clearAuthFailures(env: Env, attemptKey: string) {
   await env.sobs_marketplace
     .prepare('DELETE FROM seller_login_attempts WHERE attempt_key = ?')
     .bind(attemptKey)
+    .run();
+}
+
+async function clearAccountAuthFailures(env: Env, globalUserKey: string) {
+  const accountKey = await hashSha256(globalUserKey);
+  await env.sobs_marketplace
+    .prepare('DELETE FROM seller_login_attempts WHERE attempt_key LIKE ?')
+    .bind(`${accountKey}:%`)
     .run();
 }
 
@@ -627,9 +641,9 @@ export default {
         !seller?.login_secret_hash ||
         suppliedHash !== seller.login_secret_hash
       ) {
-        const failedAttempts = await recordAuthFailure(env, attemptKey);
+        const failedAttempts = await recordAuthFailure(env, attemptKey, MAX_SELLER_LOGIN_ATTEMPTS);
 
-        if (failedAttempts >= MAX_AUTH_ATTEMPTS) {
+        if (failedAttempts >= MAX_SELLER_LOGIN_ATTEMPTS) {
           return json(
             { error: 'Too many attempts. Restart S.O.B.S. to try again.', locked: true },
             429
@@ -639,7 +653,7 @@ export default {
         return json({ error: 'Invalid S.O.B.S ID or login secret' }, 401);
       }
 
-      await clearAuthFailures(env, attemptKey);
+      await clearAccountAuthFailures(env, globalUserKey);
 
       const sessionTokenBytes = crypto.getRandomValues(new Uint8Array(32));
       const sessionToken = Array.from(
@@ -841,7 +855,7 @@ export default {
           SELECT
             id,
             listing_number,
-            listing_alias,
+            listing_alias,
             key_token,
             title,
             description,
@@ -991,7 +1005,7 @@ export default {
           SELECT
             id,
             listing_number,
-            listing_alias,
+            listing_alias,
             key_token,
             title,
             description,

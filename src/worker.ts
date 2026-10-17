@@ -565,6 +565,24 @@ export default {
       }, 201);
     }
 
+    if (url.pathname === '/api/seller/logout' && request.method === 'POST') {
+      const globalUserKey = request.headers.get('X-SOBS-Global-Key')?.trim() || '';
+      const sessionToken = request.headers.get('X-SOBS-Seller-Session')?.trim() || '';
+      const sessionSeller = await getVerifiedSessionSeller(env, request);
+
+      if (!globalUserKey || !sessionToken || !sessionSeller) {
+        return json({ error: 'Seller login required' }, 401);
+      }
+
+      await clearAccountAuthFailures(env, globalUserKey);
+      await env.sobs_marketplace
+        .prepare('DELETE FROM seller_sessions WHERE seller_id = ? AND token_hash = ?')
+        .bind(sessionSeller.id, await hashTicket(sessionToken))
+        .run();
+
+      return json({ success: true });
+    }
+
     if (url.pathname === '/api/seller/login' && request.method === 'POST') {
       const body = await request.json().catch(() => null) as Record<string, unknown> | null;
 

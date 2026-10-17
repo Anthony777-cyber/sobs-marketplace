@@ -21,13 +21,19 @@ export async function getListings() {
 
 export async function sellerLogout() {
   const token = sessionStorage.getItem('sobs_seller_session_token') || '';
+  const globalUserKey =
+    sessionStorage.getItem('sobs_global_user_key') ||
+    sessionStorage.getItem('sobs_seller_id') ||
+    '';
 
-  if (token) {
+  if (token && globalUserKey) {
     await fetch('/api/seller/logout', {
       method: 'POST',
       headers: {
+        'X-SOBS-Global-Key': globalUserKey,
         'X-SOBS-Seller-Session': token,
       },
+      keepalive: true,
     }).catch(() => {});
   }
 

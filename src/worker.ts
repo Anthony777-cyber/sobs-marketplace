@@ -18,7 +18,7 @@ async function hashTicket(ticket: string): Promise<string> {
   return hashSha256(ticket);
 }
 
-const MAX_AUTH_ATTEMPTS = 5;
+const MAX_AUTH_ATTEMPTS = 25;
 const AUTH_LOCKOUT_MS = 10 * 60 * 1000;
 
 function requestIp(request: Request): string {

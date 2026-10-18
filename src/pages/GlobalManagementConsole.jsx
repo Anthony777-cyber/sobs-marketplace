@@ -16,11 +16,13 @@ export default function GlobalManagementConsole() {
       return;
     }
 
-    if (sessionStorage.getItem('sobs_management_unlocked') !== 'true') return;
-
     const savedKey = sessionStorage.getItem('sobs_global_user_key');
-    if (!savedKey) return;
+    if (!savedKey) {
+      navigate('/seller-login', { replace: true, state: { returnTo: '/manage-listings' } });
+      return;
+    }
 
+    const managementUnlocked = sessionStorage.getItem('sobs_management_unlocked') === 'true';
     let cancelled = false;
     fetch('/api/manage/global/verify', {
       method: 'POST',
@@ -30,15 +32,35 @@ export default function GlobalManagementConsole() {
       },
     })
       .then(async (res) => {
-        if (!res.ok) throw new Error('Key verification failed');
-        if (!cancelled) {
+        const data = await res.json().catch(() => null);
+        if (!res.ok) {
+          if (data?.error === 'Seller login required') {
+            sessionStorage.removeItem('sobs_seller_session_token');
+            sessionStorage.removeItem('sobs_seller_session_expires_at');
+            sessionStorage.removeItem('sobs_management_unlocked');
+            localStorage.removeItem('sobs_seller_id');
+            localStorage.removeItem('sobs_global_user_key');
+            localStorage.removeItem('sobs_seller_session_token');
+            localStorage.removeItem('sobs_seller_session_expires_at');
+            navigate('/seller-login', { replace: true, state: { returnTo: '/manage-listings' } });
+          } else {
+            sessionStorage.removeItem('sobs_management_unlocked');
+            sessionStorage.removeItem('sobs_global_user_key');
+            navigate('/manage-listings', { replace: true });
+          }
+          return;
+        }
+        if (!cancelled && managementUnlocked) {
           sessionStorage.removeItem('sobs_global_listing_id');
           sessionStorage.removeItem('sobs_global_listing_number');
           navigate('/manage/console', { replace: true });
         }
       })
       .catch(() => {
-        sessionStorage.removeItem('sobs_global_user_key');
+        if (!cancelled) {
+          sessionStorage.removeItem('sobs_management_unlocked');
+          navigate('/manage-listings', { replace: true });
+        }
       });
 
     return () => { cancelled = true; };

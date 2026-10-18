@@ -25,7 +25,8 @@ export default function ManagementConsole() {
       'Manage your S.O.B.S. listing.'
     );
 
-    if (!sessionStorage.getItem('sobs_seller_session_token')) {
+    const sellerSession = sessionStorage.getItem('sobs_seller_session_token');
+    if (!sellerSession) {
       navigate('/seller-login', { replace: true, state: { returnTo: '/manage-listings' } });
       return;
     }
@@ -35,16 +36,39 @@ export default function ManagementConsole() {
       return;
     }
 
-    setLoading(false);
-    if (false) {
-    getManageListing(key)
-      .then(setListing)
-      .catch(() => {
-        sessionStorage.removeItem(KEY_STORAGE);
-        navigate('/manage', { replace: true });
+    let cancelled = false;
+    fetch('/api/manage/global/verify', {
+      method: 'POST',
+      headers: {
+        'X-SOBS-Global-Key': globalKey,
+        'X-SOBS-Seller-Session': sellerSession,
+      },
+    })
+      .then(async (res) => {
+        const data = await res.json().catch(() => null);
+        if (!res.ok) {
+          if (data?.error === 'Seller login required') {
+            sessionStorage.removeItem('sobs_seller_session_token');
+            sessionStorage.removeItem('sobs_seller_session_expires_at');
+            sessionStorage.removeItem('sobs_management_unlocked');
+            navigate('/seller-login', { replace: true, state: { returnTo: '/manage-listings' } });
+          } else {
+            sessionStorage.removeItem('sobs_management_unlocked');
+            sessionStorage.removeItem('sobs_global_user_key');
+            navigate('/manage-listings', { replace: true });
+          }
+          return;
+        }
+        if (!cancelled) setLoading(false);
       })
-      .finally(() => setLoading(false));
-    }
+      .catch(() => {
+        if (!cancelled) {
+          sessionStorage.removeItem('sobs_management_unlocked');
+          navigate('/manage-listings', { replace: true });
+        }
+      });
+
+    return () => { cancelled = true; };
   }, [globalKey, navigate]);
 
   const logout = () => {

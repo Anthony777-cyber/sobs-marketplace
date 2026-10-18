@@ -4,7 +4,7 @@ import NavBar from '@/components/NavBar';
 import { formatUkDate } from '@/lib/format';
 import { getManageListing, getGlobalManageListing } from '@/lib/api';
 import { setHead } from '@/lib/head';
-import { Loader2, Pencil, RefreshCw, ExternalLink, LogOut, MessageCircle } from 'lucide-react';
+import { Loader2, Pencil, RefreshCw, ExternalLink, LogOut, MessageCircle, Upload } from 'lucide-react';
 import ListingCode from '@/components/ListingCode';
 import { getListingManagementCode, PRIVATE_LISTING_CODE_LABEL } from '@/lib/listing-codes';
 
@@ -169,6 +169,18 @@ export default function ManagementConsole() {
                 <span className="block font-semibold">Chat</span>
                 <span className="mt-1 block text-sm text-white">
                   Read all your buyer chats here.
+                </span>
+              </span>
+            </button>
+            <button
+              onClick={() => navigate('/manage/bulk-upload')}
+              className="relative flex items-center justify-center rounded-xl border-4 border-white p-5 text-center hover:border-white"
+            >
+              <Upload className="absolute left-8 h-10 w-10" />
+              <span className="relative left-6 w-full">
+                <span className="block font-semibold">Bulk Uploads</span>
+                <span className="mt-1 block text-sm text-white">
+                  Upload multiple listings from a spreadsheet.
                 </span>
               </span>
             </button>

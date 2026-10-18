@@ -15,7 +15,7 @@ function moneyLine(amount, code, rates) {
   return `${cur.symbol}${str} ${code}`;
 }
 
-export default function PaylinkGateway({ tier, currency, rates, busy, onConfirm, onClose }) {
+export default function PaylinkGateway({ tier, currency, rates, busy, onConfirm, onClose, subtitle, paymentNote }) {
   const amount = tier.amount;
   const stack = ['EUR', 'USD', 'GBP', currency]
     .filter((c, i, arr) => arr.indexOf(c) === i)
@@ -35,7 +35,7 @@ export default function PaylinkGateway({ tier, currency, rates, busy, onConfirm,
         <h1 className="mt-3 font-display text-4xl leading-none sm:text-6xl">
           {stack.join(' / ')}
         </h1>
-        <p className="mt-2 font-mono text-sm text-white/50">{tier.label} listing duration</p>
+        <p className="mt-2 font-mono text-sm text-white/50">{subtitle || `${tier.label} listing duration`}</p>
       </div>
 
       {/* Notice box */}
@@ -45,6 +45,7 @@ export default function PaylinkGateway({ tier, currency, rates, busy, onConfirm,
             ★ You are never paying more than the set flat amount to S.O.B.S., any fees or incurred
             costs arising from your payment method are yours to bear.
           </p>
+          {paymentNote && <p className="mt-3 text-xs text-amber-200">{paymentNote}</p>}
         </div>
       </div>
 

@@ -1264,6 +1264,7 @@ export default {
       const months = Number(body.months);
       const paymentAmount = Number(body.paymentAmount);
       const images = Array.isArray(body.images) ? body.images.map(String) : [];
+      const listingStatus = body.draft === true ? 'draft' : 'active';
       const globalKey = request.headers.get('X-SOBS-Global-Key')?.trim();
 
       if (!globalKey) {
@@ -1351,7 +1352,7 @@ export default {
           payment_amount: Number.isFinite(paymentAmount) ? paymentAmount : 0,
           expires_date: expiresDate.toISOString(),
           flags: 0,
-          status: 'active',
+          status: listingStatus,
           grey_zone: 0,
           grey_zone_until: null,
           seller_id: seller.id,
@@ -1367,7 +1368,7 @@ export default {
                  duration_months, payment_amount, expires_date, flags, status,
                  grey_zone, grey_zone_until, seller_id, key_token,
                  downvote_count, downvoted_by, created_date, updated_date)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'active',
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?,
                       0, NULL, ?, ?, 0, '[]', ?, ?)
             `)
             .bind(
@@ -1383,6 +1384,7 @@ export default {
               months,
               Number.isFinite(paymentAmount) ? paymentAmount : 0,
               expiresDate.toISOString(),
+              listingStatus,
               seller.id,
               keyToken,
               createdAt,
@@ -1401,6 +1403,45 @@ export default {
       }
 
       return json({ success: true, listing: { id, listingNumber, listingAlias, keyToken } }, 201);
+    }
+
+    if (url.pathname === '/api/listings/bulk-drafts/activate' && request.method === 'POST') {
+      const sessionSeller = await getVerifiedSessionSeller(env, request);
+      if (!sessionSeller) return json({ error: 'Seller login required' }, 401);
+
+      const body = await request.json().catch(() => null) as Record<string, unknown> | null;
+      const ids = Array.isArray(body?.listingIds) ? [...new Set(body.listingIds.map(String))] : [];
+      if (!ids.length || ids.length > 100) return json({ error: 'Provide between 1 and 100 draft listing IDs' }, 400);
+
+      const placeholders = ids.map(() => '?').join(', ');
+      const { results } = await env.sobs_marketplace
+        .prepare(`SELECT * FROM listings WHERE id IN (${placeholders}) AND seller_id = ?`)
+        .bind(...ids, sessionSeller.id)
+        .all();
+      if (results.length !== ids.length) return json({ error: 'One or more draft listings were not found' }, 404);
+
+      const rows = results as Record<string, unknown>[];
+      if (rows.some((row) => row.status !== 'draft' && row.status !== 'active')) {
+        return json({ error: 'One or more listings are not pending drafts' }, 409);
+      }
+
+      const activatedAt = new Date();
+      const updatedRows: Record<string, unknown>[] = rows.map((row) => {
+        const expiresDate = new Date(activatedAt);
+        expiresDate.setMonth(expiresDate.getMonth() + Number(row.duration_months || 0));
+        return { ...row, status: 'active', expires_date: expiresDate.toISOString(), updated_date: activatedAt.toISOString() };
+      });
+      const statements = [];
+      for (const row of updatedRows) {
+        if (rows.find((candidate) => candidate.id === row.id)?.status === 'active') continue;
+        statements.push(env.sobs_marketplace
+          .prepare("UPDATE listings SET status = 'active', expires_date = ?, updated_date = ? WHERE id = ? AND seller_id = ? AND status = 'draft'")
+          .bind(String(row.expires_date), String(row.updated_date), String(row.id), sessionSeller.id));
+        statements.push(await prepareListingHistoryInsert(env, row, 'bulk_activated', String(row.updated_date)));
+      }
+      if (statements.length) await env.sobs_marketplace.batch(statements);
+
+      return json({ success: true, listings: updatedRows.map((row) => ({ id: String(row.id), listingNumber: row.listing_number })) });
     }
 
     if (url.pathname === '/api/category-paths' && request.method === 'GET') {
@@ -1595,7 +1636,7 @@ export default {
       const id = decodeURIComponent(listingMatch[1]);
 
       const row = await env.sobs_marketplace
-        .prepare('SELECT * FROM listings WHERE id = ? LIMIT 1')
+        .prepare("SELECT * FROM listings WHERE id = ? AND status = 'active' LIMIT 1")
         .bind(id)
         .first();
 
@@ -1623,7 +1664,7 @@ export default {
         .run();
 
       const { results } = await env.sobs_marketplace
-        .prepare('SELECT * FROM listings ORDER BY created_date DESC LIMIT 200')
+        .prepare("SELECT * FROM listings WHERE status = 'active' ORDER BY created_date DESC LIMIT 200")
         .all();
 
       return json(results.map((row) => {

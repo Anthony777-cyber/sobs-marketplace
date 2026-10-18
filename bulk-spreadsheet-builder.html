@@ -1,0 +1,894 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S.O.B.S. Bulk Spreadsheet Builder</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, Arial, sans-serif; background: #0a0a0a; color: #fafafa; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    main { width: min(100% - 32px, 1024px); margin: 0 auto 64px; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { width: 100%; text-align: center; white-space: nowrap; font: clamp(1rem, 4.5vw, 3rem) 'Archivo Black', Impact, sans-serif; letter-spacing: 0; line-height: 1.05; margin-bottom: 14px; }
+    h2 { font-size: 1.3rem; margin-bottom: 8px; }
+    p { line-height: 1.55; color: #d4d4d8; }
+    .intro-subheading { font-size: 1.35rem; font-weight: 700; line-height: 1.3; text-align: center; }
+    .site-header { border-bottom: 1px solid rgb(255 255 255 / 10%); background: #090909; padding: 15px max(16px, calc((100% - 1024px) / 2)); margin-bottom: 30px; }
+    .brand { color: #fff; font: 1.8rem 'Archivo Black', Impact, sans-serif; letter-spacing: -.04em; line-height: 1; }
+    .tagline { display: block; margin-top: 4px; color: #fff; font-size: .65rem; font-weight: 800; letter-spacing: .22em; }
+    .card { background: #0d0d0d; border: 2px solid #fff; border-radius: 12px; padding: 22px; margin-top: 18px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+    label { display: block; font-weight: 700; font-size: 1.05rem; }
+    input, select, textarea { width: 100%; margin-top: 7px; border: 1px solid rgb(255 255 255 / 24%); border-radius: 8px; padding: 11px 12px; color: #fafafa; background: #080808; font: inherit; font-size: 1.1rem; font-weight: 700; }
+    .batch-field, .currency-field { display: grid; grid-template-columns: 1fr minmax(120px, 25%); align-items: center; gap: 16px; }
+    .items-count-field, .currency-field { grid-template-columns: 1fr 200px; }
+    .currency-field { grid-column: 1; grid-row: 2; }
+    .exchange-field { grid-column: 2; grid-row: 1; }
+    .batch-label-text { position: relative; left: 10%; }
+    .batch-card h2 { transform: translateY(-15%); }
+    #batch-size { position: relative; left: -95%; width: 100%; min-width: 0; margin-top: 0; border: 2px solid #fff; }
+    #listing-currency { position: relative; left: -15%; width: 100%; min-width: 0; margin-top: 0; border: 2px solid #fff; }
+    #batch-size, #batch-size:hover, #batch-size:focus, #batch-size:focus-visible, #batch-size:active { left: calc(200px - 15% - 6ch); width: 6ch; min-width: 6ch; border: 2px solid #fff; outline: none; box-shadow: none; background: #080808; }
+    #listing-currency { padding: 12px; }
+    .money-box { display: flex; align-items: center; min-width: 0; border: 1px solid rgb(255 255 255 / 24%); border-radius: 8px; padding-left: 12px; color: #fafafa; background: #080808; }
+    .batch-field .money-box { position: relative; left: -75%; width: 100%; border: 2px solid #fff; }
+    .money-symbol { flex: 0 0 auto; color: #d4d4d8; font-weight: 700; }
+    .money-box input, .money-box input:focus, .money-box input:focus-visible { flex: 1; min-width: 0; width: 100%; margin: 0; border: 0; outline: none; box-shadow: none; background: transparent; }
+    .price-input { appearance: textfield; -moz-appearance: textfield; }
+    .price-input::-webkit-inner-spin-button, .price-input::-webkit-outer-spin-button { margin: 0; -webkit-appearance: none; }
+    .photo-help { color: #fff; margin-left: 8px; font-weight: 400; }
+    .exchange-note { grid-column: 2; margin: 0; }
+    .photo-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+    .photo-tile, .photo-picker { position: relative; display: flex; width: 96px; height: 96px; align-items: center; justify-content: center; border: 2px dashed rgb(255 255 255 / 48%); border-radius: 9px; }
+    .photo-tile img { width: 100%; height: 100%; border-radius: 7px; object-fit: cover; }
+    .photo-picker { cursor: pointer; color: #d4d4d8; text-align: center; font-size: .8rem; }
+    .photo-picker input { display: none; }
+    .photo-remove { position: absolute; top: -8px; right: -8px; min-width: 26px; min-height: 26px; padding: 2px 7px; background: #dc2626; }
+    textarea { min-height: 110px; resize: vertical; }
+    button { border: 1px solid #dc2626; border-radius: 999px; padding: 11px 18px; color: #fff; background: #dc2626; font: inherit; font-weight: 700; cursor: pointer; transition: background .15s ease; }
+    button:hover { background: #b91c1c; }
+    button.part-flow-button { border-color: #0284c7; background: #0369a1; }
+    button.part-flow-button, button.classification-back-button, button.compact-button { padding: 6px 14px; }
+    button.part-flow-button:hover { background: #075985; }
+    button.part-flow-button.selected { border-color: #38bdf8; background: #075985; box-shadow: 0 0 0 2px rgb(14 165 233 / 28%); }
+    button[aria-pressed="true"], button.selected { border-color: #f87171; background: #991b1b; box-shadow: 0 0 0 2px rgb(220 38 38 / 28%); }
+    button.button-complete, button.button-complete:hover { border-color: #38bdf8; background: #0369a1; }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    .choices { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+    .subtle { color: #a1a1aa; font-size: .9rem; }
+    .exchange-note { color: #fff; }
+    .taxonomy { color: #fca5a5; font-weight: 700; overflow-wrap: anywhere; }
+    .item { margin-top: 14px; padding: 18px; border: 1px solid rgb(255 255 255 / 16%); border-radius: 10px; }
+    .item h3 { margin-bottom: 14px; }
+    .item legend { font-size: 2rem; font-weight: 800; line-height: 1.1; }
+    .buyer-preview { margin-top: 22px; padding: 16px; border: 1px solid rgb(255 255 255 / 24%); border-radius: 10px; background: #101820; }
+    .buyer-preview h3 { margin-bottom: 12px; }
+    .buyer-preview-card { max-width: 360px; overflow: hidden; border: 1px solid rgb(255 255 255 / 18%); border-radius: 12px; background: #0a0a0a; }
+    .buyer-preview-main-image { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; background: #161b20; }
+    .buyer-preview-no-image { display: grid; width: 100%; aspect-ratio: 1; place-items: center; color: #a1a1aa; background: #161b20; }
+    .buyer-preview-thumbnails { display: flex; gap: 8px; padding: 10px 14px 0; }
+    .buyer-preview-thumbnails img { width: 54px; height: 54px; border-radius: 6px; object-fit: cover; }
+    .buyer-preview-content { padding: 14px; }
+    .buyer-preview-title { margin: 0; color: #fff; font-size: 1.1rem; font-weight: 700; overflow-wrap: anywhere; }
+    .buyer-preview-price { margin: 8px 0 0; color: #fff; font-weight: 700; }
+    .buyer-preview-category { margin: 8px 0 0; color: #a1a1aa; font-size: .85rem; overflow-wrap: anywhere; }
+    .buyer-preview-description { margin: 12px 0 0; color: #d4d4d8; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .sifter-details { margin-top: 8px; padding: 18px; border: 1px solid rgb(255 255 255 / 24%); border-radius: 10px; }
+    .sifter-details h3 { margin-bottom: 8px; }
+    .sifter-details label { margin-top: 12px; }
+    .detail-input-row { display: flex; align-items: stretch; gap: 8px; margin-top: 7px; }
+    .detail-input-row input, .detail-input-row textarea { margin-top: 0; }
+    .detail-clear { display: inline-flex; flex: 0 0 26px; width: 26px; height: 26px; min-width: 26px; align-items: center; justify-content: center; align-self: center; padding: 0; font-size: .75rem; line-height: 1; }
+    .keyword-preview { margin: 16px 0 0; padding: 12px; border-radius: 8px; background: #101820; color: #cce4f5; overflow-wrap: anywhere; }
+    .notice { border-left: 3px solid #dc2626; padding: 10px 13px; background: #171010; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+    .danger { color: #ffb8b8; }
+    .good { color: #86efac; }
+    @media (max-width: 600px) { main { width: min(100% - 20px, 1024px); } .site-header { padding-inline: 10px; } .card { padding: 16px; } .exchange-note { grid-column: 1; } }
+    body, body * { color: #fff !important; }
+    body *::placeholder { color: #fff !important; opacity: 1; }
+  </style>
+</head>
+<body>
+
+<main>
+  <header>
+    <h1>S.O.B.S. Bulk Spreadsheet Builder</h1>
+    <p class="intro-subheading">Classify once, enter each listing, and save your upload-ready spreadsheet.</p>
+
+  </header>
+
+  <section class="card batch-card" id="batch-section" aria-labelledby="batch-title">
+    <h2 id="batch-title">1. Batch and exchange rate</h2>
+    <div class="grid">
+      <label class="batch-field items-count-field"><span class="batch-label-text">Number of items (2–100)</span><input id="batch-size" type="text" inputmode="numeric" autocomplete="off"></label>
+      <label class="currency-field"><span class="batch-label-text">Listing currency</span><select id="listing-currency"></select></label>
+      <label class="batch-field exchange-field">Your local currency value for €1<span class="money-box"><span class="money-symbol" id="exchange-symbol"></span><input id="exchange-rate" type="text" inputmode="decimal" autocomplete="off"></span></label>
+      <p class="subtle exchange-note">Enter an exchange rate (XE.com is best to find this quickly).<br>This is to give you a rough estimate of your cost in your currency.<br>This does not show the actual final price or bank charges, etc.</p>
+    </div>
+  </section>
+
+  <section class="card" id="classification-section" aria-labelledby="sifter-title">
+    <h2 id="sifter-title">2. Classify the batch once</h2>
+    <div id="sifter"></div>
+    <p class="taxonomy" id="taxonomy-preview">No shared classification selected.</p>
+  </section>
+
+  <section class="card" id="items-section" aria-labelledby="items-title">
+    <h2 id="items-title">3. Enter each item's details</h2>
+    <p>Complete one listing at a time. Your shared classification stays applied, and each new listing starts with blank item details.</p>
+    <div id="items"></div>
+  </section>
+
+  <section class="card" id="review-section" aria-labelledby="review-title">
+    <h2 id="review-title">4. Review and download</h2>
+    <p id="estimate">Estimated batch listing fee: €1.00 EUR</p>
+    <p id="validation" aria-live="polite"></p>
+    <div class="actions">
+      <button id="download" type="button">Download completed spreadsheet (.xlsx)</button>
+    </div>
+    <p class="subtle">The Excel workbook contains the listing columns and embeds selected photos in their item rows.</p>
+  </section>
+</main>
+
+<script>
+(() => {
+  const headers = ['title','description','price','currency','categoryPath','months','image1','image2','image3','searchTerms'];
+  const currencies = [
+    ['EUR', 'Euro'], ['USD', 'US Dollar'], ['GBP', 'British Pound'], ['AUD', 'Australian Dollar'],
+    ['CAD', 'Canadian Dollar'], ['JPY', 'Japanese Yen'], ['CHF', 'Swiss Franc'], ['SEK', 'Swedish Krona'],
+    ['NZD', 'NZ Dollar'], ['INR', 'Indian Rupee'], ['CNY', 'Chinese Yuan'], ['BRL', 'Brazilian Real'],
+  ];
+  const currencySymbols = { EUR: '€', USD: '$', GBP: '£', AUD: 'A$', CAD: 'C$', JPY: '¥', CHF: 'CHF', SEK: 'kr', NZD: 'NZ$', INR: '₹', CNY: '¥', BRL: 'R$' };
+
+  const categories = [
+    'Home, furniture & interiors','Garden & outdoor','Kitchen & dining','DIY, tools & building supplies','Building & renovation materials','Electrical, lighting & wiring','Computers & IT','Phones & telecommunications','TV, audio & home cinema','Cameras, photography & optics','Household appliances','Heating, cooling & ventilation','Plumbing & bathroom','Office equipment','Business, industrial & workshop equipment','Agricultural & farm equipment','Commercial catering & hospitality','Medical, laboratory & test equipment','Books, comics & magazines','Records, CDs, DVDs & media','Musical instruments & stage equipment','Games, consoles & gaming','Toys, games & puzzles','Hobbies, crafts & model making','Art, antiques & collectibles','Coins, stamps & memorabilia','Clothing, shoes & accessories','Jewellery & watches',"Baby & children's items",'Sports, fitness & recreation','Camping, travel & outdoor leisure','Bicycles & cycling','Boats & water sports','Pet supplies','Mobility & accessibility aids','Health & personal care equipment','Packaging, storage & materials','Security & specialist equipment','Other / not sure'
+  ];
+  const sifterFieldLabels = {
+    type:'Item type',make:'Brand / maker',model:'Model',year:'Year / date',partNumber:'Part number / reference',material:'Material',dimensions:'Dimensions',colour:'Colour',condition:'Condition',quantity:'Quantity',capacity:'Capacity',specifications:'Specifications',compatibility:'Compatibility',powerSource:'Power source',fault:'Faults / known issues',storage:'Storage capacity',title:'Title / item name',author:'Author',publisher:'Publisher / label',edition:'Edition / issue',format:'Format',artist:'Artist / maker',platform:'Platform',completeness:'Completeness',scale:'Scale / model size',era:'Age / era',origin:'Origin',clothingSize:'Clothing / shoe size',style:'Style',movement:'Movement / mechanism',identifyingMarks:'Identifying marks',ageRange:'Age range',accessories:'Included accessories',sport:'Sport / activity',size:'Size',frameSize:'Frame size',wheelSize:'Wheel size',length:'Length',petType:'Animal / pet type',catalogNumber:'Catalogue number',denomination:'Denomination / issue'
+  };
+  const sifterCategoryFields = {
+    'Home, furniture & interiors':['type','make','material','dimensions','colour','condition'],
+    'Garden & outdoor':['type','make','material','dimensions','powerSource','condition'],
+    'Kitchen & dining':['type','make','material','dimensions','capacity','condition'],
+    'DIY, tools & building supplies':['type','make','model','partNumber','specifications','compatibility','condition'],
+    'Building & renovation materials':['type','material','dimensions','colour','quantity','condition'],
+    'Electrical, lighting & wiring':['type','make','model','partNumber','specifications','compatibility','powerSource','condition'],
+    'Computers & IT':['type','make','model','year','specifications','storage','compatibility','condition','accessories'],
+    'Phones & telecommunications':['type','make','model','year','storage','compatibility','condition','accessories'],
+    'TV, audio & home cinema':['type','make','model','year','specifications','compatibility','condition','accessories'],
+    'Cameras, photography & optics':['type','make','model','year','specifications','compatibility','condition','accessories'],
+    'Household appliances':['type','make','model','year','capacity','powerSource','condition','fault'],
+    'Heating, cooling & ventilation':['type','make','model','capacity','powerSource','specifications','condition','fault'],
+    'Plumbing & bathroom':['type','make','model','partNumber','material','dimensions','compatibility','condition'],
+    'Office equipment':['type','make','model','year','partNumber','dimensions','specifications','condition','accessories'],
+    'Business, industrial & workshop equipment':['type','make','model','year','partNumber','specifications','capacity','powerSource','condition','fault'],
+    'Agricultural & farm equipment':['type','make','model','year','partNumber','specifications','capacity','condition','fault'],
+    'Commercial catering & hospitality':['type','make','model','capacity','dimensions','powerSource','specifications','condition'],
+    'Medical, laboratory & test equipment':['type','make','model','partNumber','specifications','capacity','condition','compatibility'],
+    'Books, comics & magazines':['title','author','publisher','edition','year','format','condition'],
+    'Records, CDs, DVDs & media':['title','artist','publisher','edition','year','format','condition'],
+    'Musical instruments & stage equipment':['type','make','model','year','material','specifications','condition','accessories'],
+    'Games, consoles & gaming':['title','platform','year','edition','compatibility','condition','accessories'],
+    'Toys, games & puzzles':['type','make','ageRange','material','completeness','condition'],
+    'Hobbies, crafts & model making':['type','make','model','scale','material','dimensions','completeness','condition'],
+    'Art, antiques & collectibles':['type','title','artist','material','era','origin','dimensions','condition'],
+    'Coins, stamps & memorabilia':['type','origin','year','denomination','catalogNumber','edition','condition'],
+    'Clothing, shoes & accessories':['type','make','clothingSize','material','colour','style','condition'],
+    'Jewellery & watches':['type','make','material','dimensions','movement','identifyingMarks','condition'],
+    "Baby & children's items":['type','make','ageRange','dimensions','material','condition','completeness'],
+    'Sports, fitness & recreation':['type','make','model','sport','size','specifications','condition','accessories'],
+    'Camping, travel & outdoor leisure':['type','make','model','capacity','dimensions','material','condition','accessories'],
+    'Bicycles & cycling':['type','make','model','year','frameSize','wheelSize','partNumber','condition','accessories'],
+    'Boats & water sports':['type','make','model','year','length','capacity','material','powerSource','condition','accessories'],
+    'Pet supplies':['type','make','petType','dimensions','material','condition'],
+    'Mobility & accessibility aids':['type','make','model','dimensions','capacity','condition','accessories'],
+    'Health & personal care equipment':['type','make','model','partNumber','specifications','dimensions','condition','accessories'],
+    'Packaging, storage & materials':['type','material','dimensions','capacity','quantity','condition'],
+    'Security & specialist equipment':['type','make','model','partNumber','specifications','compatibility','powerSource','condition']
+  };
+  const generalSifterFields = [
+    ['description','What is it?'],['machineDescription','Seller description'],['freeform','Anything else to add'],['vehicleType','Vehicle type'],['machineClass','Class of machine'],['use','What it is used for'],['type','Narrower type'],['feature','Feature / distinguishing detail'],['identification','Other identifying details'],['make','Make'],['model','Model'],['year','Year'],['partNumber','Part number'],['variant','Variant / trim'],['mileage','Mileage'],['fuelType','Fuel type'],['transmission','Transmission'],['colour','Colour'],['material','Material'],['dimensions','Dimensions'],['condition','Condition'],['quantity','Quantity'],['capacity','Capacity'],['specifications','Specifications'],['compatibility','Compatibility'],['powerSource','Power source'],['fault','Faults / known issues'],['storage','Storage capacity'],['title','Title / item name'],['author','Author'],['publisher','Publisher / label'],['edition','Edition / issue'],['format','Format'],['artist','Artist / maker'],['platform','Platform'],['completeness','Completeness'],['scale','Scale / model size'],['era','Age / era'],['origin','Origin'],['clothingSize','Clothing / shoe size'],['style','Style'],['movement','Movement / mechanism'],['identifyingMarks','Identifying marks'],['ageRange','Age range'],['accessories','Included accessories'],['sport','Sport / activity'],['size','Size'],['frameSize','Frame size'],['wheelSize','Wheel size'],['length','Length'],['petType','Animal / pet type'],['catalogNumber','Catalogue number'],['denomination','Denomination / issue'],['runningOperating','Running / operating'],['workingStatus','Working status']
+  ];
+  const machineSifterFields = ['machineClass','make','model','year','partNumber','identification','colour','runningOperating'];
+  const machineStatusCategories = new Set(['DIY, tools & building supplies','Electrical, lighting & wiring','Computers & IT','Phones & telecommunications','TV, audio & home cinema','Cameras, photography & optics','Household appliances','Heating, cooling & ventilation','Office equipment','Business, industrial & workshop equipment','Agricultural & farm equipment','Commercial catering & hospitality','Medical, laboratory & test equipment','Security & specialist equipment']);
+  const sifterKeywordFields = ['description','machineDescription','freeform','vehicleType','machineClass','use','type','feature','identification','make','model','year','partNumber','variant','mileage','fuelType','transmission','colour','material','dimensions','condition','quantity','capacity','specifications','compatibility','powerSource','fault','storage','title','author','publisher','edition','format','artist','platform','completeness','scale','era','origin','clothingSize','style','movement','identifyingMarks','ageRange','accessories','sport','size','frameSize','wheelSize','length','petType','catalogNumber','denomination','runningOperating','workingStatus'];
+  const stopWords = new Set(['a','an','the','and','or','of','for','with','in','on','to','from','by','it','is','this','that','my','your','normally','called','used','kind','type']);
+  const genericWords = new Set(['item','thing','object','stuff','something']);
+  const $ = (selector) => document.querySelector(selector);
+  const sifter = $('#sifter');
+  const itemRoot = $('#items');
+  const listingCurrency = $('#listing-currency');
+  [sifter, itemRoot].forEach((root) => {
+    root.addEventListener('keydown', (event) => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      const current = event.target.closest('.choices button:not(:disabled)');
+      if (!current || !root.contains(current)) return;
+      const group = current.closest('.choices');
+      const options = Array.from(group.querySelectorAll('button:not(:disabled)'));
+      const index = options.indexOf(current);
+      if (options.length < 2) return;
+      event.preventDefault();
+      const direction = event.key === 'ArrowRight' ? 1 : -1;
+      options[(index + direction + options.length) % options.length].focus();
+    });
+  });
+  currencies.forEach(([code, name]) => {
+    const option = document.createElement('option'); option.value = code; option.textContent = `${code} — ${name}`; listingCurrency.append(option);
+  });
+  let path = [];
+  let route = '';
+  let classification = { route: '', kind: '', category: '', detail: '' };
+  let itemValues = [];
+  let currentItemIndex = 0;
+  let itemsFinished = false;
+  let classificationApplied = false;
+
+  function refreshStepLocks() {
+    const batchSize = Number($('#batch-size').value);
+    const exchangeRate = Number($('#exchange-rate').value);
+    const batchComplete = batchSize >= 2 && batchSize <= 100 && exchangeRate > 0;
+    const lockControls = (section, enabled) => {
+      document.querySelectorAll(`${section} input, ${section} select, ${section} textarea, ${section} button`).forEach((control) => { control.disabled = !enabled; });
+    };
+    lockControls('#classification-section', batchComplete);
+    lockControls('#items-section', batchComplete && classificationApplied);
+  }
+
+  function setPath(parts) {
+    path = parts.filter(Boolean);
+    $('#taxonomy-preview').textContent = path.length ? `Applied to every row: ${path.join(' / ')}` : 'No shared classification selected.';
+    updateReview();
+  }
+
+  function sifterProfile() {
+    if (classification.route === 'machine' || classification.route === 'parts') {
+      const isVehicle = classification.kind === 'vehicle' || path.some((part) => /vehicle/i.test(part));
+      if (isVehicle) return [
+        {key:'make',answerKey:'make',label:'Make'},
+        {key:'model',answerKey:'model',label:'Model'},
+        {key:'year',answerKey:'year',label:'Year'},
+        {key:'variant',answerKey:'variant',label:'Variant / trim'},
+        {key:'partNumber',answerKey:'partNumber',label:'Part number'},
+        {key:'mileage',answerKey:'mileage',label:'Mileage'},
+        {key:'fuelType',answerKey:'fuelType',label:'Fuel type'},
+        {key:'transmission',answerKey:'transmission',label:'Transmission'},
+        {key:'colour',answerKey:'colour',label:'Colour'},
+        {key:'identification',answerKey:'identification',label:'Other identifying details'},
+        {key:'runningOperating',answerKey:'runningOperating',label:'Running / operating?'}
+      ];
+      const keys = machineSifterFields;
+      return keys.map((key) => ({ key, answerKey: key, label: key === 'identification' ? 'Other identifying details' : key === 'runningOperating' ? 'Running / operating?' : sifterFieldLabels[key] || key }));
+    }
+    if (classification.category === 'Other / not sure') {
+      return [
+        {key:'description',answerKey:'description',label:'What is it?'},
+        {key:'machineDescription',answerKey:'machineDescription',label:'Seller description'},
+        {key:'title',answerKey:'title',label:'What is it called?'},
+        {key:'use',answerKey:'use',label:'What is it used for?'},
+        {key:'make',answerKey:'make',label:'Who made it?'},
+        {key:'origin',answerKey:'origin',label:'Where was it made?'},
+        {key:'year',answerKey:'year',label:'When was it made?'},
+        {key:'material',answerKey:'material',label:'What is it made of?'},
+        {key:'dimensions',answerKey:'dimensions',label:'What are its dimensions or size?'},
+        {key:'condition',answerKey:'condition',label:'What condition is it in?'},
+        {key:'fault',answerKey:'fault',label:'Is anything missing, damaged or unusual?'},
+        {key:'identifyingMarks',answerKey:'identifyingMarks',label:'Identifying marks, numbers or labels?'},
+        {key:'freeform',answerKey:'freeform',label:'Anything else to add?'}
+      ];
+    }
+    return (sifterCategoryFields[classification.category] || ['type','make','model','condition']).map((originalKey) => {
+      const key = originalKey === 'condition' && machineStatusCategories.has(classification.category) ? 'workingStatus' : originalKey;
+      return {
+      key, answerKey: key,
+      label: key === 'workingStatus' ? 'Working?' : (sifterFieldLabels[key] || key)
+      };
+    });
+  }
+
+  function itemSifterAnswers(item) {
+    const answers = { description: item.description || '', title: item.title || '', ...(item.sifter || {}) };
+    if ((classification.route === 'machine' || classification.route === 'parts') && classification.detail) {
+      answers[classification.kind === 'vehicle' ? 'vehicleType' : 'machineClass'] ||= classification.detail;
+    }
+    return answers;
+  }
+
+  function sifterSearchTerms(answers = {}) {
+    const result = [];
+    const seen = new Set();
+    const add = (value, preserve = false) => {
+      const text = preserve ? String(value ?? '') : String(value ?? '').trim().replace(/\s+/g, ' ');
+      const normalized = text.toLowerCase().replace(/[.!?]+$/g, '');
+      if (!text.trim() || /^(?:(?:i )?(?:don't know|do not know)|unknown|not sure|unsure|n\/a|na|skip|-)$/i.test(normalized) || seen.has(text.toLowerCase())) return;
+      seen.add(text.toLowerCase()); result.push(text);
+    };
+    sifterKeywordFields.forEach((key) => {
+      const value = answers[key];
+      if (!String(value ?? '').trim()) return;
+      if (key === 'runningOperating') {
+        const answer = String(value).trim().toLowerCase();
+        if (answer === 'yes') add('running');
+        else if (answer === 'no') add('non-running');
+        else add(value);
+        return;
+      }
+      const searchable = String(value).trim().replace(/\b(?:made|manufactured|produced|built)\s+by\b/gi, ' ').replace(/\b(?:this is|it is|it was|known as)\b/gi, ' ').replace(/\s+/g, ' ').trim();
+      add(searchable, key === 'description');
+      (searchable.toLowerCase().match(/[a-z0-9]+/g) || []).forEach((word) => {
+        if (!stopWords.has(word) && !genericWords.has(word)) add(word);
+      });
+    });
+    return result;
+  }
+
+  function renderSifterDetails(grid, item, itemIndex) {
+    const section = document.createElement('section');
+    section.className = 'sifter-details';
+    section.style.gridColumn = '1 / -1';
+    const heading = document.createElement('h3');
+    heading.style.color = '#fff';
+    heading.append(
+      document.createTextNode("IF YOU DON'T KNOW SOMETHING, JUST LEAVE IT BLANK."),
+      document.createElement('br'),
+      document.createTextNode('BUT THE BETTER YOU DESCRIBE YOUR LISTING, THE EASIER IT IS FOR BUYERS TO FIND.')
+    );
+    section.append(heading);
+    const answers = item.sifter || (item.sifter = {});
+    const initialAnswers = itemSifterAnswers(item);
+    sifterProfile().forEach(({ key, answerKey, label }) => {
+      if (key === 'runningOperating' || key === 'workingStatus') {
+        const fieldset = document.createElement('fieldset');
+        const legend = document.createElement('legend'); legend.textContent = label; fieldset.append(legend);
+        const choices = document.createElement('div'); choices.className = 'choices';
+        const values = key === 'workingStatus' ? [['Working','Yes'],['Not working','No']] : [['Yes','Yes'],['No','No']];
+        const makeChoiceButton = classification.route === 'parts' ? partFlowButton : button;
+        values.forEach(([value, text]) => {
+          const option = makeChoiceButton(text, () => {
+            answers[answerKey] = answers[answerKey] === value ? '' : value;
+            choices.querySelectorAll('button').forEach((control) => {
+              const selected = control.dataset.answerValue === answers[answerKey];
+              control.classList.toggle('selected', selected);
+              control.setAttribute('aria-pressed', String(selected));
+            });
+            updateReview();
+          });
+          option.classList.add('compact-button');
+          option.dataset.answerValue = value;
+          const selected = initialAnswers[answerKey] === value;
+          option.classList.toggle('selected', selected);
+          option.setAttribute('aria-pressed', String(selected));
+          choices.append(option);
+        });
+        fieldset.append(choices); section.append(fieldset);
+        return;
+      }
+      const wrap = document.createElement('label');
+      wrap.textContent = label;
+      const input = document.createElement(['description','machineDescription','freeform'].includes(answerKey) ? 'textarea' : 'input');
+      if (input.tagName === 'INPUT') input.type = 'text';
+      input.placeholder = 'Leave blank if unknown';
+      input.value = initialAnswers[answerKey] || '';
+      input.addEventListener('input', () => { answers[answerKey] = input.value; updateReview(); });
+      input.addEventListener('change', () => { answers[answerKey] = input.value; updateReview(); });
+      input.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' || (input.tagName === 'TEXTAREA' && event.shiftKey)) return;
+        event.preventDefault();
+        const controls = Array.from(grid.querySelectorAll('input:not([type="file"]):not(:disabled), textarea:not(:disabled), select:not(:disabled), .photo-picker[tabindex="0"]'));
+        const next = controls[controls.indexOf(input) + 1];
+        if (next) next.focus();
+      });
+      const row = document.createElement('span'); row.className = 'detail-input-row';
+      const clear = button('×', () => { answers[answerKey] = ''; input.value = ''; updateReview(); input.focus(); });
+      clear.className = 'detail-clear'; clear.tabIndex = -1; clear.setAttribute('aria-label', `Clear ${label}`); clear.title = `Clear ${label}`;
+      row.append(input, clear); wrap.append(row); section.append(wrap);
+    });
+    const terms = sifterSearchTerms(itemSifterAnswers(item));
+    const preview = document.createElement('p');
+    preview.className = 'keyword-preview';
+    preview.textContent = terms.length ? `Generated search terms: ${terms.join(', ')}` : 'Generated search terms will appear here as details are entered.';
+    preview.dataset.keywordPreview = String(itemIndex);
+    section.append(preview);
+    grid.append(section);
+  }
+
+  function button(label, action) {
+    const el = document.createElement('button');
+    el.type = 'button'; el.textContent = label; el.addEventListener('click', action);
+    return el;
+  }
+
+  function partFlowButton(label, action) {
+    const el = button(label, action);
+    el.classList.add('part-flow-button');
+    return el;
+  }
+
+  function showClassificationComplete() {
+    classificationApplied = true;
+    refreshStepLocks();
+    renderItems();
+    sifter.replaceChildren();
+    const message = document.createElement('p');
+    message.className = 'taxonomy';
+    message.textContent = `Classification applied to the batch: ${path.join(' / ')}`;
+    const actions = document.createElement('div'); actions.className = 'choices';
+    const classificationButton = classification.route === 'parts' ? partFlowButton : button;
+    actions.append(classificationButton('Change classification', showRouteChoices));
+    const continueButton = classificationButton('Continue to item details', () => {
+      $('#items-title').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      itemRoot.querySelector('input:not(:disabled), textarea:not(:disabled), select:not(:disabled)')?.focus();
+    });
+    actions.append(continueButton);
+    sifter.append(message, actions);
+    $('#items-title').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    itemRoot.querySelector('input:not(:disabled), textarea:not(:disabled), select:not(:disabled)')?.focus();
+  }
+
+  function field(label, options = {}) {
+    const wrap = document.createElement('label'); wrap.textContent = label;
+    let input;
+    if (options.select) {
+      input = document.createElement('select');
+      const placeholder = document.createElement('option'); placeholder.value = ''; placeholder.textContent = 'Choose a category'; input.append(placeholder);
+      options.select.forEach((value) => { const option = document.createElement('option'); option.value = value; option.textContent = value; input.append(option); });
+    } else input = document.createElement(options.multiline ? 'textarea' : 'input');
+    if (!options.multiline && input.tagName === 'INPUT') input.type = options.type || 'text';
+    input.placeholder = options.placeholder || '';
+    input.addEventListener('input', () => options.onChange?.(input.value));
+    wrap.append(input); return { wrap, input };
+  }
+
+  function askMachineClassification(currentRoute, label) {
+    sifter.replaceChildren();
+    const title = document.createElement('h3'); title.textContent = label; sifter.append(title);
+    const options = document.createElement('div'); options.className = 'choices';
+    const choiceButton = currentRoute === 'parts' ? partFlowButton : button;
+    options.append(choiceButton('Vehicle', () => askSpecificType(currentRoute, 'vehicle')));
+    options.append(choiceButton('Other machine', () => askSpecificType(currentRoute, 'machine')));
+    sifter.append(options);
+    options.querySelector('button:not(:disabled)')?.focus();
+  }
+
+  function askSpecificType(currentRoute, kind) {
+    sifter.replaceChildren();
+    classification = { ...classification, route: currentRoute === 'parts' ? 'parts' : 'machine', kind };
+    const isPart = currentRoute === 'parts';
+    const label = isPart ? (kind === 'vehicle' ? 'Vehicle / part classification' : 'Machine / part classification') : (kind === 'vehicle' ? 'What sort of vehicle is it?' : 'What kind of machine?');
+    const specific = field(label, { placeholder: kind === 'vehicle' ? 'e.g. car, tractor, motorcycle' : 'e.g. lathe, compressor' });
+    sifter.append(specific.wrap);
+    if (isPart) {
+      const related = document.createElement('p'); related.className = 'subtle'; related.textContent = `Associated with ${kind === 'vehicle' ? 'a vehicle' : 'another machine'}.`; sifter.append(related);
+    }
+    const update = () => {
+      const detail = specific.input.value.trim();
+      classification.detail = detail;
+      const root = isPart ? 'Parts of machines' : 'Machines';
+      const branch = isPart ? (kind === 'vehicle' ? 'Parts of vehicles' : 'Parts of other machines') : (kind === 'vehicle' ? 'Vehicles' : 'Other machines');
+      setPath([root, branch, detail]);
+      apply.disabled = !detail;
+    };
+    specific.input.addEventListener('input', update);
+    const apply = isPart ? partFlowButton('Apply classification to batch', showClassificationComplete) : button('Apply classification to batch', showClassificationComplete);
+    apply.disabled = true;
+    sifter.append(apply);
+    specific.input.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' || apply.disabled) return;
+      event.preventDefault(); apply.click();
+    });
+    const back = isPart ? partFlowButton('Back', () => askMachineClassification('parts', 'Is it parts of a vehicle or another machine?')) : button('Back', showRouteChoices);
+    back.classList.add('classification-back-button');
+    sifter.append(back);
+    update();
+    specific.input.focus();
+  }
+
+  function showOtherCategories() {
+    sifter.replaceChildren();
+    classification = { route: 'other', kind: '', category: '', detail: '' };
+    const cat = field('Select category', { select: categories, onChange: (value) => { classification.category = value; setPath([value]); apply.disabled = !value; } });
+    sifter.append(cat.wrap);
+    const apply = button('Apply classification to batch', showClassificationComplete);
+    apply.disabled = true;
+    sifter.append(apply);
+    cat.input.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' || apply.disabled) return;
+      event.preventDefault(); apply.click();
+    });
+    const back = button('Back', showRouteChoices); sifter.append(back);
+    cat.input.focus();
+  }
+
+  function showRouteChoices() {
+    route = ''; classification = { route: '', kind: '', category: '', detail: '' }; classificationApplied = false; setPath([]); sifter.replaceChildren();
+    const choices = document.createElement('div'); choices.className = 'choices';
+    choices.append(button('Machine', () => { route = 'machine'; classification.route = 'machine'; askMachineClassification('machine', 'What kind of machine?'); }));
+    choices.append(partFlowButton('Part of a machine', () => { route = 'parts'; classification.route = 'parts'; askMachineClassification('parts', 'Is it parts of a vehicle or another machine?'); }));
+    choices.append(button('Everything else', showOtherCategories));
+    sifter.append(choices);
+    choices.querySelector('button:not(:disabled)')?.focus();
+    refreshStepLocks();
+  }
+
+  function renderItems() {
+    itemRoot.replaceChildren();
+    const index = currentItemIndex;
+    const value = itemValues[index];
+    if (!value) { updateReview(); return; }
+      const card = document.createElement('fieldset'); card.className = 'item';
+      const legend = document.createElement('legend'); legend.textContent = `Item ${index + 1} of ${itemValues.length}`; card.append(legend);
+      const grid = document.createElement('div'); grid.className = 'grid';
+      const add = (label, key, type = 'text', full = false) => {
+        const control = field(label, { type, multiline: key === 'description', placeholder: key.startsWith('image') ? 'https://…' : '', onChange: (next) => { if (key !== 'description' || next.trim().split(/\s+/).filter(Boolean).length <= 500) value[key] = next; updateReview(); } });
+        if (key === 'price') control.input.classList.add('price-input');
+        control.input.tabIndex = 0;
+        control.input.value = value[key] || '';
+        control.input.addEventListener('keydown', (event) => {
+          if (event.key !== 'Enter' || (control.input.tagName === 'TEXTAREA' && event.shiftKey)) return;
+          event.preventDefault();
+          const controls = Array.from(card.querySelectorAll('input:not([type="file"]):not(:disabled), textarea:not(:disabled), select:not(:disabled), .photo-picker[tabindex="0"]'));
+          const next = controls[controls.indexOf(control.input) + 1];
+          if (next) next.focus();
+        });
+        if (full) control.wrap.style.gridColumn = '1 / -1';
+        grid.append(control.wrap);
+      };
+      add('Title', 'title', 'text', true);
+      add('Seller-written description (max 500 words)', 'description', 'text', true);
+      renderSifterDetails(grid, value, index);
+      add('Price', 'price', 'number');
+      const priceControl = grid.querySelector('label:last-child');
+      const priceInput = priceControl.querySelector('input');
+      const priceBox = document.createElement('span'); priceBox.className = 'money-box';
+      const priceSymbol = document.createElement('span'); priceSymbol.className = 'money-symbol'; priceSymbol.dataset.currencySymbol = 'price';
+      priceSymbol.textContent = currencySymbols[listingCurrency.value] || listingCurrency.value;
+      priceInput.remove(); priceBox.append(priceSymbol, priceInput); priceControl.append(priceBox);
+      const photoSection = document.createElement('div'); photoSection.style.gridColumn = '1 / -1';
+      const photoHeading = document.createElement('label'); photoHeading.append(document.createTextNode('Photos (max 3)'));
+      const photoHelp = document.createElement('span'); photoHelp.className = 'photo-help'; photoHelp.textContent = 'Press Ctrl for bulk photo choice'; photoHeading.append(photoHelp); photoSection.append(photoHeading);
+      const photoGrid = document.createElement('div'); photoGrid.className = 'photo-grid';
+      const selectedPhotos = [1, 2, 3].map((number) => value[`image${number}`] || '').filter(Boolean);
+      selectedPhotos.forEach((src, index) => {
+        const tile = document.createElement('div'); tile.className = 'photo-tile';
+        const image = document.createElement('img'); image.src = src; image.alt = `Item ${index + 1} photo preview`; tile.append(image);
+        const remove = button('×', () => {
+          const remaining = selectedPhotos.filter((_, photoIndex) => photoIndex !== index);
+          [1, 2, 3].forEach((number) => { value[`image${number}`] = remaining[number - 1] || ''; });
+          renderItems();
+        });
+        remove.className = 'photo-remove'; remove.tabIndex = -1; remove.setAttribute('aria-label', `Remove photo ${index + 1}`); tile.append(remove); photoGrid.append(tile);
+      });
+      if (selectedPhotos.length < 3) {
+        const picker = document.createElement('label'); picker.className = 'photo-picker';
+        picker.tabIndex = 0;
+        picker.setAttribute('role', 'button');
+        picker.setAttribute('aria-label', 'Add photos');
+        picker.append(document.createTextNode('+ Add photo'));
+        const fileInput = document.createElement('input'); fileInput.type = 'file'; fileInput.accept = 'image/*'; fileInput.multiple = true;
+        picker.addEventListener('keydown', (event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          fileInput.click();
+        });
+        fileInput.addEventListener('change', () => {
+          const files = Array.from(fileInput.files || []).slice(0, 3 - selectedPhotos.length);
+          files.forEach((file) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const nextSlot = [1, 2, 3].find((number) => !value[`image${number}`]);
+              if (nextSlot) value[`image${nextSlot}`] = String(reader.result || '');
+              renderItems();
+            };
+            reader.readAsDataURL(file);
+          });
+          fileInput.value = '';
+        });
+        picker.append(fileInput); photoGrid.append(picker);
+      }
+      photoSection.append(photoGrid); grid.append(photoSection);
+      const durationWrap = document.createElement('label'); durationWrap.textContent = 'How long should it stay up?';
+      const duration = document.createElement('select');
+      const durationPlaceholder = document.createElement('option'); durationPlaceholder.value = ''; durationPlaceholder.textContent = 'Choose a duration'; duration.append(durationPlaceholder);
+      [['3', '3 months — €1 per item'], ['6', '6 months — €2 per item'], ['9', '9 months — €3 per item'], ['12', '12 months — €4 per item']].forEach(([months, label]) => {
+        const option = document.createElement('option'); option.value = months; option.textContent = label; duration.append(option);
+      });
+      duration.tabIndex = 0; duration.value = value.months || '';
+      duration.addEventListener('change', () => { value.months = duration.value; updateReview(); });
+      duration.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        itemRoot.querySelector('.actions button:last-child')?.focus();
+      });
+      durationWrap.append(duration); grid.append(durationWrap);
+      card.append(grid);
+      const preview = document.createElement('section'); preview.className = 'buyer-preview'; preview.dataset.listingPreview = String(index);
+      const previewHeading = document.createElement('h3'); previewHeading.textContent = 'Buyer preview'; preview.append(previewHeading);
+      const previewCard = document.createElement('div'); previewCard.className = 'buyer-preview-card';
+      const previewMedia = document.createElement('div'); previewMedia.dataset.previewMedia = '';
+      const previewContent = document.createElement('div'); previewContent.className = 'buyer-preview-content';
+      const previewTitle = document.createElement('h4'); previewTitle.className = 'buyer-preview-title'; previewTitle.dataset.previewTitle = ''; previewContent.append(previewTitle);
+      const previewPrice = document.createElement('p'); previewPrice.className = 'buyer-preview-price'; previewPrice.dataset.previewPrice = ''; previewContent.append(previewPrice);
+      const previewCategory = document.createElement('p'); previewCategory.className = 'buyer-preview-category'; previewCategory.dataset.previewCategory = ''; previewContent.append(previewCategory);
+      const previewDescription = document.createElement('p'); previewDescription.className = 'buyer-preview-description'; previewDescription.dataset.previewDescription = ''; previewContent.append(previewDescription);
+      previewCard.append(previewMedia, previewContent); preview.append(previewCard); card.append(preview); itemRoot.append(card);
+      const navigation = document.createElement('div'); navigation.className = 'actions';
+      const previous = button('Previous item', () => { currentItemIndex -= 1; renderItems(); });
+      previous.disabled = index === 0;
+      navigation.append(previous);
+      const isFinalItem = index === itemValues.length - 1;
+      const next = button(isFinalItem ? (itemsFinished ? 'Finished' : 'Finish items') : 'Save item and continue', () => {
+        if (!isItemComplete(value)) return;
+        if (index < itemValues.length - 1) { currentItemIndex += 1; renderItems(); }
+        else {
+          itemsFinished = true;
+          next.textContent = 'Finished';
+          next.classList.add('button-complete');
+          $('#review-title').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+      next.disabled = !isItemComplete(value);
+      navigation.append(next);
+      const status = document.createElement('p'); status.className = 'subtle';
+      status.textContent = `${itemValues.filter(isItemComplete).length} of ${itemValues.length} items completed.`;
+      itemRoot.append(navigation, status);
+    updateReview();
+  }
+
+  function isItemComplete(item) {
+    return Boolean(item?.title?.trim() && item?.description?.trim() && (item.description || '').trim().split(/\s+/).filter(Boolean).length <= 500 && Number(item.price) > 0 && item.months && [item.image1, item.image2, item.image3].some(Boolean) && [item.image1, item.image2, item.image3].every(validImage));
+  }
+
+  function rows() {
+    return itemValues.map((item) => ({
+      title: item.title || '', description: item.description || '', price: item.price || '',
+      currency: listingCurrency.value || 'EUR', categoryPath: path.join(' / '), months: item.months || '',
+      image1: item.image1 || '', image2: item.image2 || '', image3: item.image3 || '',
+      searchTerms: sifterSearchTerms(itemSifterAnswers(item)).join('; '),
+    }));
+  }
+
+  function validImage(value) {
+    if (!value) return true;
+    if (/^data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+$/.test(value)) return true;
+    try { return ['http:', 'https:'].includes(new URL(value).protocol); } catch { return false; }
+  }
+
+  function updateReview() {
+    if (itemsFinished && !itemValues.every(isItemComplete)) itemsFinished = false;
+    const eurTotal = itemValues.reduce((total, item) => total + (Number(item.months) || 0) / 3, 0);
+    const rate = Number($('#exchange-rate').value);
+    const localTotal = Math.ceil(eurTotal * rate * 100) / 100;
+    $('#estimate').textContent = `Estimated batch fee: €${eurTotal.toFixed(2)} EUR${rate > 0 ? ` · approximately ${localTotal.toFixed(2)} in seller's local currency` : ''}`;
+    const missing = [];
+    if (!path.length) missing.push('choose a shared classification');
+    if (!itemValues.length) missing.push('enter a number of items from 2 to 100');
+    itemValues.forEach((item, i) => {
+      if (!item.title?.trim()) missing.push(`add a title for item ${i + 1}`);
+      if (!item.description?.trim()) missing.push(`add a description for item ${i + 1}`);
+      if ((item.description || '').trim().split(/\s+/).filter(Boolean).length > 500) missing.push(`shorten item ${i + 1}'s description to 500 words`);
+      if (!(Number(item.price) > 0)) missing.push(`enter a positive price for item ${i + 1}`);
+      if (!item.months) missing.push(`choose a duration for item ${i + 1}`);
+      if (![item.image1, item.image2, item.image3].some(Boolean)) missing.push(`add at least one photo for item ${i + 1}`);
+      if (![item.image1, item.image2, item.image3].every(validImage)) missing.push(`fix an invalid photo for item ${i + 1}`);
+    });
+    const nextButton = itemRoot.querySelector('.actions button:last-child');
+    if (nextButton) {
+      const isFinalItem = currentItemIndex === itemValues.length - 1;
+      if (isFinalItem) nextButton.textContent = itemsFinished ? 'Finished' : 'Finish items';
+      nextButton.disabled = !isItemComplete(itemValues[currentItemIndex]);
+      nextButton.classList.toggle('button-complete', isFinalItem && itemsFinished && itemValues.every(isItemComplete));
+    }
+    const status = itemRoot.querySelector('.subtle');
+    if (status) status.textContent = `${itemValues.filter(isItemComplete).length} of ${itemValues.length} items completed.`;
+    itemValues.forEach((item, index) => {
+      const listingPreview = itemRoot.querySelector(`[data-listing-preview="${index}"]`);
+      if (listingPreview) {
+        const images = [item.image1, item.image2, item.image3].filter(Boolean);
+        const media = listingPreview.querySelector('[data-preview-media]');
+        media.replaceChildren();
+        if (images.length) {
+          const mainImage = document.createElement('img'); mainImage.className = 'buyer-preview-main-image'; mainImage.src = images[0]; mainImage.alt = item.title?.trim() || `Item ${index + 1} photo`;
+          media.append(mainImage);
+          if (images.length > 1) {
+            const thumbnails = document.createElement('div'); thumbnails.className = 'buyer-preview-thumbnails';
+            images.slice(1).forEach((src, photoIndex) => { const image = document.createElement('img'); image.src = src; image.alt = `Additional listing photo ${photoIndex + 2}`; thumbnails.append(image); });
+            media.append(thumbnails);
+          }
+        } else {
+          const placeholder = document.createElement('div'); placeholder.className = 'buyer-preview-no-image'; placeholder.textContent = 'Listing photo'; media.append(placeholder);
+        }
+        listingPreview.querySelector('[data-preview-title]').textContent = item.title?.trim() || 'Listing title';
+        const amount = Number(item.price);
+        const currency = listingCurrency.value || 'EUR';
+        listingPreview.querySelector('[data-preview-price]').textContent = amount > 0 ? new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(amount) : 'Price';
+        listingPreview.querySelector('[data-preview-category]').textContent = path.length ? path.join(' / ') : 'Category';
+        listingPreview.querySelector('[data-preview-description]').textContent = item.description?.trim() || 'Your description will appear here.';
+      }
+      const preview = itemRoot.querySelector(`[data-keyword-preview="${index}"]`);
+      if (preview) {
+        const terms = sifterSearchTerms(itemSifterAnswers(item));
+        preview.textContent = terms.length ? `Generated search terms: ${terms.join(', ')}` : 'Generated search terms will appear here as details are entered.';
+      }
+    });
+    $('#validation').className = missing.length ? 'danger' : 'good';
+    $('#validation').textContent = missing.length ? `Complete before download: ${missing.slice(0, 5).join('; ')}${missing.length > 5 ? `; and ${missing.length - 5} more` : ''}.` : `Ready: ${itemValues.length} item${itemValues.length === 1 ? '' : 's'} with shared taxonomy applied.`;
+    $('#download').disabled = missing.length > 0 || !(rate > 0);
+    refreshStepLocks();
+  }
+
+  function xmlEscape(value) {
+    return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+  }
+
+  function zipStored(files) {
+    const encoder = new TextEncoder();
+    const crcTable = new Uint32Array(256);
+    for (let n = 0; n < 256; n += 1) {
+      let c = n;
+      for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+      crcTable[n] = c >>> 0;
+    }
+    const crc32 = (bytes) => {
+      let crc = 0xffffffff;
+      for (const byte of bytes) crc = crcTable[(crc ^ byte) & 0xff] ^ (crc >>> 8);
+      return (crc ^ 0xffffffff) >>> 0;
+    };
+    const u16 = (value) => Uint8Array.of(value & 255, (value >>> 8) & 255);
+    const u32 = (value) => Uint8Array.of(value & 255, (value >>> 8) & 255, (value >>> 16) & 255, (value >>> 24) & 255);
+    const join = (parts) => {
+      const output = new Uint8Array(parts.reduce((sum, part) => sum + part.length, 0));
+      let offset = 0;
+      parts.forEach((part) => { output.set(part, offset); offset += part.length; });
+      return output;
+    };
+    const localParts = [];
+    const centralParts = [];
+    let offset = 0;
+    files.forEach(({ name, data }) => {
+      const nameBytes = encoder.encode(name);
+      const bytes = typeof data === 'string' ? encoder.encode(data) : data;
+      const crc = crc32(bytes);
+      const local = join([u32(0x04034b50), u16(20), u16(0x0800), u16(0), u16(0), u16(0), u32(crc), u32(bytes.length), u32(bytes.length), u16(nameBytes.length), u16(0), nameBytes, bytes]);
+      const central = join([u32(0x02014b50), u16(20), u16(20), u16(0x0800), u16(0), u16(0), u16(0), u32(crc), u32(bytes.length), u32(bytes.length), u16(nameBytes.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(offset), nameBytes]);
+      localParts.push(local); centralParts.push(central); offset += local.length;
+    });
+    const centralDirectory = join(centralParts);
+    const end = join([u32(0x06054b50), u16(0), u16(0), u16(files.length), u16(files.length), u32(centralDirectory.length), u32(offset), u16(0)]);
+    return new Blob([...localParts, centralDirectory, end], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  }
+
+  function xlsxBlob(records) {
+    const files = [];
+    const embedded = [];
+    const mimeByExt = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', bmp: 'image/bmp' };
+    records.forEach((record, rowIndex) => {
+      ['image1', 'image2', 'image3'].forEach((key, photoIndex) => {
+        const value = record[key] || '';
+        const match = value.match(/^data:(image\/(?:png|jpeg|jpg|gif|bmp));base64,([\s\S]+)$/i);
+        if (!match) return;
+        const mime = match[1].toLowerCase() === 'image/jpg' ? 'image/jpeg' : match[1].toLowerCase();
+        const ext = mime === 'image/jpeg' ? 'jpg' : mime.split('/')[1];
+        const binary = atob(match[2]);
+        const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+        const name = `image${embedded.length + 1}.${ext}`;
+        embedded.push({ name, bytes, mime, row: rowIndex + 2, col: 6 + photoIndex });
+        record[key] = '';
+      });
+    });
+    const cell = (value, reference) => {
+      if (value === '' || value === undefined || value === null) return `<c r="${reference}"/>`;
+      if (typeof value === 'number' || (typeof value === 'string' && /^\d+(?:\.\d+)?$/.test(value) && ['price', 'months'].includes(headers[reference.replace(/\d/g, '').charCodeAt(0) - 65]))) return `<c r="${reference}"><v>${xmlEscape(value)}</v></c>`;
+      return `<c r="${reference}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(value)}</t></is></c>`;
+    };
+    const colName = (index) => { let name = ''; for (let n = index + 1; n; n = Math.floor((n - 1) / 26)) name = String.fromCharCode(65 + ((n - 1) % 26)) + name; return name; };
+    const rowsXml = [headers, ...records.map((record) => headers.map((key) => record[key] ?? ''))].map((row, rowIndex) => {
+      const rowNumber = rowIndex + 1;
+      const hasPhotos = embedded.some((photo) => photo.row === rowNumber);
+      return `<row r="${rowNumber}"${hasPhotos ? ' ht="68" customHeight="1"' : ''}>${row.map((value, columnIndex) => cell(value, `${colName(columnIndex)}${rowNumber}`)).join('')}</row>`;
+    }).join('');
+    const drawingTag = embedded.length ? '<drawing r:id="rId1"/>' : '';
+    const sheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetViews><sheetView workbookViewId="0"/></sheetViews><sheetFormatPr defaultRowHeight="20"/><cols>${headers.map((_, i) => `<col min="${i + 1}" max="${i + 1}" width="${i === 9 ? 60 : i >= 6 ? 20 : i === 1 ? 44 : 22}" customWidth="1"/>`).join('')}</cols><sheetData>${rowsXml}</sheetData>${drawingTag}</worksheet>`;
+    files.push(
+      { name: '[Content_Types].xml', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>${[...new Set(embedded.map((image) => image.name.split('.').pop()))].map((ext) => `<Default Extension="${ext}" ContentType="${mimeByExt[ext]}"/>`).join('')}<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${embedded.length ? '<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>' : ''}</Types>` },
+      { name: '_rels/.rels', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>' },
+      { name: 'xl/workbook.xml', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Listings" sheetId="1" r:id="rId1"/></sheets></workbook>' },
+      { name: 'xl/_rels/workbook.xml.rels', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>' },
+      { name: 'xl/styles.xml', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>' },
+      { name: 'xl/worksheets/sheet1.xml', data: sheet },
+    );
+    if (embedded.length) {
+      files.push({ name: 'xl/worksheets/_rels/sheet1.xml.rels', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/></Relationships>' });
+      const pictures = embedded.map((image, index) => `<xdr:twoCellAnchor editAs="oneCell"><xdr:from><xdr:col>${image.col}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>${image.row - 1}</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from><xdr:to><xdr:col>${image.col + 1}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>${image.row}</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:to><xdr:pic><xdr:nvPicPr><xdr:cNvPr id="${index + 1}" name="${image.name}"/><xdr:cNvPicPr/></xdr:nvPicPr><xdr:blipFill><a:blip r:embed="rId${index + 1}"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill><xdr:spPr><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic><xdr:clientData/></xdr:twoCellAnchor>`).join('');
+      files.push({ name: 'xl/drawings/drawing1.xml', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">${pictures}</xdr:wsDr>` });
+      files.push({ name: 'xl/drawings/_rels/drawing1.xml.rels', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${embedded.map((image, index) => `<Relationship Id="rId${index + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/${image.name}"/>`).join('')}</Relationships>` });
+      embedded.forEach((image) => files.push({ name: `xl/media/${image.name}`, data: image.bytes }));
+    }
+    return zipStored(files);
+  }
+
+  function download(filename, blob) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      link.remove();
+      URL.revokeObjectURL(url);
+    }, 10000);
+  }
+
+  $('#batch-size').addEventListener('change', (event) => {
+    itemsFinished = false;
+    if (!event.target.value) {
+      itemValues = [];
+      renderItems();
+      updateReview();
+      return;
+    }
+    const requestedSize = Number(event.target.value);
+    if (!Number.isInteger(requestedSize) || requestedSize < 2) {
+      event.target.value = '';
+      itemValues = [];
+      currentItemIndex = 0;
+      renderItems();
+      updateReview();
+      return;
+    }
+    const size = Math.min(100, requestedSize);
+    event.target.value = size;
+    itemValues = Array.from({ length: size }, (_, i) => itemValues[i] || {});
+    currentItemIndex = Math.min(currentItemIndex, size - 1);
+    renderItems();
+  });
+  function updateCurrencySymbols() {
+    const symbol = currencySymbols[listingCurrency.value] || listingCurrency.value;
+    $('#exchange-symbol').textContent = symbol;
+    document.querySelectorAll('[data-currency-symbol="price"]').forEach((node) => { node.textContent = symbol; });
+  }
+  listingCurrency.addEventListener('change', () => { updateCurrencySymbols(); updateReview(); });
+  listingCurrency.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    updateCurrencySymbols();
+    updateReview();
+    $('#exchange-rate').focus();
+  });
+  $('#batch-size').addEventListener('input', (event) => {
+    event.target.value = event.target.value.replace(/\D/g, '');
+    updateReview();
+  });
+  $('#batch-size').addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' && !(event.key === 'Tab' && !event.shiftKey)) return;
+    event.preventDefault();
+    $('#exchange-rate').focus();
+  });
+  $('#exchange-rate').addEventListener('input', (event) => {
+    const input = event.target;
+    const cleaned = input.value.replace(/[^\d.]/g, '');
+    const decimal = cleaned.indexOf('.');
+    input.value = decimal < 0 ? cleaned : `${cleaned.slice(0, decimal + 1)}${cleaned.slice(decimal + 1).replace(/\./g, '')}`;
+    updateReview();
+  });
+  $('#exchange-rate').addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' && !(event.key === 'Tab' && !event.shiftKey)) return;
+    const target = classificationApplied
+      ? Array.from(sifter.querySelectorAll('button:not(:disabled)')).find((control) => control.textContent.trim() === 'Continue to item details')
+      : sifter.querySelector('button:not(:disabled)');
+    if (!target) return;
+    event.preventDefault();
+    target.focus();
+  });
+  $('#download').addEventListener('click', () => {
+    download('sobs-bulk-listings.xlsx', xlsxBlob(rows()));
+    $('#download').textContent = 'Download';
+    $('#download').classList.add('button-complete');
+  });
+  updateCurrencySymbols(); showRouteChoices(); renderItems(); updateReview(); $('#batch-size').focus();
+})();
+</script>
+</body>
+</html>

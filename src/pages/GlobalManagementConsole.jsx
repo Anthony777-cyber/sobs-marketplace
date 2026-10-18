@@ -12,9 +12,11 @@ export default function GlobalManagementConsole() {
   useEffect(() => {
     const sellerSession = sessionStorage.getItem('sobs_seller_session_token');
     if (!sellerSession) {
-      navigate('/seller-login', { replace: true });
+      navigate('/seller-login', { replace: true, state: { returnTo: '/manage-listings' } });
       return;
     }
+
+    if (sessionStorage.getItem('sobs_management_unlocked') !== 'true') return;
 
     const savedKey = sessionStorage.getItem('sobs_global_user_key');
     if (!savedKey) return;
@@ -63,6 +65,7 @@ export default function GlobalManagementConsole() {
       if (!res.ok) throw new Error(data?.error || 'Wrong key');
 
       sessionStorage.setItem('sobs_global_user_key', code);
+      sessionStorage.setItem('sobs_management_unlocked', 'true');
       localStorage.removeItem('sobs_global_user_key');
       sessionStorage.removeItem('sobs_global_listing_id');
       sessionStorage.removeItem('sobs_global_listing_number');

@@ -26,11 +26,11 @@ export default function ManagementConsole() {
     );
 
     if (!sessionStorage.getItem('sobs_seller_session_token')) {
-      navigate('/seller-login', { replace: true });
+      navigate('/seller-login', { replace: true, state: { returnTo: '/manage-listings' } });
       return;
     }
 
-    if (!globalKey) {
+    if (!globalKey || sessionStorage.getItem('sobs_management_unlocked') !== 'true') {
       navigate('/manage-listings', { replace: true });
       return;
     }

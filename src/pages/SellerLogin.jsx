@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { sellerLogout } from '@/lib/api';
 
@@ -11,6 +11,7 @@ const BUTTON_CLASS =
 
 export default function SellerLogin() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [sellerId, setSellerId] = useState('');
   const [loginSecret, setLoginSecret] = useState('');
@@ -76,6 +77,11 @@ export default function SellerLogin() {
       localStorage.setItem('sobs_global_user_key', enteredSellerId);
       localStorage.setItem('sobs_seller_session_token', data.sessionToken);
       localStorage.setItem('sobs_seller_session_expires_at', data.expiresAt);
+
+      if (location.state?.returnTo === '/manage-listings') {
+        navigate('/manage-listings', { replace: true });
+        return;
+      }
 
       setStatus('success');
     } catch {

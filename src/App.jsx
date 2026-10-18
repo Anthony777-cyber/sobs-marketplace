@@ -115,6 +115,7 @@ function App() {
       // This also prevents restored tabs from reviving the management key.
       sessionStorage.removeItem('sobs_global_user_key');
       sessionStorage.removeItem('sobs_management_key');
+      sessionStorage.removeItem('sobs_management_unlocked');
       void sellerLogout();
     };
     window.addEventListener('pagehide', handlePageHide);

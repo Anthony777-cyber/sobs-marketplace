@@ -74,6 +74,9 @@ body :where(*)::placeholder { color: #fff !important; }
 .global-management-key-submit {
   color: #000 !important;
 }
+.downvote-confirmation-toast {
+  color: #000 !important;
+}
 .management-code-toggle,
 .management-code-toggle * {
   color: #000 !important;

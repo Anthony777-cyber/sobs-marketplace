@@ -11,8 +11,61 @@ import { Image as ImageIcon, Loader2, Plus, X } from 'lucide-react';
 
 const MAX_PHOTOS = 3;
 const MAX_DESCRIPTION_WORDS = 500;
+const MAX_PHOTO_EDGE = 1600;
+const MAX_PHOTO_BYTES = 160 * 1024;
+const MAX_PHOTO_DATA_URL_LENGTH = 220 * 1024;
 const countWords = (text) => text.trim() ? text.trim().split(/\s+/).length : 0;
 const DRAFT_KEY = 'sobs_create_draft';
+const blobToDataUrl = blob => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(reader.result);
+  reader.onerror = () => reject(new Error('Could not read the resized photo.'));
+  reader.readAsDataURL(blob);
+});
+const compressPhoto = async source => {
+  if (typeof source === 'string' && source.startsWith('data:image/jpeg') && source.length <= MAX_PHOTO_DATA_URL_LENGTH) {
+    return source;
+  }
+
+  const isDataUrl = typeof source === 'string';
+  const imageUrl = isDataUrl ? source : URL.createObjectURL(source);
+
+  try {
+    const image = await new Promise((resolve, reject) => {
+      const element = new Image();
+      element.onload = () => resolve(element);
+      element.onerror = () => reject(new Error('Could not open this photo. Please choose another image.'));
+      element.src = imageUrl;
+    });
+    const scale = Math.min(1, MAX_PHOTO_EDGE / Math.max(image.naturalWidth, image.naturalHeight));
+    let width = Math.max(1, Math.round(image.naturalWidth * scale));
+    let height = Math.max(1, Math.round(image.naturalHeight * scale));
+
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('Could not resize this photo. Please choose another image.');
+      context.fillStyle = '#fff';
+      context.fillRect(0, 0, width, height);
+      context.drawImage(image, 0, 0, width, height);
+
+      for (const quality of [0.72, 0.58, 0.44]) {
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+        if (!blob) throw new Error('Could not resize this photo. Please choose another image.');
+        if (blob.size <= MAX_PHOTO_BYTES) return blobToDataUrl(blob);
+      }
+
+      width = Math.max(1, Math.round(width * 0.75));
+      height = Math.max(1, Math.round(height * 0.75));
+    }
+
+    throw new Error('This photo is too large to upload. Please choose a smaller image.');
+  } finally {
+    if (!isDataUrl) URL.revokeObjectURL(imageUrl);
+  }
+};
 
 export default function CreateListing() {
   const navigate = useNavigate();
@@ -119,28 +172,26 @@ export default function CreateListing() {
       )
     : null;
 
-  const onAddPhoto = (e) => {
-    const files = Array.from(e.target.files || []);
+  const onAddPhoto = async (e) => {
+    const input = e.currentTarget;
+    const files = Array.from(input.files || []);
     if (!files.length || photos.length >= MAX_PHOTOS) {
-      e.target.value = '';
+      input.value = '';
       return;
     }
 
     const remaining = MAX_PHOTOS - photos.length;
     const selected = files.slice(0, remaining);
 
-    selected.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setPhotos((prev) => {
-          if (prev.length >= MAX_PHOTOS) return prev;
-          return [...prev, reader.result];
-        });
-      };
-      reader.readAsDataURL(file);
-    });
+    input.value = '';
 
-    e.target.value = '';
+    try {
+      const compressedPhotos = await Promise.all(selected.map(compressPhoto));
+      setPhotos((previous) => [...previous, ...compressedPhotos].slice(0, MAX_PHOTOS));
+      setError('');
+    } catch (photoError) {
+      setError(photoError instanceof Error ? photoError.message : 'Could not process the selected photos.');
+    }
   };
   const removePhoto = (i) => setPhotos(photos.filter((_, idx) => idx !== i));
   const reorderPhotos = (targetIndex) => {
@@ -177,6 +228,9 @@ export default function CreateListing() {
     setSubmitting(true);
     setError('');
     try {
+      const images = await Promise.all(photos.map(compressPhoto));
+      setPhotos(images);
+
       const res = await fetch('/api/listings', {
         method: 'POST',
         headers: {
@@ -190,7 +244,7 @@ export default function CreateListing() {
           price: Number(price),
           currency,
           categoryPath,
-          images: photos,
+          images,
           months: tier.months,
           paymentAmount: tier.amount,
         }),

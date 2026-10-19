@@ -75,7 +75,7 @@ export default function FlagButton({ listing, onRemoved }) {
         {done ? 'downvoted' : 'Downvote'}
       </button>
       {showToast && (
-        <div className="fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-lg bg-foreground px-5 py-3 text-center text-sm font-medium text-background shadow-xl">
+        <div className="downvote-confirmation-toast fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-lg bg-red-600 px-5 py-3 text-center text-sm font-medium text-black shadow-xl">
           Flag acknowledged. Thank you for keeping the community clean.
         </div>
       )}

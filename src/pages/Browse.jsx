@@ -49,11 +49,11 @@ export default function Browse() {
   return (
     <div className="min-h-screen bg-background">
       <NavBar />
-      <div className="mx-auto max-w-5xl px-4 py-8">
-        <div><h1 className="font-display text-3xl tracking-tight">Browse listings</h1><p className="mt-1 text-muted-foreground">Everything for sale right now.</p></div>
+      <div className="mx-auto max-w-5xl px-4 pt-[5.5px] pb-8">
+        <div><h1 className="font-display text-3xl tracking-tight">Browse listings</h1><p className="mt-0.5 text-white">Everything for sale right now.</p></div>
 
         {/* Listings under this path */}
-        <div className="mt-8">
+        <div className="mt-2">
           {listings === null ? (
             <div className="flex justify-center py-20">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />

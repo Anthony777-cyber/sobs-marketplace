@@ -10,13 +10,7 @@ import { getCurrency, formatAmount } from '@/lib/currency';
 import { formatExpiryDate } from '@/lib/format';
 import { setHead } from '@/lib/head';
 import { getListing, getGlobalSellerListings } from '@/lib/api';
-import ListingCode from '@/components/ListingCode';
-import { getListingManagementCode, PRIVATE_LISTING_CODE_LABEL } from '@/lib/listing-codes';
-
-function formatPublicListingNumber(value) {
-  const digits = String(value ?? '').padStart(16, '0');
-  return digits.match(/.{1,4}/g)?.join(' ') ?? digits;
-}
+import { getListingManagementCode } from '@/lib/listing-codes';
 
 export default function ListingDetail() {
   const location = useLocation();
@@ -88,16 +82,16 @@ export default function ListingDetail() {
       <NavBar />
       <div className="mx-auto max-w-3xl px-4 py-8">
         <div className="mb-6 flex items-center justify-between gap-3">
-          <Link to={backTo} className="inline-flex items-center gap-1 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">
+          <Link to={backTo} className="inline-flex w-52 items-center justify-center gap-1 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">
             <ArrowLeft className="h-4 w-4" /> Back to listings
           </Link>
           {!loading && listing && !isUnavailable && (
             <button
               type="button"
               onClick={() => setChatOpen(true)}
-              className="inline-flex h-7 w-20 items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700"
+              className="inline-flex h-9 w-52 items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700"
             >
-              <span className="text-sm leading-none font-medium">Chat</span>
+              <span className="text-sm leading-none font-medium">Chat with seller</span>
             </button>
           )}
         </div>
@@ -141,44 +135,26 @@ export default function ListingDetail() {
                 </div>
               )}
               <div className="p-5">
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-4">
                   <h1 className="min-w-0 flex-1 font-display text-2xl tracking-tight">{listing.title}</h1>
+                </div>
+                <div className="mt-2 flex items-center justify-end gap-4">
                   {!requestedManagementView && (
-                    <div className="shrink-0">
+                    <div className="shrink-0 self-end">
                       <FlagButton listing={listing} onRemoved={() => setRemoved(true)} />
                     </div>
                   )}
                 </div>
-
-                <div className="mt-3">
-                  <ListingCode
-                    label={isManagementView ? 'Public Listing Code:' : 'Listing'}
-                    value={formatPublicListingNumber(listing.listing_alias)}
-                    copyValue={String(listing.listing_alias).padStart(16, '0')}
-                    className="text-sm"
-                    compact
-                  />
-                </div>
-                {isManagementView && (
-                  <div className="mt-0">
-                    <ListingCode
-                      label={PRIVATE_LISTING_CODE_LABEL}
-                      value={getListingManagementCode(listing) || getListingManagementCode(location.state?.managedListing)}
-                      className="text-sm"
-                      compact
-                    />
-                  </div>
-                )}
               </div>
             </div>
 
             {listing.description && (
               <div className="rounded-xl border border-white bg-card p-5">
+                <h2 className="mb-2 text-lg font-semibold underline">Seller Description</h2>
                 <p className="whitespace-pre-wrap text-white">{listing.description}</p>
               </div>
             )}
 
-            {!isManagementView && <ChatThread listingId={listing.id} />}
           </div>
         )}
       </div>

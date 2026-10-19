@@ -3,7 +3,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import React, { useEffect } from 'react';
 import { sellerLogout } from '@/lib/api';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Navigate, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import ScrollToTop from './components/ScrollToTop';
 // Add page imports here
@@ -62,6 +62,21 @@ if (typeof window !== 'undefined') {
   } catch {
     // Storage can be unavailable in restricted browser contexts.
   }
+
+  if (import.meta.env.DEV && !sessionStorage.getItem('sobs_seller_session_token')) {
+    sessionStorage.setItem('sobs_seller_id', '0000000000000000');
+    sessionStorage.setItem('sobs_global_user_key', '0000000000000000');
+    sessionStorage.setItem('sobs_seller_session_token', 'local-dev-session');
+    sessionStorage.setItem(
+      'sobs_seller_session_expires_at',
+      new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    );
+  }
+
+  if (import.meta.env.DEV) {
+    sessionStorage.setItem('sobs_global_user_key', '0000000000000000');
+    sessionStorage.setItem('sobs_management_unlocked', 'true');
+  }
 }
 
 const AuthenticatedApp = () => {
@@ -73,7 +88,10 @@ const AuthenticatedApp = () => {
       <Route path="/sifter-mk4" element={<SellerSifterPage />} />
       <Route path="/sell-info" element={<SellInfo />} />
       <Route path="/signup" element={<Signup />} />
-      <Route path="/seller-login" element={<SellerLogin />} />
+      <Route
+        path="/seller-login"
+        element={import.meta.env.DEV ? <Navigate to="/" replace /> : <SellerLogin />}
+      />
       {import.meta.env.DEV && (
         <>
           <Route path="/dev/seller-login-preview" element={<SellerLogin />} />

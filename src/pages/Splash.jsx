@@ -64,28 +64,28 @@ export default function Splash() {
               List it, chat it, sell it.
             </h1>
           </div>
-          <div className="mt-4 inline-flex flex-col items-start gap-0">
-            <div className="flex gap-[2%]">
+          <div className="mt-4 flex w-full max-w-[24rem] flex-col items-start gap-0 sm:inline-flex sm:w-auto sm:max-w-none">
+            <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:gap-[2%]">
             <Link
               to="/seller-login"
-              className="inline-flex w-32 items-center justify-center rounded-full bg-red-600 px-5 py-2 font-semibold text-black transition-colors hover:bg-red-700"
+              className="inline-flex w-full items-center justify-center rounded-full bg-red-600 px-2 py-2 font-semibold text-black transition-colors hover:bg-red-700 sm:w-32 sm:px-5"
             >
               Login
             </Link>
             <Link
               to="/manage-listings"
-              className="inline-flex w-32 items-center justify-center rounded-full bg-red-600 px-5 py-2 font-semibold text-black transition-colors hover:bg-red-700"
+              className="inline-flex w-full items-center justify-center rounded-full bg-red-600 px-2 py-2 font-semibold text-black transition-colors hover:bg-red-700 sm:w-32 sm:px-5"
             >
               Manage
             </Link>
             <Link
               to="/rules"
-              className="inline-flex w-32 items-center justify-center rounded-full bg-white px-5 py-2 font-semibold text-black transition-colors hover:bg-gray-100"
+              className="inline-flex w-full items-center justify-center rounded-full bg-white px-2 py-2 font-semibold text-black transition-colors hover:bg-gray-100 sm:w-32 sm:px-5"
             >
               Rules
             </Link>
             </div>
-            <div className="mt-[1.725%] flex gap-[2%]">
+            <div className="mt-[1.725%] grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:gap-[2%]">
             <Link
               to={
                 sessionStorage.getItem('sobs_global_user_key') && sessionStorage.getItem('sobs_seller_session_token')
@@ -94,43 +94,43 @@ export default function Splash() {
                     ? '/seller-login'
                     : '/sell-info'
               }
-              className="inline-flex w-32 items-center justify-center gap-2 rounded-full bg-red-600 px-5 py-2 font-semibold text-black transition-colors hover:bg-red-700"
+              className="inline-flex w-full items-center justify-center gap-1 rounded-full bg-red-600 px-1 py-2 font-semibold text-black transition-colors hover:bg-red-700 sm:w-32 sm:gap-2 sm:px-5"
             >
               List <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               to="/browse"
-              className="inline-flex w-32 items-center justify-center gap-2 rounded-full bg-orange-500 px-5 py-2 font-semibold text-black transition-colors hover:bg-orange-600"
+              className="inline-flex w-full items-center justify-center gap-1 rounded-full bg-orange-500 px-1 py-2 font-semibold text-black transition-colors hover:bg-orange-600 sm:w-32 sm:gap-2 sm:px-5"
             >
               Listings <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               to="/categories"
-              className="inline-flex w-32 items-center justify-center gap-2 rounded-full bg-yellow-400 px-5 py-2 font-semibold text-black transition-colors hover:bg-yellow-500"
+              className="inline-flex w-full items-center justify-center gap-1 rounded-full bg-yellow-400 px-1 py-2 font-semibold text-black transition-colors hover:bg-yellow-500 sm:w-32 sm:gap-2 sm:px-5"
             >
               Index <ArrowRight className="h-4 w-4" />
             </Link>
             </div>
           </div>
           <div className="w-full">
-          <p className="mt-5 w-full text-base leading-7 text-white sm:text-xl sm:leading-relaxed text-left sm:text-justify text-pretty">
+          <p className="mt-5 w-full text-base leading-7 text-white text-justify sm:text-xl sm:leading-relaxed text-pretty">
             S∙O∙B∙S∙ is the ultra-searchable directory of <strong className="text-xl font-bold sm:text-2xl">EVERYTHING</strong>.
           </p>
 
-          <p className="w-full text-base leading-7 text-white sm:text-xl sm:leading-relaxed text-left sm:text-justify text-pretty">
-            Junk, spares or repair machines or cars, or good ones too,<br className="hidden sm:block" /> rare parts, collectables, art, Pokemon cards,<br className="hidden sm:block" /> your precious collection of Coca-Cola bottle tops.<br className="hidden sm:block" /> So long as it's legal, we don't discriminate.<br className="hidden sm:block" /> Anything that you think is worth the listing fee.<br className="hidden sm:block" /> For instance, you're in a band and want to advertise<br className="hidden sm:block" /> your next three months' gigs for a buck, cool.<br className="hidden sm:block" /> Or the next year, or however long you want.<br className="hidden sm:block" /> This is a repository of information as well as things.
+          <p className="w-full text-base leading-7 text-white text-justify sm:text-xl sm:leading-relaxed text-pretty">
+            Junk, spares or repair machines or cars, or good ones too, rare parts, collectables, art, Pokemon cards, your precious collection of Coca-Cola bottle tops. So long as it's legal, we don't discriminate. Anything that you think is worth the listing fee. For instance, you're in a band and want to advertise your next three months' gigs for a buck, cool.<br /> This is a repository of information as well as things.
           </p>
 
-          <p className="w-full text-base leading-7 text-white sm:text-xl sm:leading-relaxed text-left sm:text-justify text-pretty">
-            We don't do <em className="font-serif font-semibold">free ads</em>. As if it's not worth the few bucks it costs to list it,<br className="hidden sm:block" /> then we're quite happy to let Gumtree or Facebook bottom-feed off it.
+          <p className="w-full text-base leading-7 text-white text-justify sm:text-xl sm:leading-relaxed text-pretty">
+            We don't do <em className="font-serif font-semibold">free ads</em>. As if it's not worth the few bucks it costs to list it, then we're quite happy to let Gumtree or Facebook bottom-feed off it.
           </p>
 
-          <p className="w-full text-base leading-7 text-white sm:text-xl sm:leading-relaxed text-left sm:text-justify text-pretty">
-            <span className="text-yellow-400">To browsers and buyers, we offer</span><br /> <strong className="font-extrabold"><span className="text-yellow-400">ZERO-FRICTION ENTRY:</span><br className="hidden sm:block" /><span className="text-red-500">NO sign-up, NO passwords, NO cookies, NO ads.</span></strong>
+          <p className="w-full text-base leading-7 text-white text-justify sm:text-xl sm:leading-relaxed text-pretty">
+            <span className="text-yellow-400">To browsers and buyers, we offer</span><br /> <strong className="font-extrabold"><span className="text-yellow-400">ZERO-FRICTION ENTRY</span><br /><span className="text-red-500">NO sign-up, NO passwords, NO cookies, NO ads.</span></strong>
           </p>
 
-          <p className="w-full text-base leading-7 text-white sm:text-xl sm:leading-relaxed text-left sm:text-justify text-pretty">
-            To sellers, we offer worldwide advertising dirt cheap,<br className="hidden sm:block" /> bulk uploads for the pros, and best of all,<br className="hidden sm:block" /> unlike eBay, we don't take a cut of your profit.
+          <p className="w-full text-base leading-7 text-white text-justify sm:text-xl sm:leading-relaxed text-pretty">
+            To sellers, we offer worldwide advertising dirt cheap,<br /> bulk uploads for the pros, and best of all, unlike eBay,<br /> we don't take a cut of your profit.
           </p>
           </div>
       </section>

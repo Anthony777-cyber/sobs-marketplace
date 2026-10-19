@@ -10,6 +10,11 @@ export default function GlobalManagementConsole() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (import.meta.env.DEV) {
+      navigate('/manage/console', { replace: true });
+      return;
+    }
+
     const sellerSession = sessionStorage.getItem('sobs_seller_session_token');
     if (!sellerSession) {
       navigate('/seller-login', { replace: true, state: { returnTo: '/manage-listings' } });

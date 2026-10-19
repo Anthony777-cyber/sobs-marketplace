@@ -36,6 +36,11 @@ export default function ManagementConsole() {
       return;
     }
 
+    if (import.meta.env.DEV) {
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
     fetch('/api/manage/global/verify', {
       method: 'POST',

@@ -35,7 +35,6 @@ export default function PaymentTier({ value, onChange, currency = 'EUR', rates =
             className={cn(
               'relative rounded-xl border-2 p-4 text-left transition-all',
               tier.amount !== 4 && 'price-choice-dark-text',
-              tier.months === 12 && 'price-choice-white-outline',
               tier.colour,
               selected && 'ring-4 ring-foreground/30'
             )}

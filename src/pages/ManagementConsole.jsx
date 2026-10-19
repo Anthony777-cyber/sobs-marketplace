@@ -126,7 +126,7 @@ export default function ManagementConsole() {
     return (
       <div className="min-h-screen bg-black text-white">
         <NavBar />
-        <div className="mx-auto max-w-xl px-4 pt-[15vh] pb-12">
+        <div className="mx-auto max-w-xl px-4 pt-4 pb-12 sm:pt-[15vh]">
           <Loader2 className="h-5 w-5 animate-spin" />
         </div>
       </div>
@@ -138,7 +138,7 @@ export default function ManagementConsole() {
       <div className="min-h-screen bg-black text-white">
         <NavBar />
 
-        <div className="mx-auto max-w-2xl px-4 pt-[15vh] pb-12">
+        <div className="mx-auto max-w-2xl px-4 pt-4 pb-12 sm:pt-[15vh]">
           <div className="mb-6 flex items-center justify-between gap-4">
             <h1 className="font-display text-3xl tracking-tight">
               Management Console
@@ -148,7 +148,7 @@ export default function ManagementConsole() {
               onClick={logout}
               className="inline-flex shrink-0 items-center gap-1 rounded-full bg-red-600 px-3 py-1 text-sm font-medium text-black hover:bg-red-500"
             >
-              <LogOut className="h-3.5 w-3.5" />
+              <LogOut className="management-exit-icon h-3.5 w-3.5" />
               Exit
             </button>
           </div>
@@ -201,7 +201,7 @@ export default function ManagementConsole() {
               <span className="relative left-6 w-full">
                 <span className="block font-semibold">Chat</span>
                 <span className="mt-1 block text-sm text-white">
-                  Read all your buyer chats here.
+                  Read buyer messages.
                 </span>
               </span>
             </button>
@@ -213,7 +213,7 @@ export default function ManagementConsole() {
               <span className="relative left-6 w-full">
                 <span className="block font-semibold">Bulk Uploads</span>
                 <span className="mt-1 block text-sm text-white">
-                  Upload multiple listings from a spreadsheet.
+                  Upload multiple listings
                 </span>
               </span>
             </button>
@@ -229,7 +229,7 @@ export default function ManagementConsole() {
     <div className="min-h-screen bg-black text-white">
       <NavBar />
 
-      <div className="mx-auto max-w-2xl px-4 pt-[15vh] pb-12">
+      <div className="mx-auto max-w-2xl px-4 pt-4 pb-12 sm:pt-[15vh]">
         <div className="mb-6 flex items-center justify-between gap-4">
           <h1 className="font-display text-3xl tracking-tight">
             Management Console
@@ -239,7 +239,7 @@ export default function ManagementConsole() {
             onClick={logout}
             className="inline-flex shrink-0 items-center gap-1 rounded-full bg-red-600 px-3 py-1 text-sm font-medium text-black hover:bg-red-500"
           >
-            <LogOut className="h-3.5 w-3.5" />
+            <LogOut className="management-exit-icon h-3.5 w-3.5" />
             Exit
           </button>
         </div>

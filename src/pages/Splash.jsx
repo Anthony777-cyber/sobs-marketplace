@@ -45,8 +45,8 @@ const STEPS = [
 
 export default function Splash() {
   return (
-    <div className="min-h-screen bg-neutral-950 text-white">
-      <header className="mx-auto flex max-w-5xl items-center justify-between px-4 py-5">
+    <div className="splash-page min-h-screen bg-neutral-950 text-white">
+      <header className="mx-auto flex max-w-5xl items-center justify-center px-4 py-5 sm:justify-between">
         <div className="flex flex-col leading-none">
           <span className="font-display text-7xl tracking-tight sm:text-8xl">S<span className="font-sans font-bold">.</span>O<span className="font-sans font-bold">.</span>B<span className="font-sans font-bold">.</span>S</span>
           <span className="mt-1 grid w-full grid-cols-4 items-center text-xs font-semibold text-white sm:text-sm">
@@ -60,27 +60,29 @@ export default function Splash() {
 
       <section className="mx-auto max-w-5xl px-4 pb-0 pt-1 sm:pt-2">
           <div className="flex items-center gap-8">
-            <h1 className="font-display text-2xl leading-tight tracking-tight sm:text-4xl">
-              List it, chat it, sell it.
+            <h1 className="grid w-full max-w-[24rem] grid-cols-3 gap-2 text-center font-display text-2xl leading-tight tracking-tight sm:w-96 sm:max-w-none sm:gap-[2%] sm:text-4xl">
+              <span>List it<span className="hidden sm:inline">, </span></span>
+              <span className="whitespace-nowrap">chat it<span className="hidden sm:inline">, </span></span>
+              <span>sell it<span className="hidden sm:inline">.</span></span>
             </h1>
           </div>
           <div className="mt-4 flex w-full max-w-[24rem] flex-col items-start gap-0 sm:inline-flex sm:w-auto sm:max-w-none">
             <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:gap-[2%]">
             <Link
               to="/seller-login"
-              className="inline-flex w-full items-center justify-center rounded-full bg-red-600 px-2 py-2 font-semibold text-black transition-colors hover:bg-red-700 sm:w-32 sm:px-5"
+              className="inline-flex w-full items-center justify-center rounded-full bg-red-600 px-2 py-2 text-center font-semibold text-black transition-colors hover:bg-red-700 sm:w-32 sm:px-5"
             >
               Login
             </Link>
             <Link
               to="/manage-listings"
-              className="inline-flex w-full items-center justify-center rounded-full bg-red-600 px-2 py-2 font-semibold text-black transition-colors hover:bg-red-700 sm:w-32 sm:px-5"
+              className="inline-flex w-full items-center justify-center rounded-full bg-red-600 px-2 py-2 text-center font-semibold text-black transition-colors hover:bg-red-700 sm:w-32 sm:px-5"
             >
               Manage
             </Link>
             <Link
               to="/rules"
-              className="inline-flex w-full items-center justify-center rounded-full bg-white px-2 py-2 font-semibold text-black transition-colors hover:bg-gray-100 sm:w-32 sm:px-5"
+              className="inline-flex w-full items-center justify-center rounded-full bg-white px-2 py-2 text-center font-semibold text-black transition-colors hover:bg-gray-100 sm:w-32 sm:px-5"
             >
               Rules
             </Link>
@@ -94,21 +96,21 @@ export default function Splash() {
                     ? '/seller-login'
                     : '/sell-info'
               }
-              className="inline-flex w-full items-center justify-center gap-1 rounded-full bg-red-600 px-1 py-2 font-semibold text-black transition-colors hover:bg-red-700 sm:w-32 sm:gap-2 sm:px-5"
+              className="relative inline-flex w-full items-center justify-center rounded-full bg-red-600 px-1 py-2 text-center font-semibold text-black transition-colors hover:bg-red-700 sm:w-32 sm:px-5"
             >
-              List <ArrowRight className="h-4 w-4" />
+              <span className="relative -left-2">List</span> <ArrowRight className="splash-list-arrow absolute right-3 h-4 w-4 sm:right-4" />
             </Link>
             <Link
               to="/browse"
-              className="inline-flex w-full items-center justify-center gap-1 rounded-full bg-orange-500 px-1 py-2 font-semibold text-black transition-colors hover:bg-orange-600 sm:w-32 sm:gap-2 sm:px-5"
+              className="relative inline-flex w-full items-center justify-center rounded-full bg-orange-500 px-1 py-2 text-center font-semibold text-black transition-colors hover:bg-orange-600 sm:w-32 sm:px-5"
             >
-              Listings <ArrowRight className="h-4 w-4" />
+              Listings <ArrowRight className="absolute right-3 h-4 w-4 sm:right-4" />
             </Link>
             <Link
               to="/categories"
-              className="inline-flex w-full items-center justify-center gap-1 rounded-full bg-yellow-400 px-1 py-2 font-semibold text-black transition-colors hover:bg-yellow-500 sm:w-32 sm:gap-2 sm:px-5"
+              className="relative inline-flex w-full items-center justify-center rounded-full bg-yellow-400 px-1 py-2 text-center font-semibold text-black transition-colors hover:bg-yellow-500 sm:w-32 sm:px-5"
             >
-              Index <ArrowRight className="h-4 w-4" />
+              Index <ArrowRight className="absolute right-3 h-4 w-4 sm:right-4" />
             </Link>
             </div>
           </div>
@@ -125,7 +127,7 @@ export default function Splash() {
             We don't do <em className="font-serif font-semibold">free ads</em>. As if it's not worth the few bucks it costs to list it, then we're quite happy to let Gumtree or Facebook bottom-feed off it.
           </p>
 
-          <p className="w-full text-base leading-7 text-white text-justify sm:text-xl sm:leading-relaxed text-pretty">
+          <p className="splash-offer-red w-full text-base leading-7 text-white text-justify sm:text-xl sm:leading-relaxed text-pretty">
             <span className="text-yellow-400">To browsers and buyers, we offer</span><br /> <strong className="font-extrabold"><span className="text-yellow-400">ZERO-FRICTION ENTRY</span><br /><span className="text-red-500">NO sign-up, NO passwords, NO cookies, NO ads.</span></strong>
           </p>
 

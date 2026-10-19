@@ -56,27 +56,49 @@ html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0; height: 0; }
 
 
 /* Keep all site text white across pages and controls. */
+body :where(.min-h-screen) { background-color: #000 !important; }
 body :where(*) { color: #fff !important; }
 body :where(*)::placeholder { color: #fff !important; }
+@media (max-width: 639px) {
+  .pt-\[15vh\],
+  .pt-\[25vh\] {
+    padding-top: 1rem !important;
+  }
+}
+.create-abandon-button {
+  color: #000 !important;
+}
+.management-exit-icon,
+.management-exit-icon * {
+  color: #000 !important;
+}
 body :where(.price-choice-dark-text, .price-choice-dark-text *) { color: #000 !important; }
- .abandon-listing-button { color: #000 !important; }
-body :where(.price-choice-white-outline) { border: 2px solid #fff !important; }
 .sifter-flow button[class~="disabled:opacity-40"] {
   background-color: #000 !important;
   border: 2px solid #fff !important;
-  border-radius: 9999px !important;
+  color: #fff !important;
 }
 .sifter-flow button[class~="disabled:opacity-40"] + button {
   background-color: #dc2626 !important;
   color: #000 !important;
-  border-radius: 9999px !important;
 }
-.sifter-flow button.text-black {
-  color: #fff !important;
-}
-.sifter-flow button.text-black * {
+.sifter-exit-icon,
+.sifter-exit-icon * {
   color: #000 !important;
 }
-.sifter-flow .sifter-route-choice {
+.splash-page a,
+.splash-page a * {
   color: #000 !important;
+}
+.splash-list-arrow {
+  right: calc(0.75rem + 10%);
+}
+@media (min-width: 640px) {
+  .splash-list-arrow {
+    right: calc(1rem + 10%);
+  }
+}
+.splash-page .splash-offer-red,
+.splash-page .splash-offer-red * {
+  color: #ef4444 !important;
 }

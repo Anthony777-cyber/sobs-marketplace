@@ -100,7 +100,7 @@ export default function RenewListing() {
             onClick={() => navigate('/manage/console')}
             className="inline-flex shrink-0 items-center gap-1 rounded-full bg-red-600 px-3 py-1 text-sm font-medium text-black hover:bg-red-500"
           >
-            <ArrowLeft className="h-3.5 w-3.5" />
+            <ArrowLeft className="management-exit-icon h-3.5 w-3.5" />
             Exit
           </button>
         </div>

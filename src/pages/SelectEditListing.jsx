@@ -52,7 +52,7 @@ export default function SelectEditListing({ preview = false }) {
     return (
       <div className="min-h-screen bg-black text-white">
         <NavBar />
-        <div className="mx-auto w-[90vw] max-w-none px-4 pt-[15vh] pb-12">
+        <div className="mx-auto w-full px-4 pt-6 pb-12 sm:w-[90vw] sm:pt-[15vh]">
           <Loader2 className="h-5 w-5 animate-spin" />
         </div>
       </div>
@@ -62,23 +62,23 @@ export default function SelectEditListing({ preview = false }) {
   return (
     <div className="min-h-screen bg-black text-white">
       <NavBar />
-      <div className="mx-auto w-[90vw] max-w-none px-4 pt-[15vh] pb-12">
-        <div className="mb-6 flex flex-wrap items-center gap-16">
-          <h1 className="font-display text-3xl tracking-tight">
+      <div className="mx-auto w-full px-4 pt-6 pb-12 sm:w-[90vw] sm:pt-[15vh]">
+        <div className="mb-6 flex flex-wrap items-center gap-4 sm:gap-16">
+          <h1 className="font-display text-2xl tracking-tight sm:text-3xl">
             Edit Listing
           </h1>
           <button
             onClick={() => navigate('/manage/console')}
             className="inline-flex shrink-0 items-center gap-1 rounded-full bg-red-600 px-3 py-1 text-sm font-medium text-black hover:bg-red-500"
           >
-            <ArrowLeft className="h-3.5 w-3.5" />
+            <ArrowLeft className="management-exit-icon h-3.5 w-3.5" />
             Exit
           </button>
         </div>
         <p className="mt-1 text-muted-foreground">Listings available to edit.</p>
 
         {listings.length > 0 ? (
-          <div className="mt-8 grid grid-cols-[repeat(10,minmax(0,1fr))] gap-2">
+          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-10">
             {listings.map((listing) => (
               <div key={listing.id} className="min-w-0 w-full">
                 <ListingCard listing={listing} backTo="/manage/edit-listings" useDirectImages showPublicNumber={false} contentClassName="py-4" />

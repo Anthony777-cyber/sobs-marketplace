@@ -329,7 +329,7 @@ export default function CreateListing() {
                   <img
                     src={file}
                     alt={`preview ${i + 1}`}
-                    className="h-24 w-24 rounded-lg object-cover"
+                    className="h-24 w-24 rounded-lg border-2 border-white object-cover"
                   />
                   <button
                     type="button"
@@ -383,7 +383,7 @@ export default function CreateListing() {
           <button
             type="button"
             onClick={resetListing}
-            className="abandon-listing-button mt-3 inline-flex w-full items-center justify-center rounded-full bg-red-600 px-5 py-3 font-semibold text-black hover:bg-red-700"
+            className="create-abandon-button mt-3 inline-flex w-full items-center justify-center rounded-full bg-red-600 px-5 py-3 font-semibold text-black hover:bg-red-700"
           >
             Abandon
           </button>

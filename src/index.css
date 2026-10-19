@@ -68,6 +68,20 @@ body :where(*)::placeholder { color: #fff !important; }
 .create-abandon-button {
   color: #000 !important;
 }
+.seller-login-submit {
+  color: #000 !important;
+}
+.global-management-key-submit {
+  color: #000 !important;
+}
+.management-code-toggle,
+.management-code-toggle * {
+  color: #000 !important;
+}
+.listing-confirmation-action,
+.listing-confirmation-action * {
+  color: #000 !important;
+}
 .management-exit-icon,
 .management-exit-icon * {
   color: #000 !important;

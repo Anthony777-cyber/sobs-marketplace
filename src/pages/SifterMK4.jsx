@@ -15,13 +15,13 @@ const GENERAL_CATEGORIES = [
   'Building & renovation materials','Electrical, lighting & wiring','Computers & IT','Phones & telecommunications',
   'TV, audio & home cinema','Cameras, photography & optics','Household appliances','Heating, cooling & ventilation',
   'Plumbing & bathroom','Office equipment','Business, industrial & workshop equipment','Agricultural & farm equipment',
-  'Commercial catering & hospitality','Medical, laboratory & test equipment','Books, comics & magazines',
+  'Commercial catering & hospitality','Medical, laboratory & test equipment','Books, comics & magazines','Security & specialist equipment',
   'Records, CDs, DVDs & media','Musical instruments & stage equipment','Games, consoles & gaming',
   'Toys, games & puzzles','Hobbies, crafts & model making','Art, antiques & collectibles','Coins, stamps & memorabilia',
   'Clothing, shoes & accessories','Jewellery & watches',"Baby & children's items",'Sports, fitness & recreation',
   'Camping, travel & outdoor leisure','Bicycles & cycling','Boats & water sports','Pet supplies',
   'Mobility & accessibility aids','Health & personal care equipment','Packaging, storage & materials',
-  'Security & specialist equipment','Other / not sure',
+  'Information','Other / not sure',
 ];
 const GENERAL_CATEGORY_BUTTON_COLORS = [
   '#1d4ed8','#c2410c','#475569','#6d28d9','#0e7490','#be123c',
@@ -61,6 +61,11 @@ const CATEGORY_FIELD_DEFS = {
   fault:{label:'Faults / known issues',placeholder:'Known faults or what does not work'},
   storage:{label:'Storage capacity',placeholder:'Capacity, e.g. GB or TB'},
   title:{label:'Title / item name',placeholder:'Title or name'},
+  informationType:{label:'Information type',placeholder:'Event, announcement, public notice, service information, or other'},
+  datePeriod:{label:'Date / period',placeholder:'Event date and time, or the period this information applies to'},
+  location:{label:'Location / area',placeholder:'Venue, local area, service area, or online'},
+  informationDetails:{label:'Information / event details',placeholder:'What people should know or what is being advertised'},
+  contactDetails:{label:'Contact / attendance details',placeholder:'Website, contact details, booking, or how to take part'},
   author:{label:'Author',placeholder:'Author or creator'},
   publisher:{label:'Publisher / label',placeholder:'Publisher, record label or producer'},
   edition:{label:'Edition / issue',placeholder:'Edition, issue, pressing or version'},
@@ -106,6 +111,7 @@ const CATEGORY_FORM_FIELDS = {
   'Commercial catering & hospitality':['type','make','model','capacity','dimensions','powerSource','specifications','condition'],
   'Medical, laboratory & test equipment':['type','make','model','partNumber','specifications','capacity','condition','compatibility'],
   'Books, comics & magazines':['title','author','publisher','edition','year','format','condition'],
+  'Information':['title','informationType','datePeriod','location','informationDetails','contactDetails'],
   'Records, CDs, DVDs & media':['title','artist','publisher','edition','year','format','condition'],
   'Musical instruments & stage equipment':['type','make','model','year','material','specifications','condition','accessories'],
   'Games, consoles & gaming':['title','platform','year','edition','compatibility','condition','accessories'],
@@ -431,16 +437,16 @@ export default function SifterMK4({ customerMode = false, onContinue }) {
     </label>
   );
   const operatingField = (setter,source) => <fieldset><div className="flex items-center justify-between gap-3"><legend className="text-sm font-semibold">Running / operating?</legend>{source.runningOperating && <button type="button" tabIndex={-1} aria-label="Clear running / operating answer" onClick={()=>updateForm(setter,'runningOperating','')} className="rounded-full border px-2.5 py-1 text-sm font-bold">×</button>}</div><div className="mt-2 flex gap-3">{['Yes','No'].map(choice=><button key={choice} type="button" aria-pressed={source.runningOperating===choice} onClick={()=>updateForm(setter,'runningOperating',choice)} className={'rounded-full border px-6 py-3 font-semibold '+(source.runningOperating===choice?'border-red-600 bg-red-600 text-white':'bg-background hover:border-red-600')}>{choice}</button>)}</div></fieldset>;
-  return <div className="min-h-screen bg-background"><div className={`mx-auto flex min-h-screen w-full ${phase==='category'?'w-[80vw] max-w-none':'max-w-5xl'} flex-col px-5 py-8 sm:px-8`}>
+  return <div className="min-h-screen bg-background"><div className={`mx-auto flex min-h-screen w-full ${phase==='category'?'w-full max-w-none sm:w-[80vw]':'max-w-5xl'} flex-col px-5 py-8 sm:px-8`}>
     {!customerMode && <header className="mb-10"><p className="text-xs font-mono uppercase tracking-[0.2em] text-muted-foreground">S.O.B.S TEST</p><h1 className="mt-2 font-display text-3xl tracking-tight sm:text-4xl">Sifter MK4 — Taxonomy and keywords</h1><p className="mt-3 max-w-2xl text-sm text-muted-foreground">Button choices build the item's taxonomy. Seller details generate searchable keywords separately. Test only; no Registry write is performed.</p></header>}
     <div className={`grid ${customerMode ? '' : 'flex-1'} gap-8 ${customerMode || phase==='category'?'grid-cols-1':'md:grid-cols-[1fr_300px]'}`}>
-      <main className={`sifter-flow rounded-2xl border bg-background p-6 shadow-sm sm:p-10 ${phase==='category'?'w-full':''}`}>
+      <main className={`sifter-flow rounded-2xl border bg-background p-4 shadow-sm sm:p-10 ${phase==='category'?'w-full':''}`}>
         {!complete ? <>
           <div className="flex items-center justify-between gap-4"><span className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">{phase==='route'?'CHOOSE A ROUTE':phase==='vehicle-type'?'MACHINE ROUTE':phase==='category'?'CHOOSE A CATEGORY':categoryForm?'CATEGORY DETAILS':machineForm?'MACHINE DETAILS':carForm?'CAR DETAILS':''}</span>{customerMode ? (phase==='route' ? <button type="button" onClick={()=>navigate('/')} className="sifter-exit-button inline-flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold hover:bg-red-700"><LogOut className="sifter-exit-icon h-4 w-4 -scale-x-100" />Exit</button> : null) : <span className="rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide">Test only</span>}</div>
           {phase==='route' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">What are you listing?</h2><div className="mt-6 grid gap-3 sm:grid-cols-3">{[['machine','Machine'],['spares','Part of a machine'],['other','Everything else']].map(([value,label])=><button key={value} type="button" onClick={()=>chooseRoute(value)} className="min-h-16 rounded-xl border border-red-600 bg-red-600 px-4 py-4 text-lg font-semibold text-white transition hover:bg-red-700">{label}</button>)}</div></div>
           : phase==='vehicle-type' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">A vehicle or another machine?</h2><div className="mt-6 grid gap-3 sm:grid-cols-2">{[['car','Vehicles','Adds “Vehicles” and asks the seller to name the vehicle type'],['machine','Other machines','Opens the existing machine-details form']].map(([value,label,desc])=><button key={value} type="button" onClick={()=>chooseMachineType(value)} className="min-h-16 rounded-xl border border-blue-600 bg-blue-600 px-4 py-4 text-lg font-semibold text-white transition hover:bg-blue-700">{label}</button>)}</div></div>
           : vehicleClassification ? <form onSubmit={submitAnswer} onKeyDown={handleSifterEnter} className="mt-10"><p className="text-base font-bold">{FORM_INSTRUCTION}</p><h2 className="text-2xl font-semibold leading-tight sm:text-3xl">What sort of vehicle is it?</h2><p className="mt-3 text-sm text-muted-foreground">Use your own description, such as truck, SUV, kit car or motorcycle.</p><div className="mt-6 flex items-start gap-2"><input autoFocus value={input} onChange={e=>setInput(e.target.value)} placeholder="Vehicle type" className="w-full rounded-xl border bg-background px-5 py-5 text-xl outline-none focus:ring-2 focus:ring-ring sm:text-2xl"/><button type="button" tabIndex={-1} aria-label="Clear vehicle type" onClick={()=>clearInputAnswer('vehicleType')} className="rounded-full border px-2.5 py-2 text-sm font-bold">×</button></div><div className="mt-5 flex justify-end"><button type="submit" className="rounded-full bg-red-600 px-7 py-3 font-semibold text-white">Continue</button></div></form>
-          : phase==='category' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">Which category best fits the item?</h2><p className="mt-3 text-sm text-muted-foreground">Choose the item's top-level family. The sifter then collects useful searchable details.</p><div className="mt-6 grid grid-cols-4 gap-3">{GENERAL_CATEGORIES.map((category,index)=><button key={category} type="button" onClick={()=>chooseGeneralCategory(category)} style={{backgroundColor:GENERAL_CATEGORY_BUTTON_COLORS[index % GENERAL_CATEGORY_BUTTON_COLORS.length]}} className="flex h-16 min-w-0 w-full items-center justify-center overflow-hidden rounded-full px-1 text-center text-sm font-semibold leading-tight text-white transition hover:brightness-95">{category}</button>)}</div></div>
+          : phase==='category' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">Which category best fits the item?</h2><p className="mt-3 text-sm text-muted-foreground">Choose the item's top-level family. The sifter then collects useful searchable details.</p><div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">{GENERAL_CATEGORIES.map((category,index)=><button key={category} type="button" onClick={()=>chooseGeneralCategory(category)} style={{backgroundColor:GENERAL_CATEGORY_BUTTON_COLORS[index % GENERAL_CATEGORY_BUTTON_COLORS.length]}} className="flex h-auto min-h-16 min-w-0 w-full items-center justify-center overflow-hidden rounded-full px-2 py-2 text-center text-xs font-semibold leading-tight text-white transition hover:brightness-95 sm:h-16 sm:px-1 sm:py-0 sm:text-sm">{category}</button>)}</div></div>
            : generalQuestionnaire ? <form onSubmit={submitAnswer} onKeyDown={handleSifterEnter} className="mt-8 space-y-5 rounded-2xl border bg-muted/20 p-5">
              <p className="text-base font-bold">{FORM_INSTRUCTION}</p>
              {[

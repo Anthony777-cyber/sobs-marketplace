@@ -1,19 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 
 const MAX_ATTEMPTS = 5;
 
 export default function GlobalManagementConsole() {
   const navigate = useNavigate();
   const [userKey, setUserKey] = useState('');
+  const [showUserKey, setShowUserKey] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (import.meta.env.DEV) {
-      navigate('/manage/console', { replace: true });
-      return;
-    }
+    if (import.meta.env.DEV) return;
 
     const sellerSession = sessionStorage.getItem('sobs_seller_session_token');
     if (!sellerSession) {
@@ -121,23 +120,36 @@ export default function GlobalManagementConsole() {
             Input user code to open management console
           </p>
 
-          <input
-            type="password"
-            inputMode="numeric"
-            name="password"
-            autoComplete="current-password"
-            value={userKey}
-            onChange={(event) => {
-              setUserKey(event.target.value);
-              setError('');
-            }}
-            className="mt-3 w-full rounded border border-white/30 bg-white px-4 py-3 text-black outline-none focus:border-white"
-          />
+          <div className="relative mt-3">
+            <input
+              id="management-user-code"
+              type={showUserKey ? 'text' : 'password'}
+              inputMode="numeric"
+              name="password"
+              autoComplete="current-password"
+              value={userKey}
+              onChange={(event) => {
+                setUserKey(event.target.value);
+                setError('');
+              }}
+              className="w-full rounded border border-white/30 bg-white px-4 py-3 pr-12 text-black outline-none focus:border-white"
+            />
+            <button
+              type="button"
+              aria-label={showUserKey ? 'Hide code' : 'Show code'}
+              aria-controls="management-user-code"
+              aria-pressed={showUserKey}
+              onClick={() => setShowUserKey((visible) => !visible)}
+              className="management-code-toggle absolute inset-y-0 right-3 flex items-center text-gray-600 hover:text-black"
+            >
+              {showUserKey ? <Eye size={20} aria-hidden="true" /> : <EyeOff size={20} aria-hidden="true" />}
+            </button>
+          </div>
 
           <button
             type="submit"
             disabled={attempts >= MAX_ATTEMPTS}
-            className="mt-5 inline-flex rounded-full bg-white px-6 py-2.5 font-semibold text-black hover:bg-white/90 disabled:opacity-50"
+            className="global-management-key-submit mt-5 inline-flex rounded-full bg-white px-6 py-2.5 font-semibold text-black hover:bg-white/90 disabled:opacity-50"
           >
             Continue
           </button>

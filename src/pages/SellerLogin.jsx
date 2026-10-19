@@ -211,7 +211,7 @@ export default function SellerLogin() {
             <button
               type="submit"
               disabled={status === 'logging-in' || attempts >= 25}
-              className={BUTTON_CLASS}
+              className={`${BUTTON_CLASS} seller-login-submit`}
             >
               {status === 'logging-in' ? 'Logging in...' : 'Log in'}
             </button>

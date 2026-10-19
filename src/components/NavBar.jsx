@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 
 // S.O.B.S. brand header. Brand text is a functional Home button (routes to /).
 // Browse = solid rounded Orange button. Post = solid Red button, high-contrast.
-export default function NavBar() {
+export default function NavBar({ showPost = true }) {
   const { pathname } = useLocation();
   const onCreate = pathname === '/create';
   const onBrowse = pathname.startsWith('/browse');
@@ -22,14 +22,14 @@ export default function NavBar() {
               SELL OLD BROKEN STUFF
             </span>
           </Link>
-          {onBrowse && (
+          {showPost && onBrowse && (
             <div className="mt-[6%] flex items-center gap-3">
               <Link to={`/sifter-mk4?fresh=${Date.now()}`} className="inline-flex w-32 items-center justify-center rounded-full bg-red-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700">Post</Link>
             </div>
           )}
         </div>
         <div className="flex items-center gap-3">
-          {!onBrowse && pathname !== '/create' && <Link to={`/sifter-mk4?fresh=${Date.now()}`} className="inline-flex w-32 items-center justify-center rounded-full bg-red-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700">Post</Link>}
+          {showPost && !onBrowse && pathname !== '/create' && <Link to={`/sifter-mk4?fresh=${Date.now()}`} className="inline-flex w-32 items-center justify-center rounded-full bg-red-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700">Post</Link>}
         </div>
       </div>
     </header>

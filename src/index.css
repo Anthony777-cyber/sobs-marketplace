@@ -54,3 +54,29 @@
 html, body { scrollbar-width: none; }
 html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0; height: 0; }
 
+
+/* Keep all site text white across pages and controls. */
+body :where(*) { color: #fff !important; }
+body :where(*)::placeholder { color: #fff !important; }
+body :where(.price-choice-dark-text, .price-choice-dark-text *) { color: #000 !important; }
+ .abandon-listing-button { color: #000 !important; }
+body :where(.price-choice-white-outline) { border: 2px solid #fff !important; }
+.sifter-flow button[class~="disabled:opacity-40"] {
+  background-color: #000 !important;
+  border: 2px solid #fff !important;
+  border-radius: 9999px !important;
+}
+.sifter-flow button[class~="disabled:opacity-40"] + button {
+  background-color: #dc2626 !important;
+  color: #000 !important;
+  border-radius: 9999px !important;
+}
+.sifter-flow button.text-black {
+  color: #fff !important;
+}
+.sifter-flow button.text-black * {
+  color: #000 !important;
+}
+.sifter-flow .sifter-route-choice {
+  color: #000 !important;
+}

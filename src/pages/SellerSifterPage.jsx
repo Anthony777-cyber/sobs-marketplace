@@ -7,6 +7,11 @@ export default function SellerSifterPage() {
   const [verified, setVerified] = useState(false);
 
   useEffect(() => {
+    if (import.meta.env.DEV) {
+      setVerified(true);
+      return;
+    }
+
     let cancelled = false;
     const globalKey = sessionStorage.getItem('sobs_global_user_key')?.trim();
     const sessionToken = sessionStorage.getItem('sobs_seller_session_token')?.trim();
@@ -36,11 +41,11 @@ export default function SellerSifterPage() {
     return () => { cancelled = true; };
   }, [navigate]);
 
-  if (!verified) return <div className="min-h-screen bg-background px-5 pt-[15vh] text-center text-sm text-muted-foreground">Checking seller login…</div>;
+  if (!verified) return <div className="min-h-screen bg-background px-5 pt-4 text-center text-sm text-muted-foreground">Checking seller login…</div>;
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="px-5 pt-[15vh]">
+      <div className="px-5 pt-0">
         <p className="mx-auto max-w-5xl text-center text-lg font-extrabold sm:text-xl">
           The more accurately you describe your item, the sooner you sell it.
         </p>

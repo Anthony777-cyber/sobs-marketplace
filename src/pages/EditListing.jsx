@@ -30,6 +30,7 @@ export default function EditListing() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
   const [photos, setPhotos] = useState([]);
+  const [draggedPhotoIndex, setDraggedPhotoIndex] = useState(null);
   const descriptionWordCount = countWords(description);
 
   useEffect(() => {
@@ -96,6 +97,17 @@ export default function EditListing() {
 
   const removePhoto = (i) => {
     setPhotos(photos.filter((_, idx) => idx !== i));
+  };
+
+  const reorderPhotos = (targetIndex) => {
+    if (draggedPhotoIndex == null || draggedPhotoIndex === targetIndex) return;
+    setPhotos((current) => {
+      const reordered = [...current];
+      const [photo] = reordered.splice(draggedPhotoIndex, 1);
+      reordered.splice(targetIndex, 0, photo);
+      return reordered;
+    });
+    setDraggedPhotoIndex(null);
   };
 
   const saveEdits = async () => {
@@ -241,7 +253,16 @@ export default function EditListing() {
             </label>
             <div className="mt-1.5 flex flex-wrap gap-3">
               {photos.map((file, i) => (
-                <div key={i} className="relative">
+                <div
+                  key={i}
+                  draggable
+                  onDragStart={() => setDraggedPhotoIndex(i)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => reorderPhotos(i)}
+                  onDragEnd={() => setDraggedPhotoIndex(null)}
+                  className="relative cursor-grab active:cursor-grabbing"
+                  title="Drag to reorder photos"
+                >
                   <img
                     src={file}
                     alt={`preview ${i + 1}`}
@@ -258,7 +279,7 @@ export default function EditListing() {
               ))}
 
               {photos.length < MAX_PHOTOS && (
-                <label className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed text-muted-foreground hover:bg-muted/50">
+                <label className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-white text-muted-foreground hover:bg-muted/50">
                   <Plus className="h-5 w-5" />
                   <span className="mt-1 text-xs">Add photo</span>
                   <input

@@ -7,7 +7,6 @@ export default function NavBar() {
   const { pathname } = useLocation();
   const onCreate = pathname === '/create';
   const onBrowse = pathname.startsWith('/browse');
-  const onCategories = pathname === '/categories';
   const isManagementFlow =
     pathname === '/manage' || pathname.startsWith('/manage/');
 
@@ -26,14 +25,11 @@ export default function NavBar() {
           {onBrowse && (
             <div className="mt-[6%] flex items-center gap-3">
               <Link to={`/sifter-mk4?fresh=${Date.now()}`} className="inline-flex w-32 items-center justify-center rounded-full bg-red-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700">Post</Link>
-              <Link to="/categories" className="inline-flex w-32 items-center justify-center rounded-full bg-yellow-400 px-5 py-2 text-sm font-semibold text-black shadow-sm transition-colors hover:bg-yellow-500">Index</Link>
             </div>
           )}
         </div>
         <div className="flex items-center gap-3">
           {!onBrowse && pathname !== '/create' && <Link to={`/sifter-mk4?fresh=${Date.now()}`} className="inline-flex w-32 items-center justify-center rounded-full bg-red-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700">Post</Link>}
-          {pathname !== '/browse' && <Link to="/browse" className="inline-flex w-32 items-center justify-center rounded-full bg-orange-500 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-orange-600">Listings</Link>}
-          {!onBrowse && pathname !== '/categories' && <Link to="/categories" className="inline-flex w-32 items-center justify-center rounded-full bg-yellow-400 px-5 py-2 text-sm font-semibold text-black shadow-sm transition-colors hover:bg-yellow-500">Index</Link>}
         </div>
       </div>
     </header>

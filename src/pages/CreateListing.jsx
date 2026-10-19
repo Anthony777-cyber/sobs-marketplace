@@ -25,6 +25,7 @@ export default function CreateListing() {
   const [rates, setRates] = useState(null);
   const [categoryPath, setCategoryPath] = useState('');
   const [photos, setPhotos] = useState([]);
+  const [draggedPhotoIndex, setDraggedPhotoIndex] = useState(null);
   const [tier, setTier] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -142,6 +143,16 @@ export default function CreateListing() {
     e.target.value = '';
   };
   const removePhoto = (i) => setPhotos(photos.filter((_, idx) => idx !== i));
+  const reorderPhotos = (targetIndex) => {
+    if (draggedPhotoIndex == null || draggedPhotoIndex === targetIndex) return;
+    setPhotos((current) => {
+      const reordered = [...current];
+      const [photo] = reordered.splice(draggedPhotoIndex, 1);
+      reordered.splice(targetIndex, 0, photo);
+      return reordered;
+    });
+    setDraggedPhotoIndex(null);
+  };
 
   const resetListing = () => {
     try {
@@ -225,18 +236,18 @@ export default function CreateListing() {
   return (
     <div className="min-h-screen bg-background">
       <NavBar />
-      <div className="mx-auto max-w-2xl px-4 py-10">
-        <h1 className="font-display text-3xl tracking-tight">NOW FILL IN YOUR TITLE AND DESCRIPTION</h1>
+      <div className="ml-0 mr-auto max-w-2xl px-4 py-10">
+        <h1 className="font-display text-3xl tracking-tight">Your Title and Description</h1>
 
         <div className="mt-8 space-y-6">
           <div>
-            <label className="text-sm font-medium">Title <span className="ml-1 text-xs font-normal text-muted-foreground">Keep it brief, Brevity is the soul of wit.</span></label>
+            <label className="text-sm font-medium"><span className="text-[28px] leading-none">Title</span> <span className="ml-1 text-xs font-normal text-muted-foreground">Keep it brief, Brevity is the soul of wit.</span></label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
               placeholder="Your listing title"
-              className="mt-1.5 w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring"
+              className="mt-1.5 w-full rounded-lg border-2 border-white bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
           <div>
@@ -249,26 +260,31 @@ export default function CreateListing() {
               }}
               rows={6}
               placeholder="Describe your item in your own words."
-              className="mt-1.5 w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring"
+              className="mt-1.5 w-full rounded-lg border-2 border-white bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring"
             />
             <p className="mt-1 text-xs text-muted-foreground">
               {descriptionWordCount} / {MAX_DESCRIPTION_WORDS} words
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 rounded-xl border-2 border-white p-3">
             <div>
               <label className="text-sm font-medium">Price</label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                required
-                placeholder="0"
-                className="mt-1.5 w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-              />
+              <div className="relative mt-1.5">
+                <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-3 flex items-center font-medium">
+                  {cur.symbol}
+                </span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  required
+                  placeholder="0"
+                  className="w-full rounded-lg border-2 border-white bg-background py-2.5 pl-10 pr-3 outline-none focus:ring-2 focus:ring-ring [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                />
+              </div>
               {price && (
                 <p className="mt-1 text-xs text-muted-foreground">
                   Displayed as {formatAmount(Number(price), cur)} {currency}
@@ -283,7 +299,7 @@ export default function CreateListing() {
               <select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
-                className="mt-1.5 w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring"
+                className="mt-1.5 w-full rounded-lg border-2 border-white bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-ring"
               >
                 {CURRENCIES.map((c) => (
                   <option key={c.code} value={c.code}>
@@ -291,21 +307,29 @@ export default function CreateListing() {
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-xs text-muted-foreground">Manual — no geo-tracking.</p>
             </div>
           </div>
 
-          <div>
+          <div className="rounded-xl p-3">
             <label className="text-sm font-medium">
               Photos (max {MAX_PHOTOS}) <span className="ml-1 text-xs font-normal text-muted-foreground">Press ctrl, to select all three at once.</span>
             </label>
             <div className="mt-1.5 flex flex-wrap gap-3">
               {photos.map((file, i) => (
-                <div key={i} className="relative">
+                <div
+                  key={i}
+                  draggable
+                  onDragStart={() => setDraggedPhotoIndex(i)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => reorderPhotos(i)}
+                  onDragEnd={() => setDraggedPhotoIndex(null)}
+                  className="relative cursor-grab active:cursor-grabbing"
+                  title="Drag to reorder photos"
+                >
                   <img
                     src={file}
                     alt={`preview ${i + 1}`}
-                    className="h-24 w-24 rounded-lg border object-cover"
+                    className="h-24 w-24 rounded-lg object-cover"
                   />
                   <button
                     type="button"
@@ -317,7 +341,7 @@ export default function CreateListing() {
                 </div>
               ))}
               {photos.length < MAX_PHOTOS && (
-                <label className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed text-muted-foreground hover:bg-muted/50">
+                <label className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-white text-muted-foreground hover:bg-muted/50">
                   <Plus className="h-5 w-5" />
                   <span className="mt-1 text-xs">Add photo</span>
                   <input
@@ -332,7 +356,7 @@ export default function CreateListing() {
             </div>
           </div>
 
-          <div>
+          <div className="rounded-xl p-3">
             <label className="text-sm font-medium">How long should it stay up?</label>
             <p className="mt-1 text-xs text-muted-foreground">
               Pick a duration — your listing auto-deletes when it expires.
@@ -359,9 +383,9 @@ export default function CreateListing() {
           <button
             type="button"
             onClick={resetListing}
-            className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-red-600 px-5 py-3 font-semibold text-black hover:bg-red-700"
+            className="abandon-listing-button mt-3 inline-flex w-full items-center justify-center rounded-full bg-red-600 px-5 py-3 font-semibold text-black hover:bg-red-700"
           >
-            Reset
+            Abandon
           </button>
         </div>
 

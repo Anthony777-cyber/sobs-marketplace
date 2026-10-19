@@ -83,7 +83,6 @@ const AuthenticatedApp = () => {
       )}
       <Route path="/listings" element={<Listings />} />
       <Route path="/listings/:id" element={<ListingDetail />} />
-      <Route path="/chat/:listingId" element={<ChatPage />} />
       <Route path="/manage/chats" element={<ChatPage sellerMode />} />
       <Route path="/rules" element={<Rules />} />
       <Route path="/browse/*" element={<Browse />} />

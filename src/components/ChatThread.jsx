@@ -1,8 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 export default function ChatThread({ listingId }) {
-  const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
@@ -41,5 +39,5 @@ export default function ChatThread({ listingId }) {
     } catch (e) { setError(e.message || 'Message could not be sent.'); }
     finally { setSending(false); }
   }
-  return <div className="flex flex-col rounded-xl border border-white bg-card"><div className="border-b border-white p-3 text-sm font-medium">Chat with the seller</div><div className="max-h-80 min-h-48 space-y-2 overflow-y-auto p-3">{error && <p className="text-sm text-red-400">{error}</p>}{messages.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">No messages yet. Start the conversation!</p>}{messages.map((m) => <div key={m.id} className="text-sm"><span className="font-medium">{m.sender === 'seller' ? 'Seller' : 'You'}: </span><span className="text-muted-foreground">{m.message}</span></div>)}<div ref={endRef} /></div><div className="flex gap-2 border-t border-white p-3"><input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), send())} placeholder="Type a message..." maxLength={4000} className="flex-1 rounded-lg border border-white bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" /><button onClick={send} disabled={sending || !input.trim()} className="rounded-lg bg-foreground px-3 py-2 text-sm text-background disabled:opacity-50">Send</button><button onClick={() => navigate(`/chat/${encodeURIComponent(listingId)}`)} className="rounded-lg border border-white px-3 py-2 text-sm">Open</button></div></div>;
+  return <div className="flex flex-col rounded-xl border border-white bg-card"><div className="border-b border-white p-3 text-sm font-medium">Chat with the seller</div><div className="max-h-80 min-h-48 space-y-2 overflow-y-auto p-3">{error && <p className="text-sm text-red-400">{error}</p>}{messages.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">No messages yet. Start the conversation!</p>}{messages.map((m) => <div key={m.id} className="text-sm"><span className="font-medium">{m.sender === 'seller' ? 'Seller' : 'You'}: </span><span className="text-muted-foreground">{m.message}</span></div>)}<div ref={endRef} /></div><div className="flex gap-2 border-t border-white p-3"><input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), send())} placeholder="Type a message..." maxLength={4000} className="flex-1 rounded-lg border border-white bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" /><button onClick={send} disabled={sending || !input.trim()} className="rounded-lg bg-foreground px-3 py-2 text-sm text-background disabled:opacity-50">Send</button></div></div>;
 }

@@ -335,7 +335,7 @@ export default function BulkListings() {
 
   useEffect(() => {
     if (!uploadFailed || previewUploadFailure) return undefined;
-    const timer = window.setTimeout(() => setUploadFailed(false), 2200);
+    const timer = window.setTimeout(() => setUploadFailed(false), 5200);
     return () => window.clearTimeout(timer);
   }, [uploadFailed, previewUploadFailure]);
 

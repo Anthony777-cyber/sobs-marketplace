@@ -74,11 +74,11 @@
 }
 
 .upload-robot-explode {
-  animation: upload-robot-explode 0.75s ease-out forwards;
+  animation: upload-robot-explode-preview 1.8s ease-in-out infinite;
 }
 
 .upload-explosion-burst {
-  animation: upload-explosion-burst 0.8s ease-out forwards;
+  animation: upload-explosion-preview 1.8s ease-in-out infinite;
 }
 
 @keyframes upload-robot-explode-preview {

@@ -1,0 +1,54 @@
+%%{init: {"theme":"base", "themeVariables": {"background":"#000000", "primaryColor":"#032b4d", "primaryTextColor":"#9acbff", "primaryBorderColor":"#0c4167", "lineColor":"#999999", "secondaryColor":"#001522", "tertiaryColor":"#032b4d", "fontFamily":"Arial, sans-serif"}}}%%
+%% Sifter MK4 current flow, traced from src/pages/SifterMK4.jsx and src/lib/sifterMK4Engine.js
+%% Render with Mermaid. Dark background and navy/blue styling match the supplied flowcharts.
+flowchart TB
+    A[What are you listing?]
+
+    A --> M[Machine]
+    A --> P[Part of a machine]
+    A --> E[Everything else]
+
+    M --> MQ{A vehicle or another machine?}
+    MQ -->|Vehicles button| MV[Vehicles button label]
+    MQ -->|Other machines button| MO[Other machines button label]
+    MV --> MVT[Question: What sort of vehicle is it? Placeholder: Car, Truck, Van, Lorry etc]
+    MO --> MOT[Question: What type of machine is it? Placeholder: Tape deck, Generator, Washing Machine]
+    MVT --> MM{Make known?}
+    MOT --> MM
+    MM -->|Yes| MME[Vehicle: What make of Vehicle is it? Placeholder: Audi, Volkswagen, Kit car. Machine: What is the make of the machine? Placeholder: Sanyo, Hoover, Dyson etc]
+    MM -->|No| MMN[Tick I don't know the make; record N/A]
+    MME --> MF[Selected route determines the detail form]
+    MMN --> MF
+    MF --> MCF[Vehicle route: confirm or edit make; enter model, year, variant, part number, mileage, fuel, transmission, colour, running status and other details]
+    MF --> MAF[Machine route: confirm or edit make; enter machine class, model, year, part number, colour, running status and other details]
+    MCF --> MC[Complete; retain taxonomy path and build search terms]
+    MAF --> MC
+
+    P --> PQ{Part of a vehicle or other machine?}
+    PQ -->|Vehicle parts button| PV[Vehicle parts button label]
+    PQ -->|Other machine parts button| PO[Other machine parts button label]
+    PV --> PT[Question: What sort of vehicle is it? Placeholder: Car, Truck, Van, Lorry etc]
+    PO --> PTM[Question: What type of machine is it? Placeholder: Tape deck, Generator, Washing Machine]
+    PTM --> PT
+    PT --> PM{Make known?}
+    PM -->|Yes| PME[Vehicle: What make of Vehicle is it? Placeholder: Audi, Volkswagen, Kit car. Machine: What is the make of the machine? Placeholder: Sanyo, Hoover, Dyson etc]
+    PM -->|No| PMN[Tick I don't know the make; record N/A]
+    PME --> PF[Selected route determines the detail form]
+    PMN --> PF
+    PF --> PCF[Vehicle parts route: confirm or edit make; enter model, year, variant, part number, mileage, fuel, transmission, colour, running status and other details]
+    PF --> PAF[Other machine parts route: confirm or edit make; enter machine class, model, year, part number, colour, running status and other details]
+    PCF --> PC[Complete; retain parts taxonomy path and build search terms]
+    PAF --> PC
+
+    E --> EQ[Choose a top-level category]
+    EQ -->|A listed category| EF[Enter that category's configured detail fields]
+    EQ -->|Other / not sure| GQ[General questionnaire]
+    EF --> EC[Complete; retain selected category and build search terms]
+    GQ --> GD[Complete the 13-field general questionnaire; fields may be left blank]
+    GD --> GC[Complete; taxonomy is And now for something completely different.]
+
+    classDef main fill:#032b4d,stroke:#0c4167,color:#9acbff,stroke-width:1.5px;
+    classDef decision fill:#001522,stroke:#075080,color:#9acbff,stroke-width:1.5px,stroke-dasharray:4 3;
+    class A,M,MME,MMN,MF,MCF,MAF,MC,P,PV,PO,PT,PTM,PME,PMN,PF,PCF,PAF,PC,E,EQ,EF,GQ,GD,EC,GC main;
+    class MQ,MM,PQ,PM decision;
+    linkStyle default stroke:#999999,stroke-width:1.5px;

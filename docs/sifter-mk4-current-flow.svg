@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2000" height="1780" viewBox="0 0 2000 1780" role="img" aria-labelledby="title description">
+  <title id="title">Sifter MK4 current flow</title>
+  <desc id="description">Flowchart of the implemented Sifter MK4 machine, machine parts, and everything else routes.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#999"/></marker>
+    <style>
+      .bg { fill:#000; }
+      .node { fill:#032b4d; stroke:#0c4167; stroke-width:2; }
+      .choice { fill:#001522; stroke:#075080; stroke-width:2; stroke-dasharray:6 5; }
+      .line { fill:none; stroke:#999; stroke-width:2.5; marker-end:url(#arrow); }
+      .plain-line { fill:none; stroke:#999; stroke-width:2.5; }
+      .txt { fill:#9acbff; font:600 23px Arial,sans-serif; text-anchor:middle; dominant-baseline:middle; }
+      .small { fill:#9acbff; font:600 19px Arial,sans-serif; text-anchor:middle; dominant-baseline:middle; }
+      .tiny { fill:#9acbff; font:600 15px Arial,sans-serif; text-anchor:middle; dominant-baseline:middle; }
+      .micro { fill:#9acbff; font:600 13px Arial,sans-serif; text-anchor:middle; dominant-baseline:middle; }
+      .label { fill:#bdbdbd; font:600 19px Arial,sans-serif; text-anchor:middle; }
+    </style>
+  </defs>
+  <rect class="bg" width="2000" height="1780"/>
+
+  <!-- Shared opening and three route choices -->
+  <rect class="node" x="755" y="35" width="490" height="92" rx="28"/>
+  <text class="txt" x="1000" y="81">What are you listing?</text>
+  <path class="plain-line" d="M1000 127 V165 M350 165 H1650 M350 165 V202 M1000 165 V202 M1650 165 V202"/>
+  <path class="line" d="M350 165 V202"/><path class="line" d="M1000 165 V202"/><path class="line" d="M1650 165 V202"/>
+
+  <!-- Machine route -->
+  <rect class="node" x="80" y="205" width="540" height="86" rx="28"/>
+  <text class="txt" x="350" y="248">Machine</text>
+  <path class="line" d="M350 291 V335"/>
+  <rect class="choice" x="80" y="338" width="540" height="100" rx="26"/>
+  <text class="txt" x="350" y="388"><tspan x="350">A vehicle or another</tspan><tspan x="350" dy="28">machine?</tspan></text>
+  <path class="plain-line" d="M350 438 V472 H215 V493 M350 472 H485 V493"/>
+  <path class="line" d="M215 472 V493"/><path class="line" d="M485 472 V493"/>
+  <text class="label" x="215" y="465">Vehicle</text>
+  <text class="label" x="485" y="465">Another machine</text>
+  <rect class="node" x="80" y="497" width="270" height="84" rx="25"/>
+  <text class="txt" x="215" y="539">Vehicles</text>
+  <rect class="node" x="350" y="497" width="270" height="84" rx="25"/>
+  <text class="txt" x="485" y="539">Other machines</text>
+  <path class="line" d="M215 581 V615 M485 581 V615"/>
+  <rect class="node" x="80" y="619" width="270" height="92" rx="25"/>
+  <text class="tiny" x="215" y="646"><tspan x="215">Question: What sort of</tspan><tspan x="215" dy="19">vehicle is it?</tspan><tspan x="215" dy="19">Placeholder: Car, Truck,</tspan><tspan x="215" dy="19">Van, Lorry etc</tspan></text>
+  <rect class="node" x="350" y="619" width="270" height="92" rx="25"/>
+  <text class="tiny" x="485" y="646"><tspan x="485">Question: What type of</tspan><tspan x="485" dy="19">machine is it?</tspan><tspan x="485" dy="19">Placeholder: Tape deck,</tspan><tspan x="485" dy="19">Generator, Washing Machine</tspan></text>
+  <path class="plain-line" d="M215 711 V738 H350 M485 711 V738 H350"/>
+  <path class="line" d="M350 738 V758"/>
+  <rect class="choice" x="80" y="761" width="540" height="86" rx="25"/>
+  <text class="txt" x="350" y="804">Make known?</text>
+  <path class="plain-line" d="M350 847 V875 H215 V897 M350 875 H485 V897"/>
+  <path class="line" d="M215 875 V897"/><path class="line" d="M485 875 V897"/>
+  <text class="label" x="215" y="869">Yes</text><text class="label" x="485" y="869">No</text>
+  <rect class="node" x="80" y="901" width="270" height="105" rx="24"/>
+  <text class="micro" x="215" y="917"><tspan x="215">Vehicle heading: What make of</tspan><tspan x="215" dy="15">Vehicle is it?</tspan><tspan x="215" dy="15">Placeholder: Audi, Volkswagen, Kit car</tspan><tspan x="215" dy="15">Machine heading: What is the make</tspan><tspan x="215" dy="15">of the machine?</tspan><tspan x="215" dy="15">Placeholder: Sanyo, Hoover, Dyson etc</tspan></text>
+  <rect class="node" x="350" y="901" width="270" height="105" rx="24"/>
+  <text class="tiny" x="485" y="930"><tspan x="485">Tick “I don't know</tspan><tspan x="485" dy="19">the make” checkbox;</tspan><tspan x="485" dy="19">record N/A</tspan></text>
+  <path class="plain-line" d="M215 1006 V1035 H350 M485 1006 V1035 H350"/>
+  <path class="line" d="M350 1035 V1052"/>
+  <rect class="node" x="80" y="1055" width="540" height="82" rx="24"/>
+  <text class="small" x="350" y="1096">Selected route chooses the detail form</text>
+  <path class="line" d="M350 1137 V1160 H215 V1177"/><path class="line" d="M350 1160 H485 V1177"/>
+  <rect class="node" x="80" y="1181" width="270" height="225" rx="25"/>
+  <text class="small" x="215" y="1238"><tspan x="215">Vehicle details</tspan><tspan x="215" dy="28">Confirm/edit make;</tspan><tspan x="215" dy="25">model, year, variant,</tspan><tspan x="215" dy="25">part number, mileage,</tspan><tspan x="215" dy="25">fuel, transmission, colour,</tspan><tspan x="215" dy="25">running status, other IDs</tspan></text>
+  <rect class="node" x="350" y="1181" width="270" height="225" rx="25"/>
+  <text class="small" x="485" y="1238"><tspan x="485">Machine details</tspan><tspan x="485" dy="28">Confirm/edit make;</tspan><tspan x="485" dy="25">machine class, model, year,</tspan><tspan x="485" dy="25">part number, colour,</tspan><tspan x="485" dy="25">running status, other IDs</tspan></text>
+  <path class="plain-line" d="M215 1406 V1435 H350 M485 1406 V1435 H350"/>
+  <path class="line" d="M350 1435 V1452"/>
+  <rect class="node" x="80" y="1455" width="540" height="135" rx="25"/>
+  <text class="small" x="350" y="1495"><tspan x="350">Complete; generate search terms</tspan><tspan x="350" dy="26">Taxonomy: Machines → Vehicles / Other</tspan><tspan x="350" dy="25">machines → type → make</tspan></text>
+
+  <!-- Parts route, including the implemented second-tier choice -->
+  <rect class="node" x="730" y="205" width="540" height="86" rx="28"/>
+  <text class="txt" x="1000" y="248">Part of a machine</text>
+  <path class="line" d="M1000 291 V335"/>
+  <rect class="choice" x="730" y="338" width="540" height="100" rx="26"/>
+  <text class="txt" x="1000" y="388"><tspan x="1000">Part of a vehicle or</tspan><tspan x="1000" dy="28">other machine?</tspan></text>
+  <path class="plain-line" d="M1000 438 V472 H865 V493 M1000 472 H1135 V493"/>
+  <path class="line" d="M865 472 V493"/><path class="line" d="M1135 472 V493"/>
+  <text class="label" x="865" y="465">Vehicle</text><text class="label" x="1135" y="465">Another machine</text>
+  <rect class="node" x="730" y="497" width="270" height="84" rx="25"/>
+  <text class="small" x="865" y="539">Vehicle parts</text>
+  <rect class="node" x="1000" y="497" width="270" height="84" rx="25"/>
+  <text class="small" x="1135" y="539">Other machine parts</text>
+  <path class="line" d="M865 581 V615 M1135 581 V615"/>
+  <rect class="node" x="730" y="619" width="270" height="92" rx="25"/>
+  <text class="tiny" x="865" y="646"><tspan x="865">Question: What sort of</tspan><tspan x="865" dy="19">vehicle is it?</tspan><tspan x="865" dy="19">Placeholder: Car, Truck,</tspan><tspan x="865" dy="19">Van, Lorry etc</tspan></text>
+  <rect class="node" x="1000" y="619" width="270" height="92" rx="25"/>
+  <text class="tiny" x="1135" y="646"><tspan x="1135">Question: What type of</tspan><tspan x="1135" dy="19">machine is it?</tspan><tspan x="1135" dy="19">Placeholder: Tape deck,</tspan><tspan x="1135" dy="19">Generator, Washing Machine</tspan></text>
+  <path class="plain-line" d="M865 711 V738 H1000 M1135 711 V738 H1000"/>
+  <path class="line" d="M1000 738 V758"/>
+  <rect class="choice" x="730" y="761" width="540" height="86" rx="25"/>
+  <text class="txt" x="1000" y="804">Make known?</text>
+  <path class="plain-line" d="M1000 847 V875 H865 V897 M1000 875 H1135 V897"/>
+  <path class="line" d="M865 875 V897"/><path class="line" d="M1135 875 V897"/>
+  <text class="label" x="865" y="869">Yes</text><text class="label" x="1135" y="869">No</text>
+  <rect class="node" x="730" y="901" width="270" height="105" rx="24"/>
+  <text class="micro" x="865" y="917"><tspan x="865">Vehicle heading: What make of</tspan><tspan x="865" dy="15">Vehicle is it?</tspan><tspan x="865" dy="15">Placeholder: Audi, Volkswagen, Kit car</tspan><tspan x="865" dy="15">Machine heading: What is the make</tspan><tspan x="865" dy="15">of the machine?</tspan><tspan x="865" dy="15">Placeholder: Sanyo, Hoover, Dyson etc</tspan></text>
+  <rect class="node" x="1000" y="901" width="270" height="105" rx="24"/>
+  <text class="tiny" x="1135" y="930"><tspan x="1135">Tick “I don't know</tspan><tspan x="1135" dy="19">the make” checkbox;</tspan><tspan x="1135" dy="19">record N/A</tspan></text>
+  <path class="plain-line" d="M865 1006 V1035 H1000 M1135 1006 V1035 H1000"/>
+  <path class="line" d="M1000 1035 V1052"/>
+  <rect class="node" x="730" y="1055" width="540" height="82" rx="24"/>
+  <text class="small" x="1000" y="1096">Selected route chooses the detail form</text>
+  <path class="line" d="M1000 1137 V1160 H865 V1177"/><path class="line" d="M1000 1160 H1135 V1177"/>
+  <rect class="node" x="730" y="1181" width="270" height="225" rx="25"/>
+  <text class="small" x="865" y="1238"><tspan x="865">Vehicle parts details</tspan><tspan x="865" dy="28">Confirm/edit make;</tspan><tspan x="865" dy="25">model, year, variant,</tspan><tspan x="865" dy="25">part number, mileage,</tspan><tspan x="865" dy="25">fuel, transmission, colour,</tspan><tspan x="865" dy="25">running status, other IDs</tspan></text>
+  <rect class="node" x="1000" y="1181" width="270" height="225" rx="25"/>
+  <text class="small" x="1135" y="1238"><tspan x="1135">Other machine parts</tspan><tspan x="1135" dy="28">Confirm/edit make;</tspan><tspan x="1135" dy="25">machine class, model, year,</tspan><tspan x="1135" dy="25">part number, colour,</tspan><tspan x="1135" dy="25">running status, other IDs</tspan></text>
+  <path class="plain-line" d="M865 1406 V1435 H1000 M1135 1406 V1435 H1000"/>
+  <path class="line" d="M1000 1435 V1452"/>
+  <rect class="node" x="730" y="1455" width="540" height="135" rx="25"/>
+  <text class="small" x="1000" y="1490"><tspan x="1000">Complete; generate search terms</tspan><tspan x="1000" dy="26">Parts of machines → Vehicle parts</tspan><tspan x="1000" dy="25">or Other machine parts → type → make</tspan></text>
+
+  <!-- Everything else route -->
+  <rect class="node" x="1380" y="205" width="540" height="86" rx="28"/>
+  <text class="txt" x="1650" y="248">Everything else</text>
+  <path class="line" d="M1650 291 V335"/>
+  <rect class="node" x="1380" y="338" width="540" height="100" rx="26"/>
+  <text class="txt" x="1650" y="388"><tspan x="1650">Choose a top-level</tspan><tspan x="1650" dy="28">category</tspan></text>
+  <path class="plain-line" d="M1650 438 V472 H1515 V493 M1650 472 H1785 V493"/>
+  <path class="line" d="M1515 472 V493"/><path class="line" d="M1785 472 V493"/>
+  <text class="label" x="1515" y="465">Listed category</text><text class="label" x="1785" y="465">Other / not sure</text>
+  <rect class="node" x="1380" y="497" width="270" height="105" rx="25"/>
+  <text class="small" x="1515" y="549"><tspan x="1515">Enter that category's</tspan><tspan x="1515" dy="25">configured detail fields</tspan></text>
+  <rect class="node" x="1650" y="497" width="270" height="105" rx="25"/>
+  <text class="small" x="1785" y="549"><tspan x="1785">Complete the general</tspan><tspan x="1785" dy="25">questionnaire</tspan></text>
+  <path class="line" d="M1515 602 V650 M1785 602 V650"/>
+  <rect class="node" x="1380" y="654" width="270" height="220" rx="25"/>
+  <text class="small" x="1515" y="704"><tspan x="1515">Category form:</tspan><tspan x="1515" dy="28">fields vary by category</tspan><tspan x="1515" dy="27">(type, maker, size,</tspan><tspan x="1515" dy="25">condition, specifications,</tspan><tspan x="1515" dy="25">and other relevant details)</tspan></text>
+  <rect class="node" x="1650" y="654" width="270" height="220" rx="25"/>
+  <text class="small" x="1785" y="694"><tspan x="1785">13 fields covering</tspan><tspan x="1785" dy="27">description, name, use,</tspan><tspan x="1785" dy="25">maker, origin, date,</tspan><tspan x="1785" dy="25">material, size, condition,</tspan><tspan x="1785" dy="25">faults, marks and notes</tspan></text>
+  <path class="line" d="M1515 874 V928 M1785 874 V928"/>
+  <rect class="node" x="1380" y="932" width="270" height="150" rx="25"/>
+  <text class="small" x="1515" y="977"><tspan x="1515">Complete; category</tspan><tspan x="1515" dy="26">is the taxonomy</tspan><tspan x="1515" dy="26">and search terms build</tspan></text>
+  <rect class="node" x="1650" y="932" width="270" height="150" rx="25"/>
+  <text class="small" x="1785" y="977"><tspan x="1785">Complete; taxonomy:</tspan><tspan x="1785" dy="26">“And now for something</tspan><tspan x="1785" dy="26">completely different.”</tspan></text>
+  <text class="label" x="1000" y="1690">Classification and search terms are passed to the listing creation flow.</text>
+</svg>

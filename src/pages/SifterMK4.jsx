@@ -144,15 +144,14 @@ export default function SifterMK4({ customerMode = false, onContinue }) {
   const [current, setCurrent] = useState({ id:'description', label:'What is it?', placeholder:'Enter the item name or a short description' });
   const [phase, setPhase] = useState('route');
   const [input, setInput] = useState('');
+  const [dontKnowMake, setDontKnowMake] = useState(false);
   const [machineDetails, setMachineDetails] = useState(EMPTY_MACHINE);
   const [carDetails, setCarDetails] = useState(EMPTY_CAR);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [taxonomy, setTaxonomy] = useState(null);
   const [categoryDetails, setCategoryDetails] = useState({});
   const [decision, setDecision] = useState(null);
-  const [diagnosticLog, setDiagnosticLog] = useState([]);
   const [history, setHistory] = useState([]);
-  const [copyStatus, setCopyStatus] = useState('');
   const [draftReady, setDraftReady] = useState(!customerMode);
 
   useEffect(() => {
@@ -161,9 +160,9 @@ export default function SifterMK4({ customerMode = false, onContinue }) {
     try { localStorage.removeItem(DRAFT_KEY); localStorage.removeItem('sobs_create_draft'); } catch {}
     setRoute(''); setRouteKeywords([]); setAnswers({}); setAskedIds([]); setStructuredCount(0);
     setCurrent({ id:'description', label:'What is it?', placeholder:'Enter the item name or a short description' });
-    setPhase('route'); setInput(''); setMachineDetails(EMPTY_MACHINE); setCarDetails(EMPTY_CAR);
+    setPhase('route'); setInput(''); setDontKnowMake(false); setMachineDetails(EMPTY_MACHINE); setCarDetails(EMPTY_CAR);
     setSelectedCategory(''); setTaxonomy(null); setCategoryDetails({}); setDecision(null);
-    setDiagnosticLog([]); setHistory([]); setCopyStatus(''); setDraftReady(true);
+    setHistory([]); setDraftReady(true);
     if (new URLSearchParams(location.search).has('fresh')) navigate('/sifter-mk4', { replace: true });
   }, [customerMode]);
 
@@ -178,15 +177,14 @@ export default function SifterMK4({ customerMode = false, onContinue }) {
   const searchTerms = useMemo(() => buildSearchTerms(answers, routeKeywords), [answers, routeKeywords]);
   const pushHistory = () => setHistory(previous => [...previous, {
     route, routeKeywords, answers, askedIds, structuredCount, current, phase, input,
-    machineDetails, carDetails, selectedCategory, taxonomy, categoryDetails, decision, diagnosticLog,
+    machineDetails, carDetails, selectedCategory, taxonomy, categoryDetails, decision
   }]);
   const restore = previous => {
     setRoute(previous.route); setRouteKeywords(previous.routeKeywords); setAnswers(previous.answers);
     setAskedIds(previous.askedIds); setStructuredCount(previous.structuredCount); setCurrent(previous.current);
     setPhase(previous.phase); setInput(previous.input); setMachineDetails(previous.machineDetails);
     setCarDetails(previous.carDetails); setSelectedCategory(previous.selectedCategory || ''); setTaxonomy(previous.taxonomy || null);
-    setCategoryDetails(previous.categoryDetails || {}); setDecision(previous.decision); setDiagnosticLog(previous.diagnosticLog);
-    setCopyStatus('');
+    setCategoryDetails(previous.categoryDetails || {}); setDecision(previous.decision); setDontKnowMake(previous.dontKnowMake || false);
   };
   const goBack = () => {
     if (!history.length) return;
@@ -198,15 +196,12 @@ export default function SifterMK4({ customerMode = false, onContinue }) {
     if (choice === 'machine') {
       const nextTaxonomy = {family:'Machines',path:['Machines']};
       setRoute(choice); setRouteKeywords([]); setTaxonomy(nextTaxonomy); setPhase('vehicle-type');
-      setDiagnosticLog(previous => [...previous, {event:'route-selected',choice,addedKeywords:[],taxonomy:nextTaxonomy,nextStep:'vehicle-type'}]);
     } else if (choice === 'spares') {
       const nextTaxonomy = {family:'Parts of machines',path:['Parts of machines']};
       setRoute(choice); setRouteKeywords([]); setTaxonomy(nextTaxonomy); setPhase('vehicle-type');
-      setDiagnosticLog(previous => [...previous, {event:'route-selected',choice,addedKeywords:[],taxonomy:nextTaxonomy,nextStep:'vehicle-type'}]);
     } else {
       setRoute(choice); setRouteKeywords([]); setSelectedCategory(''); setTaxonomy(null); setCategoryDetails({}); setPhase('category');
       setCurrent({id:'description',label:'What is it?',placeholder:'Enter the item name or a short description'});
-      setDiagnosticLog(previous => [...previous, {event:'route-selected',choice,addedKeywords:[],nextStep:'category'}]);
     }
   };
   const chooseGeneralCategory = category => {
@@ -222,11 +217,9 @@ export default function SifterMK4({ customerMode = false, onContinue }) {
     if (isOtherNotSure) {
       setCategoryDetails({});
       setPhase('general-questionnaire');
-      setDiagnosticLog(previous => [...previous,{event:'general-category-selected',category:taxonomyCategory,buttonLabel:category,taxonomy:nextTaxonomy,addedKeywords:[],nextStep:'general-questionnaire',adaptiveQuestionnaireStarted:false}]);
     } else {
       setCategoryDetails({});
       setPhase('category-form');
-      setDiagnosticLog(previous => [...previous,{event:'general-category-selected',category,taxonomy:nextTaxonomy,addedKeywords:[],nextStep:'category-form',adaptiveQuestionnaireStarted:false,formFields:(CATEGORY_FORM_FIELDS[category] || ['type','make','model','condition']).map(key=>key === 'condition' && MACHINE_STATUS_CATEGORIES.has(category) ? 'workingStatus' : key)}]);
     }
   };
   const completeCategoryForm = event => {
@@ -241,23 +234,21 @@ export default function SifterMK4({ customerMode = false, onContinue }) {
     const groups = buildKeywordGroups(nextAnswers,routeKeywords), terms = buildSearchTerms(nextAnswers,routeKeywords);
     const result = {done:true,reason:'Category-specific details recorded; no extra free-text fields.',keywordGroups:groups,searchTerms:terms};
     setDecision(result);
-    setDiagnosticLog(previous => [...previous,{event:'category-details-recorded',category:selectedCategory,answers:nextAnswers,formFields:Object.keys(details),nextQuestionId:null,finalOptionalQuestionProvided:false,keywordGroups:groups,searchTerms:terms}]);
   };
   const chooseMachineType = choice => {
     pushHistory();
-    const root = route === 'spares' ? 'Parts of machines' : 'Machines';
-    const branch = route === 'spares'
+    const isParts = route === 'spares';
+    const root = isParts ? 'Parts of machines' : 'Machines';
+    const branch = isParts
       ? (choice === 'car' ? 'Parts of vehicles' : 'Parts of other machines')
       : (choice === 'car' ? 'Vehicles' : 'Other machines');
-    const leaf = route === 'spares' ? (choice === 'car' ? 'Car parts' : '') : '';
-    const path = [root, branch, ...(leaf ? [leaf] : [])];
-    const nextTaxonomy = {family:root,path};
+    const leaf = isParts && choice === 'car' ? 'Car parts' : '';
+    const nextTaxonomy = {family:root,path:[root,branch,...(leaf ? [leaf] : [])]};
     setTaxonomy(nextTaxonomy);
-    setRouteKeywords([]);
-    setRoute(choice === 'car' ? (route === 'spares' ? 'spares-car' : 'car') : (route === 'spares' ? 'spares-machine' : 'machine'));
-    const nextPhase = choice === 'car' && route !== 'spares' ? 'vehicle-classification' : (choice === 'car' ? 'car-form' : 'machine-form');
-    setPhase(nextPhase);
-    setDiagnosticLog(previous => [...previous, {event:'machine-kind-selected',choice,taxonomy:nextTaxonomy,addedKeywords:[],nextStep:nextPhase}]);
+    setRoute(choice === 'car' ? (isParts ? 'spares-car' : 'car') : (isParts ? 'spares-machine' : 'machine'));
+    setInput('');
+    setDontKnowMake(false);
+    setPhase(choice === 'car' ? 'vehicle-classification' : 'machine-classification');
   };
   const updateForm = (setter,key,value) => setter(previous => ({...previous,[key]:value}));
   const removeAnswer = key => setAnswers(previous => { const next = {...previous}; delete next[key]; return next; });
@@ -292,7 +283,6 @@ export default function SifterMK4({ customerMode = false, onContinue }) {
     const groups = buildKeywordGroups(nextAnswers,routeKeywords), terms = buildSearchTerms(nextAnswers,routeKeywords);
     const reason = (isCar ? 'Vehicle' : 'Machine') + ' details recorded; no extra free-text fields.';
     setDecision({done:true,reason,keywordGroups:groups,searchTerms:terms});
-    setDiagnosticLog(previous => [...previous,{event:isCar?'car-details-recorded':'machine-details-recorded',answers:nextAnswers,taxonomy:nextTaxonomy,nextQuestionId:null,finalOptionalQuestionProvided:false,keywordGroups:groups,searchTerms:terms}]);
   };
   const completeGeneralQuestionnaire = event => {
     event?.preventDefault();
@@ -314,25 +304,48 @@ export default function SifterMK4({ customerMode = false, onContinue }) {
     const groups = buildKeywordGroups(nextAnswers, []);
     const terms = buildSearchTerms(nextAnswers, []);
     setDecision({done:true,reason:'General questionnaire completed.',keywordGroups:groups,searchTerms:terms});
-    setDiagnosticLog(previous=>[...previous,{
-      event:'general-questionnaire-completed',
-      category:'And now for something completely different.',
-      originalKeyword:categoryDetails.whatIsIt ?? '',
-      answers:nextAnswers,keywordGroups:groups,searchTerms:terms
-    }]);
   };
   const submitAnswer = event => {
     event?.preventDefault();
     if (phase === 'general-questionnaire') return completeGeneralQuestionnaire(event);
-    if (phase === 'vehicle-classification') {
+    if (phase === 'vehicle-classification' || phase === 'machine-classification') {
       pushHistory();
-      const vehicleType = clean(input);
-      const root = 'Machines';
-      const path = vehicleType ? [root, 'Vehicles', vehicleType] : [root, 'Vehicles'];
-      const nextTaxonomy = {family:root,path};
-      const nextAnswers = vehicleType ? {...answers,vehicleType} : {...answers};
-      setAnswers(nextAnswers); setTaxonomy(nextTaxonomy); setInput(''); setPhase('car-form');
-      setDiagnosticLog(previous => [...previous,{event:'vehicle-type-recorded',question:'What sort of vehicle is it?',answer:vehicleType,answerStatus:vehicleType?'supplied':'blank-unsupplied',taxonomy:nextTaxonomy,keywordGroups:buildKeywordGroups(nextAnswers,routeKeywords),searchTerms:buildSearchTerms(nextAnswers,routeKeywords),nextStep:'vehicle-form'}]);
+      const itemType = clean(input);
+      const isVehicle = phase === 'vehicle-classification';
+      const answerKey = isVehicle ? 'vehicleType' : 'machineType';
+      const root = route.startsWith('spares-') ? 'Parts of machines' : 'Machines';
+      const branch = route === 'car' ? 'Vehicles'
+        : route === 'machine' ? 'Other machines'
+        : route === 'spares-car' ? 'Parts of vehicles' : 'Parts of other machines';
+      const basePath = root === 'Machines'
+        ? ['Machines', branch]
+        : ['Parts of machines', branch, ...(route === 'spares-car' ? ['Car parts'] : [])];
+      const nextTaxonomy = {family:root,path:itemType ? [...basePath,itemType] : basePath};
+      const nextAnswers = itemType ? {...answers,[answerKey]:itemType} : {...answers};
+      setAnswers(nextAnswers);
+      setTaxonomy(nextTaxonomy);
+      setInput('');
+      setDontKnowMake(false);
+      setPhase('make-classification');
+      return;
+    }
+    if (phase === 'make-classification') {
+      const make = dontKnowMake ? 'N/A' : clean(input);
+      if (!make) return;
+      pushHistory();
+      const nextAnswers = {...answers,make};
+      const nextTaxonomy = {...taxonomy,path:[...(taxonomy?.path || []),make]};
+      setAnswers(nextAnswers);
+      setTaxonomy(nextTaxonomy);
+      if (route === 'car' || route === 'spares-car') {
+        setCarDetails(previous => ({...previous,make}));
+        setPhase('car-form');
+      } else {
+        setMachineDetails(previous => ({...previous,make}));
+        setPhase('machine-form');
+      }
+      setInput('');
+      setDontKnowMake(false);
       return;
     }
     if (phase === 'machine-form' || phase === 'car-form') return completeForm(event);
@@ -345,10 +358,6 @@ export default function SifterMK4({ customerMode = false, onContinue }) {
     const result=getNextGeneralQuestion(nextAnswers,nextAsked,nextCount);
     setAnswers(nextAnswers); setAskedIds(nextAsked); setStructuredCount(nextCount); setInput(''); setDecision(result);
     const groups=buildKeywordGroups(nextAnswers,routeKeywords),terms=buildSearchTerms(nextAnswers,routeKeywords);
-    setDiagnosticLog(previous=>[...previous,
-      {event:'answer-recorded',questionId:current.id,question:current.label,answer:value,answerStatus:value?'supplied':'blank-unsupplied',structuredCount:nextCount,keywordGroups:groups,searchTerms:terms},
-      {event:result.done?'structured-questions-stopped':'next-question-selected',nextQuestionId:result.done?null:result.question.id,reason:result.reason,keywordGroups:groups,searchTerms:terms},
-    ]);
     if(result.done) setPhase('complete');
     else setCurrent(result.question);
   };
@@ -356,19 +365,11 @@ export default function SifterMK4({ customerMode = false, onContinue }) {
     if (customerMode) { try { localStorage.removeItem(DRAFT_KEY); } catch {} }
     setRoute('');setRouteKeywords([]);setAnswers({});setAskedIds([]);setStructuredCount(0);
     setCurrent({id:'description',label:'What is it?',placeholder:'Enter the item name or a short description'});
-    setPhase('route');setInput('');setMachineDetails(EMPTY_MACHINE);setCarDetails(EMPTY_CAR);
+    setPhase('route');setInput('');setDontKnowMake(false);setMachineDetails(EMPTY_MACHINE);setCarDetails(EMPTY_CAR);
     setSelectedCategory('');setTaxonomy(null);setCategoryDetails({});
-    setDecision(null);setDiagnosticLog([]);setHistory([]);setCopyStatus('');setDraftReady(true);
+    setDecision(null);setHistory([]);setDraftReady(true);
   };
   const abandon = () => { if (customerMode) reset(); else if (window.confirm('Abandon this test and discard the answers?')) reset(); };
-  const diagnostics = JSON.stringify({
-    test:'sifter-mk4-taxonomy-and-keywords',purpose:'Button choices build explicit taxonomy; seller answers generate search keywords separately. No Registry writes.',
-    maxStructuredQuestions:MAX_QUESTIONS,target:'Fewest useful questions; 12 structured questions is the hard ceiling, not the goal.',
-    phase,route,selectedCategory,taxonomy,routeKeywords,structuredCount,currentQuestion:current,destination:'Test page only — no Registry write is performed',
-    answers,askedIds,keywordGroups,searchTerms,outputCounts:{keywordGroups:keywordGroups.length,searchTerms:searchTerms.length},
-    generatedOutput:{keywordGroups,searchTerms},lastDecision:decision,log:diagnosticLog,
-    navigation:{canGoBack:history.length>0,historyDepth:history.length},
-  },null,2);
   const handleSifterEnter = event => {
     if (event.key !== 'Enter' || event.target.tagName === 'TEXTAREA' || event.target.type === 'submit') return;
     event.preventDefault();
@@ -381,7 +382,7 @@ export default function SifterMK4({ customerMode = false, onContinue }) {
       return;
     }
 
-    if (phase !== 'vehicle-classification') {
+    if (phase !== 'vehicle-classification' && phase !== 'machine-classification' && phase !== 'make-classification') {
       const value = clean(input);
       const nextAnswers = value ? { ...answers, [current.id]: value } : { ...answers };
       const nextAsked = [...new Set([...askedIds, current.id])];
@@ -391,43 +392,12 @@ export default function SifterMK4({ customerMode = false, onContinue }) {
 
     event.currentTarget.requestSubmit();
   };
-  const copyDiagnostics = async () => {
-    setCopyStatus('');
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(diagnostics);
-        setCopyStatus('Diagnostics copied.');
-        return;
-      }
-    } catch {}
-    let area;
-    try {
-      area = document.createElement('textarea');
-      area.value = diagnostics;
-      area.setAttribute('readonly', '');
-      area.setAttribute('aria-label', 'Diagnostics to copy');
-      area.style.position = 'fixed';
-      area.style.left = '0';
-      area.style.top = '0';
-      area.style.width = '1px';
-      area.style.height = '1px';
-      area.style.opacity = '0.01';
-      document.body.appendChild(area);
-      area.focus();
-      area.select();
-      area.setSelectionRange(0, area.value.length);
-      const copied = document.execCommand('copy');
-      area.remove();
-      setCopyStatus(copied ? 'Diagnostics copied.' : 'Automatic copy was blocked. Select the diagnostic text below and press Ctrl+C.');
-    } catch {
-      area?.remove();
-      setCopyStatus('Automatic copy was blocked. Select the diagnostic text below and press Ctrl+C.');
-    }
-  };
   const complete = phase === 'complete';
   const machineForm = phase === 'machine-form';
   const carForm = phase === 'car-form';
   const vehicleClassification = phase === 'vehicle-classification';
+  const machineClassification = phase === 'machine-classification';
+  const makeClassification = phase === 'make-classification';
   const categoryForm = phase === 'category-form';
   const generalQuestionnaire = phase === 'general-questionnaire';
   const categoryFormFields = (CATEGORY_FORM_FIELDS[selectedCategory] || ['type','make','model','condition']).map(key=>key === 'condition' && MACHINE_STATUS_CATEGORIES.has(selectedCategory) ? 'workingStatus' : key);
@@ -444,8 +414,9 @@ export default function SifterMK4({ customerMode = false, onContinue }) {
         {!complete ? <>
           <div className="flex items-center justify-between gap-4"><span className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">{phase==='route'?'CHOOSE A ROUTE':phase==='vehicle-type'?'MACHINE ROUTE':phase==='category'?'CHOOSE A CATEGORY':categoryForm?'CATEGORY DETAILS':machineForm?'MACHINE DETAILS':carForm?'CAR DETAILS':''}</span>{customerMode ? (phase==='route' ? <button type="button" onClick={()=>navigate('/')} className="sifter-exit-button inline-flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold hover:bg-red-700"><LogOut className="sifter-exit-icon h-4 w-4 -scale-x-100" />Exit</button> : null) : <span className="rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide">Test only</span>}</div>
           {phase==='route' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">What are you listing?</h2><div className="mt-6 grid gap-3 sm:grid-cols-3">{[['machine','Machine'],['spares','Part of a machine'],['other','Everything else']].map(([value,label])=><button key={value} type="button" onClick={()=>chooseRoute(value)} className="min-h-16 rounded-xl border border-red-600 bg-red-600 px-4 py-4 text-lg font-semibold text-white transition hover:bg-red-700">{label}</button>)}</div></div>
-          : phase==='vehicle-type' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">A vehicle or another machine?</h2><div className="mt-6 grid gap-3 sm:grid-cols-2">{[['car','Vehicles','Adds “Vehicles” and asks the seller to name the vehicle type'],['machine','Other machines','Opens the existing machine-details form']].map(([value,label,desc])=><button key={value} type="button" onClick={()=>chooseMachineType(value)} className="min-h-16 rounded-xl border border-blue-600 bg-blue-600 px-4 py-4 text-lg font-semibold text-white transition hover:bg-blue-700">{label}</button>)}</div></div>
-          : vehicleClassification ? <form onSubmit={submitAnswer} onKeyDown={handleSifterEnter} className="mt-10"><p className="text-base font-bold">{FORM_INSTRUCTION}</p><h2 className="text-2xl font-semibold leading-tight sm:text-3xl">What sort of vehicle is it?</h2><p className="mt-3 text-sm text-muted-foreground">Use your own description, such as truck, SUV, kit car or motorcycle.</p><div className="mt-6 flex items-start gap-2"><input autoFocus value={input} onChange={e=>setInput(e.target.value)} placeholder="Vehicle type" className="w-full rounded-xl border bg-background px-5 py-5 text-xl outline-none focus:ring-2 focus:ring-ring sm:text-2xl"/><button type="button" tabIndex={-1} aria-label="Clear vehicle type" onClick={()=>clearInputAnswer('vehicleType')} className="rounded-full border px-2.5 py-2 text-sm font-bold">×</button></div><div className="mt-5 flex justify-end"><button type="submit" className="rounded-full bg-red-600 px-7 py-3 font-semibold text-white">Continue</button></div></form>
+          : phase==='vehicle-type' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">{route === 'spares' ? 'Part of a vehicle or other machine?' : 'A vehicle or another machine?'}</h2><div className="mt-6 grid gap-3 sm:grid-cols-2">{[['car','Vehicles','Adds “Vehicles” and asks the seller to name the vehicle type'],['machine','Other machines','Opens the existing machine-details form']].map(([value,label,desc])=><button key={value} type="button" onClick={()=>chooseMachineType(value)} className="min-h-16 rounded-xl border border-blue-600 bg-blue-600 px-4 py-4 text-lg font-semibold text-white transition hover:bg-blue-700">{route === 'spares' ? (value === 'car' ? 'Vehicle parts' : 'Other machine parts') : label}</button>)}</div></div>
+          : vehicleClassification || machineClassification ? <form onSubmit={submitAnswer} onKeyDown={handleSifterEnter} className="mt-10"><p className="text-base font-bold">{FORM_INSTRUCTION}</p><h2 className="text-2xl font-semibold leading-tight sm:text-3xl">{vehicleClassification?'What sort of vehicle is it?':'What type of machine is it?'}</h2><p className="mt-3 text-sm text-muted-foreground">{vehicleClassification?'Use your own description, such as truck, SUV, kit car or motorcycle.':'Enter the type of machine.'}</p><div className="mt-6 flex items-start gap-2"><input autoFocus value={input} onChange={e=>setInput(e.target.value)} placeholder={vehicleClassification?'Car, Truck, Van, Lorry etc':'Tape deck, Generator, Washing Machine'} className="w-full rounded-xl border bg-background px-5 py-5 text-xl outline-none focus:ring-2 focus:ring-ring sm:text-2xl"/><button type="button" tabIndex={-1} aria-label="Clear vehicle type" onClick={()=>clearInputAnswer('vehicleType')} className="rounded-full border px-2.5 py-2 text-sm font-bold">×</button></div><div className="mt-5 flex justify-end"><button type="submit" className="rounded-full bg-red-600 px-7 py-3 font-semibold text-white">Continue</button></div></form>
+          : makeClassification ? <form onSubmit={submitAnswer} onKeyDown={handleSifterEnter} className="mt-10"><h2 className="text-2xl font-semibold leading-tight sm:text-3xl">{route === 'machine' || route === 'spares-machine' ? 'What is the make of the machine?' : 'What make of Vehicle is it?'}</h2><div className="mt-6 flex items-start gap-2"><input autoFocus value={input} disabled={dontKnowMake} required={!dontKnowMake} onChange={e=>setInput(e.target.value)} placeholder={route === 'machine' || route === 'spares-machine' ? 'Sanyo, Hoover, Dyson etc' : 'Audi, Volkswagen, Kit car'} className="w-full rounded-xl border bg-background px-5 py-5 text-xl outline-none focus:ring-2 focus:ring-ring sm:text-2xl"/><button type="button" tabIndex={-1} aria-label="Clear make" onClick={()=>setInput('')} className="rounded-full border px-2.5 py-2 text-sm font-bold">??</button></div><label className="mt-4 flex items-center gap-3 text-sm font-semibold"><input type="checkbox" checked={dontKnowMake} onChange={e=>{setDontKnowMake(e.target.checked);if(e.target.checked)setInput('');}} className="h-4 w-4 accent-red-600"/>I don\'t know the make</label><div className="mt-5 flex justify-end"><button type="submit" className="rounded-full bg-red-600 px-7 py-3 font-semibold text-white">Continue</button></div></form>
           : phase==='category' ? <div className="mt-10"><h2 className="text-2xl font-semibold sm:text-3xl">Which category best fits the item?</h2><p className="mt-3 text-sm text-muted-foreground">Choose the item's top-level family. The sifter then collects useful searchable details.</p><div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">{GENERAL_CATEGORIES.map((category,index)=><button key={category} type="button" onClick={()=>chooseGeneralCategory(category)} style={{backgroundColor:GENERAL_CATEGORY_BUTTON_COLORS[index % GENERAL_CATEGORY_BUTTON_COLORS.length]}} className="flex h-auto min-h-16 min-w-0 w-full items-center justify-center overflow-hidden rounded-full px-2 py-2 text-center text-xs font-semibold leading-tight text-white transition hover:brightness-95 sm:h-16 sm:px-1 sm:py-0 sm:text-sm">{category}</button>)}</div></div>
            : generalQuestionnaire ? <form onSubmit={submitAnswer} onKeyDown={handleSifterEnter} className="mt-8 space-y-5 rounded-2xl border bg-muted/20 p-5">
              <p className="text-base font-bold">{FORM_INSTRUCTION}</p>
@@ -479,7 +450,6 @@ export default function SifterMK4({ customerMode = false, onContinue }) {
         </> : customerMode ? <div className="flex flex-col"><h2 className="mt-4 text-3xl font-semibold tracking-tight">Your item details are ready.</h2><p className="mt-3 text-muted-foreground">Continue to create your listing.</p><div className="mt-8 flex flex-wrap gap-3"><button type="button" onClick={goBack} disabled={!history.length} className="rounded-full border px-6 py-3 font-semibold disabled:opacity-40">Back</button><button type="button" onClick={abandon} className="rounded-full border px-6 py-3 font-semibold">Abandon</button><button type="button" onClick={()=>onContinue?.({answers,taxonomy,keywordGroups,searchTerms})} className="rounded-full bg-red-600 px-6 py-3 font-semibold text-white">Continue to Create</button></div></div> : <div className="flex min-h-[400px] flex-col justify-center"><p className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">CLASSIFICATION READY</p><h2 className="mt-4 text-4xl font-semibold tracking-tight">Taxonomy and search terms collected.</h2><div className="mt-8 rounded-xl border bg-muted/20 p-5"><p className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">TOP-LEVEL TAXONOMY</p><p className="mt-3 font-semibold">{taxonomy?.family || 'Not assigned'}</p><p className="mt-1 text-sm text-muted-foreground">{taxonomy?.path?.join(' → ') || 'No taxonomy selected'}</p><p className="mt-6 text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">GENERATED SEARCH TERMS</p><div className="mt-3 flex flex-wrap gap-2">{searchTerms.length?searchTerms.map(term=><span key={term} className="rounded-full border bg-background px-3 py-1 text-sm">{term}</span>):<span className="text-sm text-muted-foreground">No search terms supplied.</span>}</div></div><div className="mt-8 flex flex-wrap gap-3"><button type="button" onClick={goBack} disabled={!history.length} className="rounded-full border px-6 py-3 font-semibold disabled:opacity-40">Back</button><button type="button" onClick={abandon} className="rounded-full border px-6 py-3 font-semibold">Abandon test</button><button type="button" onClick={reset} className="rounded-full border px-6 py-3 font-semibold">Run another test</button></div></div>}
       </main>
       {!customerMode && <aside className="rounded-2xl border bg-muted/20 p-5"><p className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">TAXONOMY</p><p className="mt-3 font-semibold">{taxonomy?.family || 'Not assigned yet'}</p><p className="mt-1 break-words text-sm text-muted-foreground">{taxonomy?.path?.join(' → ') || 'Choose a button to classify the item'}</p><div className="mt-5 border-t pt-4"><p className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">KEYWORDS RECORDED</p><div className="mt-4 space-y-4">{keywordGroups.length?keywordGroups.map(group=><div key={group.id}><p className="text-xs uppercase tracking-wide text-muted-foreground">{group.label}</p><p className="mt-1 break-words font-medium">{group.value}</p></div>):<p className="text-sm text-muted-foreground">No keywords yet.</p>}</div><div className="mt-6 border-t pt-4"><p className="text-xs uppercase tracking-wide text-muted-foreground">Search terms</p><div className="mt-3 flex flex-wrap gap-2">{searchTerms.map(term=><span key={term} className="rounded-full border bg-background px-2 py-1 text-xs">{term}</span>)}</div></div><div className="mt-6 border-t pt-4"><p className="text-xs uppercase tracking-wide text-muted-foreground">Answers recorded</p><div className="mt-3 space-y-3">{Object.entries(answers).map(([key,value])=><div key={key}><p className="text-xs text-muted-foreground">{LABELS[key]||key}</p><p className="mt-1 break-words text-sm">{clean(value)||'Unknown / skipped'}</p></div>)}</div></div></div></aside>}
-      <section hidden={customerMode} className="rounded-2xl border bg-muted/20 p-5 md:col-span-2"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">DIAGNOSTICS</p><p className="mt-2 text-sm text-muted-foreground">Includes taxonomy, answers, generated keywords, decisions and the event log. Taxonomy and search terms are separate; no Registry write is performed.</p>{copyStatus&&<p className="mt-2 text-sm" role="status">{copyStatus}</p>}</div><button type="button" onClick={copyDiagnostics} className="rounded-full border bg-background px-5 py-2 text-sm font-semibold">Copy diagnostics</button></div><pre className="mt-4 max-h-[420px] overflow-auto whitespace-pre-wrap break-words rounded-xl border bg-background p-4 text-xs leading-relaxed">{diagnostics}</pre></section>
     </div>
   </div></div>;
 }

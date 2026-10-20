@@ -282,6 +282,9 @@ function validateRows(records) {
 
 export default function BulkListings() {
   const navigate = useNavigate();
+  const previewParams = new URLSearchParams(window.location.search);
+  const previewUploadMeter = previewParams.get('previewUploadMeter') === '1' || previewParams.get('previewUploadFailure') === '1';
+  const previewUploadFailure = previewParams.get('previewUploadFailure') === '1';
   const [builderDownloaded, setBuilderDownloaded] = useState(false);
   const [builderDownloading, setBuilderDownloading] = useState(false);
   const [builderDownloadError, setBuilderDownloadError] = useState('');
@@ -293,7 +296,10 @@ export default function BulkListings() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState({ completed: 0, total: 0 });
+  const [uploadFailed, setUploadFailed] = useState(previewUploadFailure);
+  const [uploadProgress, setUploadProgress] = useState({ completed: 0, total: 0, phase: '' });
+  const [previewPercent, setPreviewPercent] = useState(0);
+  const [previewRobotOff, setPreviewRobotOff] = useState(false);
   const [draftRows, setDraftRows] = useState({});
   const [activatedRows, setActivatedRows] = useState({});
   const [submissionMessage, setSubmissionMessage] = useState('');
@@ -301,6 +307,37 @@ export default function BulkListings() {
   useEffect(() => {
     setHead('Bulk Uploads | S.O.B.S');
   }, []);
+
+  useEffect(() => {
+    if (!previewUploadMeter || submitting) return undefined;
+    let percent = 0;
+    let timer;
+    const advance = () => {
+      if (percent < 100) {
+        percent = Math.min(100, percent + 2);
+        setPreviewPercent(percent);
+        timer = window.setTimeout(advance, 90);
+        return;
+      }
+      timer = window.setTimeout(() => {
+        setPreviewRobotOff(true);
+        timer = window.setTimeout(() => {
+          setPreviewRobotOff(false);
+          percent = 0;
+          setPreviewPercent(0);
+          timer = window.setTimeout(advance, 250);
+        }, 850);
+      }, 700);
+    };
+    advance();
+    return () => window.clearTimeout(timer);
+  }, [previewUploadMeter, submitting]);
+
+  useEffect(() => {
+    if (!uploadFailed || previewUploadFailure) return undefined;
+    const timer = window.setTimeout(() => setUploadFailed(false), 2200);
+    return () => window.clearTimeout(timer);
+  }, [uploadFailed, previewUploadFailure]);
 
   async function handleFile(event) {
     const file = event.target.files?.[0];
@@ -312,7 +349,7 @@ export default function BulkListings() {
     setDraftRows({});
     setActivatedRows({});
     setSubmissionMessage('');
-    setUploadProgress({ completed: 0, total: 0 });
+    setUploadProgress({ completed: 0, total: 0, phase: '' });
 
     const isExcel = file.name.toLowerCase().endsWith('.xlsx');
     if (!isExcel && !file.name.toLowerCase().endsWith('.csv')) {
@@ -348,8 +385,9 @@ export default function BulkListings() {
     }
 
     setSubmitting(true);
+    setUploadFailed(false);
     setSubmissionMessage('');
-    setUploadProgress({ completed: 0, total: pendingRows.length });
+    setUploadProgress({ completed: 0, total: pendingRows.length, phase: 'saving' });
     const stagedRows = { ...draftRows };
 
     let allDraftsSaved = false;
@@ -382,11 +420,12 @@ export default function BulkListings() {
 
         stagedRows[row.rowNumber] = result.listing || {};
         setDraftRows({ ...stagedRows });
-        setUploadProgress({ completed: index + 1, total: pendingRows.length });
+        setUploadProgress({ completed: index + 1, total: pendingRows.length, phase: 'saving' });
       }
       allDraftsSaved = validRows.every((row) => stagedRows[row.rowNumber]);
       setSubmissionMessage(allDraftsSaved ? 'Drafts saved. Uploading the test listings…' : `${pendingRows.length} draft${pendingRows.length === 1 ? '' : 's'} saved.`);
     } catch (submitError) {
+      setUploadFailed(true);
       const stagedNow = Object.keys(stagedRows).filter((rowNumber) => !draftRows[rowNumber]).length;
       setSubmissionMessage(`${submitError instanceof Error ? submitError.message : 'Upload failed.'} ${stagedNow} draft${stagedNow === 1 ? '' : 's'} saved before the error. You can retry; saved drafts will be skipped.`);
       return;
@@ -411,7 +450,9 @@ export default function BulkListings() {
     }
 
     setSubmitting(true);
+    setUploadFailed(false);
     setSubmissionMessage('');
+    setUploadProgress({ completed: 0, total: listingIds.length, phase: 'publishing' });
     try {
       const response = await fetch('/api/listings/bulk-drafts/activate', {
         method: 'POST',
@@ -439,6 +480,7 @@ export default function BulkListings() {
         : '';
       setSubmissionMessage(`${listingIds.length} test listing${listingIds.length === 1 ? '' : 's'} uploaded. Payment is disabled during testing.${skippedMessage}${warningMessage}`);
     } catch (submitError) {
+      setUploadFailed(true);
       setSubmissionMessage(submitError instanceof Error ? submitError.message : 'Batch submission failed.');
     } finally {
       setSubmitting(false);
@@ -499,6 +541,12 @@ export default function BulkListings() {
       setTemplateDownloading(false);
     }
   }
+
+  const meterPercent = previewUploadMeter && !submitting
+    ? previewPercent
+    : uploadProgress.phase === 'saving'
+      ? Math.round((uploadProgress.completed / uploadProgress.total) * 100)
+      : 100;
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -574,19 +622,24 @@ export default function BulkListings() {
             Upload an Excel (.xlsx) file containing up to 100 listings plus one heading row (101 rows total). Embedded photos in Excel files are read from each item row.
           </p>
 
-          <label className="mt-5 block">
+          <label className="mt-5 block" aria-live="polite">
             <span className="mb-2 block font-medium">Spreadsheet file</span>
-            <input
-              type="file"
-              accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-              onChange={handleFile}
-              className="block w-full max-w-xl rounded-lg border border-white/30 p-3 text-sm file:mr-4 file:rounded-full file:border-0 file:bg-white file:px-4 file:py-2 file:font-semibold file:text-black"
-            />
+            <span className="relative flex min-h-12 w-full max-w-xl items-center gap-3 rounded-lg bg-white/5 p-2">
+              <input
+                type="file"
+                accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                onChange={handleFile}
+                aria-label="Choose spreadsheet file"
+                className="peer absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+              />
+              <span className={`min-w-0 flex-1 truncate px-2 text-sm ${fileName ? 'text-white' : 'text-white/50'}`} title={fileName || 'No file selected'}>
+                {fileName || 'No file selected'}
+              </span>
+              <span className="shrink-0 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold !text-black transition-colors peer-hover:bg-red-500 peer-active:bg-red-700 peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-red-300">
+                {fileName ? 'Chosen' : 'Choose file'}
+              </span>
+            </span>
           </label>
-
-          {fileName && (
-            <p className="mt-3 text-sm text-white/75">Selected: {fileName}</p>
-          )}
 
           {loading && <p className="mt-3">Reading spreadsheet...</p>}
 
@@ -611,8 +664,8 @@ export default function BulkListings() {
                 <p className="mt-1 text-2xl font-bold">{validRows.length}</p>
               </div>
               <div className="rounded-lg border border-white/20 p-4">
-                <p className="text-sm text-white/70">Rows with errors</p>
-                <p className="mt-1 text-2xl font-bold">{invalidRows.length}</p>
+                <p className="text-sm font-semibold text-red-400">Rows with errors</p>
+                <p className="mt-1 text-2xl font-extrabold text-red-500">{invalidRows.length}</p>
               </div>
               <div className="rounded-lg border border-white/20 p-4">
                 <p className="text-sm text-white/70">Rows with warnings</p>
@@ -639,7 +692,7 @@ export default function BulkListings() {
                 </thead>
                 <tbody>
                   {rows.map((row) => (
-                    <tr key={row.rowNumber} className="border-b border-white/15 align-top">
+                    <tr key={row.rowNumber} className={`border-b align-top ${row.errors.length ? 'border-red-500 bg-red-950/60' : 'border-white/15'}`}>
                       <td className="p-3">{row.rowNumber}</td>
                       <td className="p-3">{row.title || '(missing title)'}</td>
                       <td className="p-3">
@@ -656,18 +709,24 @@ export default function BulkListings() {
                           <span className="text-amber-200">Draft ready for test upload</span>
                         ) : row.errors.length === 0 ? (
                           row.warnings.length ? (
-                            <ul className="list-disc pl-4 text-amber-200">
-                              {row.warnings.map((message, index) => (
-                                <li key={`${row.rowNumber}-warning-${index}`}>{message}</li>
-                              ))}
-                            </ul>
+                            <div className="rounded-md border border-red-500 bg-red-950 p-2 text-red-400">
+                              <p className="mb-1 font-extrabold uppercase tracking-wide">Warning</p>
+                              <ul className="list-disc pl-4 font-semibold">
+                                {row.warnings.map((message, index) => (
+                                  <li key={`${row.rowNumber}-warning-${index}`}>{message}</li>
+                                ))}
+                              </ul>
+                            </div>
                           ) : <span className="text-green-300">Valid</span>
                         ) : (
-                          <ul className="list-disc pl-4 text-red-300">
-                            {row.errors.map((message, index) => (
-                              <li key={`${row.rowNumber}-${index}`}>{message}</li>
-                            ))}
-                          </ul>
+                          <div className="rounded-md border border-red-500 bg-red-950 p-2 text-red-400">
+                            <p className="mb-1 font-extrabold uppercase tracking-wide">Error</p>
+                            <ul className="list-disc pl-4 font-semibold">
+                              {row.errors.map((message, index) => (
+                                <li key={`${row.rowNumber}-${index}`}>{message}</li>
+                              ))}
+                            </ul>
+                          </div>
                         )}
                       </td>
                     </tr>
@@ -680,18 +739,90 @@ export default function BulkListings() {
               Payment is disabled for testing. Rows with required-field errors are skipped; rows with warnings can still be uploaded and will publish without collecting payment.
             </p>
             {submissionMessage && (
-              <p role="status" className="mt-4 rounded-lg border border-white/20 p-4 text-sm text-white/90">
-                {submitting && uploadProgress.total ? `Saving ${uploadProgress.completed} of ${uploadProgress.total} drafts... ` : ''}{submissionMessage}
+              <p role="status" className={`mt-4 rounded-lg border p-4 text-sm ${/failed|error|skipped/i.test(submissionMessage) ? 'border-red-500/70 text-red-300' : 'border-white/20 text-white/90'}`}>
+                {submissionMessage}
               </p>
             )}
-            <button
-              type="button"
-              onClick={allDraftsStaged ? () => activateDrafts() : stageDrafts}
-              disabled={submitting || validRows.length === 0 || allListingsActivated}
-              className="mt-5 rounded-full bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {submitting ? 'Uploading test batch…' : allListingsActivated ? 'Test batch uploaded' : allDraftsStaged ? 'Retry test upload' : `Upload ${validRows.length} valid test listing${validRows.length === 1 ? '' : 's'}`}
-            </button>
+            <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center">
+              <button
+                type="button"
+                onClick={allDraftsStaged ? () => activateDrafts() : stageDrafts}
+                disabled={submitting || validRows.length === 0 || allListingsActivated}
+                className="shrink-0 rounded-full bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {submitting ? 'Uploading test batch…' : allListingsActivated ? 'Test batch uploaded' : allDraftsStaged ? 'Retry test upload' : 'Upload valid listings'}
+              </button>
+              {(submitting && uploadProgress.total > 0 || previewUploadMeter || uploadFailed) && (
+                <div className={`relative w-full min-w-0 overflow-hidden rounded-xl border bg-slate-950 p-4 shadow-[0_0_28px_rgba(34,211,238,0.12)] sm:max-w-xl ${uploadFailed ? 'border-red-500/80 shadow-[0_0_30px_rgba(239,68,68,0.3)]' : 'border-cyan-300/40'}`} aria-live="polite">
+                  <div className="pointer-events-none absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(103,232,249,.45) 1px, transparent 0)', backgroundSize: '22px 22px' }} />
+                  <div className="relative">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div>
+                        <p className={`text-[10px] font-bold uppercase tracking-[0.28em] ${uploadFailed ? 'text-red-300' : 'text-cyan-300'}`}>{uploadFailed ? previewUploadFailure ? 'S.O.B.S. • FAILURE PREVIEW' : 'S.O.B.S. • TRANSMISSION FAILED' : 'S.O.B.S. • BATCH TRANSMISSION'}</p>
+                        <p className="mt-1 font-semibold text-white">
+                          {uploadFailed ? previewUploadFailure ? 'Robot failure animation' : 'Robot needs a reboot!' : previewUploadMeter && !submitting ? 'Hyperdrive upload sequence' : uploadProgress.phase === 'publishing' ? 'Publishing test listings…' : 'Uploading test listings…'}
+                        </p>
+                      </div>
+                      <span className={`flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${uploadFailed ? 'border-red-300/40 bg-red-400/10 text-red-200' : 'border-cyan-300/30 bg-cyan-300/10 text-cyan-200'}`}>
+                        <span className={`h-2 w-2 rounded-full ${uploadFailed ? 'bg-red-400' : 'bg-cyan-300 upload-meter-glow'}`} /> {uploadFailed ? 'Failed' : previewUploadMeter && !submitting ? 'Preview' : 'Active'}
+                      </span>
+                    </div>
+                    <div
+                      role="progressbar"
+                      aria-label={uploadProgress.phase === 'publishing' || previewUploadMeter && !submitting ? 'Uploading test listings' : 'Saving test listings'}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      {...(uploadProgress.phase === 'saving' || previewUploadMeter && !submitting ? { 'aria-valuenow': meterPercent } : {})}
+                      className="relative h-12 overflow-hidden rounded-xl border border-cyan-200/30 bg-slate-900 shadow-inner shadow-black"
+                    >
+                    <div
+                      className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-950 via-blue-800 to-cyan-900/70 transition-[width] duration-500 ease-out"
+                      style={{ width: `${meterPercent}%` }}
+                    />
+                    <span className="absolute inset-0 opacity-25" style={{ backgroundImage: 'linear-gradient(90deg, transparent 49%, rgba(103,232,249,.6) 50%, transparent 51%)', backgroundSize: '20px 100%' }} />
+                    <div
+                      className={`absolute bottom-0 z-10 h-[42px] w-[92px] transition-[left] duration-500 ease-out ${uploadFailed ? previewUploadFailure ? 'upload-robot-explode-preview' : 'upload-robot-explode' : previewRobotOff || uploadProgress.phase === 'saving' && meterPercent >= 100 ? 'upload-robot-exit' : previewUploadMeter && !submitting || uploadProgress.phase === 'saving' ? 'upload-robot-walk' : 'upload-robot-travel upload-robot-walk'}`}
+                      style={previewUploadMeter && !submitting || uploadProgress.phase === 'saving' ? { left: `calc(${meterPercent}% - ${Math.round(92 * meterPercent / 100)}px)` } : undefined}
+                      aria-hidden="true"
+                    >
+                      <svg viewBox="0 0 100 44" className="h-full w-full overflow-visible drop-shadow-[0_0_7px_rgba(34,211,238,0.65)]">
+                        <path d="M36 24 C47 22 52 28 62 27" fill="none" stroke="#fbbf24" strokeWidth="2" strokeDasharray="3 2" />
+                        <path d="M14 7 H28 L36 15 V36 H14 Z" fill="#e0f2fe" stroke="#67e8f9" strokeWidth="1.7" />
+                        <path d="M28 7 V15 H36" fill="#7dd3fc" stroke="#67e8f9" strokeWidth="1.4" />
+                        <path d="M19 21 H31 M19 25 H31 M19 29 H29" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round" />
+                        <path d="M68 22 L63 25 L68 28 M88 22 L94 25 L90 28" fill="none" stroke="#a5f3fc" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                        <rect x="67" y="15" width="22" height="20" rx="5" fill="#0e7490" stroke="#a5f3fc" strokeWidth="2" />
+                        <rect x="70" y="4" width="19" height="15" rx="4" fill="#cffafe" stroke="#22d3ee" strokeWidth="2" />
+                        <path d="M74 4 V2 L79 0 L83 3" fill="none" stroke="#67e8f9" strokeWidth="1.5" />
+                        <circle cx="80" cy="1.5" r="1.5" fill="#facc15" />
+                        <path d="M74 8 H86" stroke="#67e8f9" strokeWidth="1" opacity=".8" />
+                        <circle cx="75" cy="11" r="2" fill="#2563eb" />
+                        <circle cx="84" cy="11" r="2" fill="#2563eb" />
+                        <path d="M77 16 Q80 18 83 16" fill="none" stroke="#0891b2" strokeWidth="1.5" />
+                        <rect x="72" y="22" width="12" height="8" rx="2" fill="#082f49" stroke="#22d3ee" strokeWidth="1" />
+                        <circle cx="76" cy="26" r="1.5" fill="#facc15" />
+                        <circle cx="81" cy="26" r="1.5" fill="#4ade80" />
+                        <path d="M72 34 L69 39 M84 34 L87 39" stroke="#a5f3fc" strokeWidth="3" strokeLinecap="round" />
+                        <rect x="65" y="38" width="7" height="3" rx="1.5" fill="#22d3ee" />
+                        <rect x="85" y="38" width="7" height="3" rx="1.5" fill="#22d3ee" />
+                      </svg>
+                      {uploadFailed && (
+                        <svg viewBox="0 0 40 40" className={`${previewUploadFailure ? 'upload-explosion-preview' : 'upload-explosion-burst'} absolute left-7 top-0 h-10 w-10`}>
+                          <path d="M20 1 24 11 35 6 31 17 40 20 30 25 36 36 24 31 19 40 16 29 4 34 9 23 0 18 12 16 8 5 18 11Z" fill="#f97316" stroke="#fef08a" strokeWidth="2" />
+                          <circle cx="20" cy="20" r="5" fill="#fde047" />
+                        </svg>
+                      )}
+                    </div>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between font-mono text-[10px] uppercase tracking-wider text-cyan-100/70">
+                      <span>{uploadProgress.phase === 'saving' && !previewUploadMeter ? `${uploadProgress.completed} / ${uploadProgress.total} records` : previewUploadMeter && !submitting ? 'File delivery sequence' : 'Secure channel established'}</span>
+                      <span>{uploadProgress.phase === 'saving' || previewUploadMeter && !submitting ? `${meterPercent}%` : 'Transmitting'}</span>
+                    </div>
+                    <p className="mt-3 text-xs text-white/65">Keep this page open while the batch is being processed.</p>
+                  </div>
+                </div>
+              )}
+            </div>
           </section>
         )}
         {helpOpen && (

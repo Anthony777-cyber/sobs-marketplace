@@ -224,11 +224,12 @@ function validateRows(records) {
     });
 
     const errors = [];
+    const warnings = [];
     const price = Number(item.price);
     const months = Number(item.months);
 
     if (!item.title) errors.push('Title is required');
-    if (!item.description) errors.push('Description is required');
+    if (!item.description) warnings.push('Description is blank');
     if (!item.price || !Number.isFinite(price) || price <= 0) {
       errors.push('Price must be greater than zero');
     }
@@ -240,7 +241,7 @@ function validateRows(records) {
 
     const images = [item.image1, item.image2, item.image3].filter(Boolean);
     if (!images.length) {
-      errors.push('At least one photo is required');
+      warnings.push('No photo provided');
     }
 
     images.forEach((image) => {
@@ -248,10 +249,10 @@ function validateRows(records) {
       try {
         const parsed = new URL(image);
         if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-          errors.push('Photos must be public HTTP/HTTPS URLs or embedded image files');
+          warnings.push('Photo must be a public HTTP/HTTPS URL or embedded image file');
         }
       } catch {
-        errors.push('A photo is invalid');
+        warnings.push('A photo is invalid');
       }
     });
 
@@ -259,6 +260,7 @@ function validateRows(records) {
       ...item,
       rowNumber: index + 2,
       errors,
+      warnings,
       fee: Number.isInteger(months) && months > 0 ? months / 3 : 0,
     };
   });
@@ -267,9 +269,9 @@ function validateRows(records) {
     return { error: 'The CSV contains headers but no listing rows.', rows: [] };
   }
 
-  if (rows.length > 100) {
+  if (records.length > 101) {
     return {
-      error: 'A maximum of 100 listings can be previewed in one upload.',
+      error: 'A spreadsheet can contain up to 101 rows total: one heading row and 100 listings.',
       rows,
     };
   }
@@ -334,8 +336,6 @@ export default function BulkListings() {
   }
 
   async function stageDrafts() {
-    if (invalidRows.length) return;
-
     const globalKey = sessionStorage.getItem('sobs_global_user_key')?.trim();
     if (!globalKey) {
       setSubmissionMessage('Verified seller login is required before listings can be submitted.');
@@ -431,7 +431,13 @@ export default function BulkListings() {
         if (row) activated[row.rowNumber] = listing;
       });
       setActivatedRows((previous) => ({ ...previous, ...activated }));
-      setSubmissionMessage(`${listingIds.length} test listing${listingIds.length === 1 ? '' : 's'} uploaded. Payment is disabled during testing.`);
+      const skippedMessage = invalidRows.length
+        ? ` ${invalidRows.length} row${invalidRows.length === 1 ? '' : 's'} with required-field errors skipped.`
+        : '';
+      const warningMessage = warningRows.length
+        ? ` ${warningRows.length} uploaded row${warningRows.length === 1 ? '' : 's'} have warnings.`
+        : '';
+      setSubmissionMessage(`${listingIds.length} test listing${listingIds.length === 1 ? '' : 's'} uploaded. Payment is disabled during testing.${skippedMessage}${warningMessage}`);
     } catch (submitError) {
       setSubmissionMessage(submitError instanceof Error ? submitError.message : 'Batch submission failed.');
     } finally {
@@ -441,6 +447,7 @@ export default function BulkListings() {
 
   const validRows = rows.filter((row) => row.errors.length === 0);
   const invalidRows = rows.filter((row) => row.errors.length > 0);
+  const warningRows = rows.filter((row) => row.warnings.length > 0 && row.errors.length === 0);
   const totalFees = validRows.reduce((sum, row) => sum + row.fee, 0);
   const allDraftsStaged = validRows.length > 0 && validRows.every((row) => draftRows[row.rowNumber]);
   const allListingsActivated = validRows.length > 0 && validRows.every((row) => activatedRows[row.rowNumber]);
@@ -564,7 +571,7 @@ export default function BulkListings() {
           </h2>
 
           <p className="mt-3 text-sm text-white/75">
-            Upload an Excel (.xlsx) file containing up to 100 listings. Embedded photos in Excel files are read from each item row.
+            Upload an Excel (.xlsx) file containing up to 100 listings plus one heading row (101 rows total). Embedded photos in Excel files are read from each item row.
           </p>
 
           <label className="mt-5 block">
@@ -594,7 +601,7 @@ export default function BulkListings() {
           <section className="mt-6 rounded-xl border border-white/30 p-5">
             <h2 className="text-xl font-semibold">3. Review listings</h2>
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <div className="mt-4 grid gap-3 sm:grid-cols-4">
               <div className="rounded-lg border border-white/20 p-4">
                 <p className="text-sm text-white/70">Total rows</p>
                 <p className="mt-1 text-2xl font-bold">{rows.length}</p>
@@ -606,6 +613,10 @@ export default function BulkListings() {
               <div className="rounded-lg border border-white/20 p-4">
                 <p className="text-sm text-white/70">Rows with errors</p>
                 <p className="mt-1 text-2xl font-bold">{invalidRows.length}</p>
+              </div>
+              <div className="rounded-lg border border-white/20 p-4">
+                <p className="text-sm text-white/70">Rows with warnings</p>
+                <p className="mt-1 text-2xl font-bold">{warningRows.length}</p>
               </div>
             </div>
 
@@ -644,7 +655,13 @@ export default function BulkListings() {
                         ) : draftRows[row.rowNumber] ? (
                           <span className="text-amber-200">Draft ready for test upload</span>
                         ) : row.errors.length === 0 ? (
-                          <span className="text-green-300">Valid</span>
+                          row.warnings.length ? (
+                            <ul className="list-disc pl-4 text-amber-200">
+                              {row.warnings.map((message, index) => (
+                                <li key={`${row.rowNumber}-warning-${index}`}>{message}</li>
+                              ))}
+                            </ul>
+                          ) : <span className="text-green-300">Valid</span>
                         ) : (
                           <ul className="list-disc pl-4 text-red-300">
                             {row.errors.map((message, index) => (
@@ -660,7 +677,7 @@ export default function BulkListings() {
             </div>
 
             <p className="mt-5 rounded-lg border border-white/20 p-4 text-sm text-white/75">
-              Payment is disabled for testing. Uploading this batch will publish the listings without collecting payment.
+              Payment is disabled for testing. Rows with required-field errors are skipped; rows with warnings can still be uploaded and will publish without collecting payment.
             </p>
             {submissionMessage && (
               <p role="status" className="mt-4 rounded-lg border border-white/20 p-4 text-sm text-white/90">
@@ -670,10 +687,10 @@ export default function BulkListings() {
             <button
               type="button"
               onClick={allDraftsStaged ? () => activateDrafts() : stageDrafts}
-              disabled={submitting || invalidRows.length > 0 || validRows.length === 0 || allListingsActivated}
+              disabled={submitting || validRows.length === 0 || allListingsActivated}
               className="mt-5 rounded-full bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {submitting ? 'Uploading test batch…' : allListingsActivated ? 'Test batch uploaded' : allDraftsStaged ? 'Retry test upload' : `Upload ${validRows.length} test listing${validRows.length === 1 ? '' : 's'}`}
+              {submitting ? 'Uploading test batch…' : allListingsActivated ? 'Test batch uploaded' : allDraftsStaged ? 'Retry test upload' : `Upload ${validRows.length} valid test listing${validRows.length === 1 ? '' : 's'}`}
             </button>
           </section>
         )}

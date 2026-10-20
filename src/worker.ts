@@ -1413,11 +1413,16 @@ export default {
       const ids = Array.isArray(body?.listingIds) ? [...new Set(body.listingIds.map(String))] : [];
       if (!ids.length || ids.length > 100) return json({ error: 'Provide between 1 and 100 draft listing IDs' }, 400);
 
-      const placeholders = ids.map(() => '?').join(', ');
-      const { results } = await env.sobs_marketplace
-        .prepare(`SELECT * FROM listings WHERE id IN (${placeholders}) AND seller_id = ?`)
-        .bind(...ids, sessionSeller.id)
-        .all();
+      const results: Record<string, unknown>[] = [];
+      for (let offset = 0; offset < ids.length; offset += 99) {
+        const idChunk = ids.slice(offset, offset + 99);
+        const placeholders = idChunk.map(() => '?').join(', ');
+        const chunk = await env.sobs_marketplace
+          .prepare(`SELECT * FROM listings WHERE id IN (${placeholders}) AND seller_id = ?`)
+          .bind(...idChunk, sessionSeller.id)
+          .all();
+        results.push(...chunk.results as Record<string, unknown>[]);
+      }
       if (results.length !== ids.length) return json({ error: 'One or more draft listings were not found' }, 404);
 
       const rows = results as Record<string, unknown>[];

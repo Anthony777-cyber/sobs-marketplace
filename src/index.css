@@ -72,7 +72,7 @@ body :where(*)::placeholder { color: #fff !important; }
   color: #000 !important;
 }
 .global-management-key-submit {
-  color: #000 !important;
+  color: #fff !important;
 }
 .downvote-confirmation-toast {
   color: #000 !important;
@@ -80,6 +80,13 @@ body :where(*)::placeholder { color: #fff !important; }
 .management-code-toggle,
 .management-code-toggle * {
   color: #000 !important;
+}
+.management-code-input {
+  color: #000 !important;
+}
+.management-code-input::-ms-reveal,
+.management-code-input::-ms-clear {
+  display: none;
 }
 .listing-confirmation-action,
 .listing-confirmation-action * {
@@ -118,4 +125,10 @@ body :where(.price-choice-dark-text, .price-choice-dark-text *) { color: #000 !i
 .splash-page .splash-offer-red,
 .splash-page .splash-offer-red * {
   color: #ef4444 !important;
+}
+.splash-page .splash-listings-word {
+  color: #f97316 !important;
+}
+.splash-page .splash-index-word {
+  color: #facc15 !important;
 }

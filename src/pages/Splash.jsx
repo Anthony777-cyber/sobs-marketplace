@@ -132,6 +132,10 @@ export default function Splash() {
           </p>
 
           <p className="w-full text-base leading-7 text-white text-justify sm:text-xl sm:leading-relaxed text-pretty">
+            Just click on <span className="splash-listings-word">LISTINGS</span> above and have a look at what's on offer,<br /> or search the <span className="splash-index-word">INDEX</span> for your heart's desire.<br /> Or endlessly scroll through bad photos of people's tat.
+          </p>
+
+          <p className="w-full text-base leading-7 text-white text-justify sm:text-xl sm:leading-relaxed text-pretty">
             To sellers, we offer worldwide advertising dirt cheap,<br /> bulk uploads for the pros, and best of all, unlike eBay,<br /> we don't take a cut of your profit.
           </p>
           </div>

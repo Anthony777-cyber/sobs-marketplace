@@ -101,6 +101,7 @@ export default function GlobalManagementConsole() {
       const nextAttempts = attempts + 1;
       setAttempts(nextAttempts);
       setUserKey('');
+      setShowUserKey(false);
       setError(nextAttempts >= MAX_ATTEMPTS ? 'Too many attempts. Restart S.O.B.S. to try again.' : 'Wrong key');
 
       if (nextAttempts >= MAX_ATTEMPTS) {
@@ -125,14 +126,15 @@ export default function GlobalManagementConsole() {
               id="management-user-code"
               type={showUserKey ? 'text' : 'password'}
               inputMode="numeric"
-              name="password"
-              autoComplete="current-password"
+              pattern="[0-9]*"
+              name="management-code"
+              autoComplete="off"
               value={userKey}
               onChange={(event) => {
-                setUserKey(event.target.value);
+                setUserKey(event.target.value.replace(/\D/g, ''));
                 setError('');
               }}
-              className="w-full rounded border border-white/30 bg-white px-4 py-3 pr-12 text-black outline-none focus:border-white"
+              className="management-code-input w-full rounded border border-white/30 bg-white px-4 py-3 pr-12 text-black outline-none focus:border-white"
             />
             <button
               type="button"
@@ -149,7 +151,7 @@ export default function GlobalManagementConsole() {
           <button
             type="submit"
             disabled={attempts >= MAX_ATTEMPTS}
-            className="global-management-key-submit mt-5 inline-flex rounded-full bg-white px-6 py-2.5 font-semibold text-black hover:bg-white/90 disabled:opacity-50"
+            className="global-management-key-submit mt-5 inline-flex rounded-full bg-red-600 px-6 py-2.5 font-semibold text-white hover:bg-red-700 disabled:opacity-50"
           >
             Continue
           </button>

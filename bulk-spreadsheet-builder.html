@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>S.O.B.S. Bulk Spreadsheet Builder</title>
+  <title>S.O.B.S. BSB v2</title>
   <style>
     :root { color-scheme: dark; font-family: Inter, Arial, sans-serif; background: #0a0a0a; color: #fafafa; }
     * { box-sizing: border-box; }
@@ -94,7 +94,7 @@
 
 <main>
   <header>
-    <h1>S.O.B.S. Bulk Spreadsheet Builder</h1>
+    <h1>S.O.B.S. BSB v2</h1>
     <p class="intro-subheading">Classify once, enter each listing, and save your upload-ready spreadsheet.</p>
 
   </header>
@@ -219,7 +219,7 @@
   });
   let path = [];
   let route = '';
-  let classification = { route: '', kind: '', category: '', detail: '' };
+  let classification = { route: '', kind: '', category: '', detail: '', make: '' };
   let itemValues = [];
   let currentItemIndex = 0;
   let itemsFinished = false;
@@ -246,7 +246,6 @@
     if (classification.route === 'machine' || classification.route === 'parts') {
       const isVehicle = classification.kind === 'vehicle' || path.some((part) => /vehicle/i.test(part));
       if (isVehicle) return [
-        {key:'make',answerKey:'make',label:'Make'},
         {key:'model',answerKey:'model',label:'Model'},
         {key:'year',answerKey:'year',label:'Year'},
         {key:'variant',answerKey:'variant',label:'Variant / trim'},
@@ -259,7 +258,7 @@
         {key:'runningOperating',answerKey:'runningOperating',label:'Running / operating?'}
       ];
       const keys = machineSifterFields;
-      return keys.map((key) => ({ key, answerKey: key, label: key === 'identification' ? 'Other identifying details' : key === 'runningOperating' ? 'Running / operating?' : sifterFieldLabels[key] || key }));
+      return keys.filter((key) => key !== 'make').map((key) => ({ key, answerKey: key, label: key === 'identification' ? 'Other identifying details' : key === 'runningOperating' ? 'Running / operating?' : sifterFieldLabels[key] || key }));
     }
     if (classification.category === 'Other / not sure') {
       return [
@@ -291,6 +290,7 @@
     const answers = { description: item.description || '', title: item.title || '', ...(item.sifter || {}) };
     if ((classification.route === 'machine' || classification.route === 'parts') && classification.detail) {
       answers[classification.kind === 'vehicle' ? 'vehicleType' : 'machineClass'] ||= classification.detail;
+      answers.make ||= classification.make;
     }
     return answers;
   }
@@ -337,7 +337,7 @@
     section.append(heading);
     const answers = item.sifter || (item.sifter = {});
     const initialAnswers = itemSifterAnswers(item);
-    sifterProfile().forEach(({ key, answerKey, label }) => {
+    sifterProfile().forEach(({ key, answerKey, label, placeholder }) => {
       if (key === 'runningOperating' || key === 'workingStatus') {
         const fieldset = document.createElement('fieldset');
         const legend = document.createElement('legend'); legend.textContent = label; fieldset.append(legend);
@@ -368,7 +368,7 @@
       wrap.textContent = label;
       const input = document.createElement(['description','machineDescription','freeform'].includes(answerKey) ? 'textarea' : 'input');
       if (input.tagName === 'INPUT') input.type = 'text';
-      input.placeholder = 'Leave blank if unknown';
+      input.placeholder = placeholder || 'Leave blank if unknown';
       input.value = initialAnswers[answerKey] || '';
       input.addEventListener('input', () => { answers[answerKey] = input.value; updateReview(); });
       input.addEventListener('change', () => { answers[answerKey] = input.value; updateReview(); });
@@ -445,8 +445,8 @@
     const title = document.createElement('h3'); title.textContent = label; sifter.append(title);
     const options = document.createElement('div'); options.className = 'choices';
     const choiceButton = currentRoute === 'parts' ? partFlowButton : button;
-    options.append(choiceButton('Vehicle', () => askSpecificType(currentRoute, 'vehicle')));
-    options.append(choiceButton('Other machine', () => askSpecificType(currentRoute, 'machine')));
+    options.append(choiceButton(currentRoute === 'parts' ? 'Vehicle parts' : 'Vehicles', () => askSpecificType(currentRoute, 'vehicle')));
+    options.append(choiceButton(currentRoute === 'parts' ? 'Other machine parts' : 'Other machines', () => askSpecificType(currentRoute, 'machine')));
     sifter.append(options);
     options.querySelector('button:not(:disabled)')?.focus();
   }
@@ -455,8 +455,14 @@
     sifter.replaceChildren();
     classification = { ...classification, route: currentRoute === 'parts' ? 'parts' : 'machine', kind };
     const isPart = currentRoute === 'parts';
-    const label = isPart ? (kind === 'vehicle' ? 'Vehicle / part classification' : 'Machine / part classification') : (kind === 'vehicle' ? 'What sort of vehicle is it?' : 'What kind of machine?');
-    const specific = field(label, { placeholder: kind === 'vehicle' ? 'e.g. car, tractor, motorcycle' : 'e.g. lathe, compressor' });
+    const label = isPart
+      ? (kind === 'vehicle' ? 'What sort of vehicle part is it?' : 'What type of machine part is it?')
+      : (kind === 'vehicle' ? 'What sort of vehicle is it?' : 'What type of machine is it?');
+    const placeholder = isPart
+      ? (kind === 'vehicle' ? 'Car mirror, van door, truck alternator' : 'Washing machine pump, vacuum motor, etc')
+      : (kind === 'vehicle' ? 'Car, Truck, Van, Lorry etc' : 'Tape deck, Generator, Washing Machine');
+    const specific = field(label, { placeholder });
+    specific.input.value = classification.detail || '';
     sifter.append(specific.wrap);
     if (isPart) {
       const related = document.createElement('p'); related.className = 'subtle'; related.textContent = `Associated with ${kind === 'vehicle' ? 'a vehicle' : 'another machine'}.`; sifter.append(related);
@@ -466,11 +472,11 @@
       classification.detail = detail;
       const root = isPart ? 'Parts of machines' : 'Machines';
       const branch = isPart ? (kind === 'vehicle' ? 'Parts of vehicles' : 'Parts of other machines') : (kind === 'vehicle' ? 'Vehicles' : 'Other machines');
-      setPath([root, branch, detail]);
+      setPath([root, branch, ...(isPart && kind === 'vehicle' ? ['Car parts'] : []), detail]);
       apply.disabled = !detail;
     };
     specific.input.addEventListener('input', update);
-    const apply = isPart ? partFlowButton('Apply classification to batch', showClassificationComplete) : button('Apply classification to batch', showClassificationComplete);
+    const apply = isPart ? partFlowButton('Continue to make', () => askMake(currentRoute, kind)) : button('Continue to make', () => askMake(currentRoute, kind));
     apply.disabled = true;
     sifter.append(apply);
     specific.input.addEventListener('keydown', (event) => {
@@ -484,9 +490,52 @@
     specific.input.focus();
   }
 
+  function askMake(currentRoute, kind) {
+    sifter.replaceChildren();
+    const isPart = currentRoute === 'parts';
+    const label = kind === 'vehicle' ? 'What make of Vehicle is it?' : 'What is the make of the machine?';
+    const placeholder = kind === 'vehicle' ? 'Audi, Volkswagen, Kit car' : 'Sanyo, Hoover, Dyson etc';
+    const make = field(label, { placeholder });
+    const unknownMake = classification.make === 'N/A';
+    make.input.value = unknownMake ? '' : classification.make || '';
+    make.input.disabled = unknownMake;
+    sifter.append(make.wrap);
+    const dontKnowLabel = document.createElement('label');
+    dontKnowLabel.style.display = 'flex';
+    dontKnowLabel.style.alignItems = 'center';
+    dontKnowLabel.style.gap = '10px';
+    dontKnowLabel.style.marginTop = '12px';
+    const dontKnow = document.createElement('input');
+    dontKnow.type = 'checkbox';
+    dontKnow.checked = unknownMake;
+    dontKnow.style.width = 'auto';
+    dontKnow.style.margin = '0';
+    dontKnowLabel.append(dontKnow, document.createTextNode("I don't know the make"));
+    sifter.append(dontKnowLabel);
+    const apply = isPart ? partFlowButton('Apply classification to batch', showClassificationComplete) : button('Apply classification to batch', showClassificationComplete);
+    const actions = document.createElement('div'); actions.className = 'choices';
+    actions.append(apply);
+    const back = isPart ? partFlowButton('Back', () => askSpecificType(currentRoute, kind)) : button('Back', () => askSpecificType(currentRoute, kind));
+    back.classList.add('classification-back-button');
+    actions.append(back);
+    sifter.append(actions);
+    const update = () => {
+      classification.make = dontKnow.checked ? 'N/A' : make.input.value.trim();
+      const root = isPart ? 'Parts of machines' : 'Machines';
+      const branch = isPart ? (kind === 'vehicle' ? 'Parts of vehicles' : 'Parts of other machines') : (kind === 'vehicle' ? 'Vehicles' : 'Other machines');
+      setPath([root, branch, ...(isPart && kind === 'vehicle' ? ['Car parts'] : []), classification.detail, classification.make]);
+      apply.disabled = !classification.make;
+    };
+    dontKnow.addEventListener('change', () => { make.input.disabled = dontKnow.checked; if (dontKnow.checked) make.input.value = ''; update(); });
+    make.input.addEventListener('input', update);
+    make.input.addEventListener('keydown', (event) => { if (event.key === 'Enter' && !apply.disabled) { event.preventDefault(); apply.click(); } });
+    update();
+    if (!unknownMake) make.input.focus();
+  }
+
   function showOtherCategories() {
     sifter.replaceChildren();
-    classification = { route: 'other', kind: '', category: '', detail: '' };
+    classification = { route: 'other', kind: '', category: '', detail: '', make: '' };
     const cat = field('Select category', { select: categories, onChange: (value) => { classification.category = value; setPath([value]); apply.disabled = !value; } });
     sifter.append(cat.wrap);
     const apply = button('Apply classification to batch', showClassificationComplete);
@@ -501,10 +550,10 @@
   }
 
   function showRouteChoices() {
-    route = ''; classification = { route: '', kind: '', category: '', detail: '' }; classificationApplied = false; setPath([]); sifter.replaceChildren();
+    route = ''; classification = { route: '', kind: '', category: '', detail: '', make: '' }; classificationApplied = false; setPath([]); sifter.replaceChildren();
     const choices = document.createElement('div'); choices.className = 'choices';
-    choices.append(button('Machine', () => { route = 'machine'; classification.route = 'machine'; askMachineClassification('machine', 'What kind of machine?'); }));
-    choices.append(partFlowButton('Part of a machine', () => { route = 'parts'; classification.route = 'parts'; askMachineClassification('parts', 'Is it parts of a vehicle or another machine?'); }));
+    choices.append(button('Machine', () => { route = 'machine'; classification.route = 'machine'; askMachineClassification('machine', 'A vehicle or another machine?'); }));
+    choices.append(partFlowButton('Part of a machine', () => { route = 'parts'; classification.route = 'parts'; askMachineClassification('parts', 'Part of a vehicle or other machine?'); }));
     choices.append(button('Everything else', showOtherCategories));
     sifter.append(choices);
     choices.querySelector('button:not(:disabled)')?.focus();
@@ -883,7 +932,7 @@
     target.focus();
   });
   $('#download').addEventListener('click', () => {
-    download('sobs-bulk-listings.xlsx', xlsxBlob(rows()));
+    download('SOBS-BSB-v2.xlsx', xlsxBlob(rows()));
     $('#download').textContent = 'Download';
     $('#download').classList.add('button-complete');
   });

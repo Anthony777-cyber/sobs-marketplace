@@ -22,7 +22,7 @@ $shortcut = $shell.CreateShortcut($shortcutPath)
 $shortcut.TargetPath = Join-Path $installPath 'SOBS BSB.html'
 $shortcut.WorkingDirectory = $installPath
 $shortcut.IconLocation = (Join-Path $installPath 'SOBS-BSB.ico') + ',0'
-$shortcut.Description = 'SOBS Bulk Spreadsheet Builder'
+$shortcut.Description = 'SOBS BSB v2'
 $shortcut.Save()
 
 Start-Process -FilePath $shortcut.TargetPath

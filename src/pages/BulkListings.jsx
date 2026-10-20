@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NavBar from '@/components/NavBar';
-import PaylinkGateway from '@/components/PaylinkGateway';
 import { setHead } from '@/lib/head';
 import { ArrowLeft, Download, FileSpreadsheet, Upload } from 'lucide-react';
 
@@ -279,15 +278,14 @@ function validateRows(records) {
 }
 
 
-function downloadTemplate() {
-  const link = document.createElement('a');
-  link.href = '/downloads/SOBS-BSB-Blank-Template.xlsx';
-  link.download = 'SOBS-BSB-Blank-Template.xlsx';
-  link.click();
-}
-
 export default function BulkListings() {
   const navigate = useNavigate();
+  const [builderDownloaded, setBuilderDownloaded] = useState(false);
+  const [builderDownloading, setBuilderDownloading] = useState(false);
+  const [builderDownloadError, setBuilderDownloadError] = useState('');
+  const [templateDownloaded, setTemplateDownloaded] = useState(false);
+  const [templateDownloading, setTemplateDownloading] = useState(false);
+  const [templateDownloadError, setTemplateDownloadError] = useState('');
   const [fileName, setFileName] = useState('');
   const [rows, setRows] = useState([]);
   const [error, setError] = useState('');
@@ -297,7 +295,6 @@ export default function BulkListings() {
   const [draftRows, setDraftRows] = useState({});
   const [activatedRows, setActivatedRows] = useState({});
   const [submissionMessage, setSubmissionMessage] = useState('');
-  const [gatewayOpen, setGatewayOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   useEffect(() => {
     setHead('Bulk Uploads | S.O.B.S');
@@ -313,7 +310,6 @@ export default function BulkListings() {
     setDraftRows({});
     setActivatedRows({});
     setSubmissionMessage('');
-    setGatewayOpen(false);
     setUploadProgress({ completed: 0, total: 0 });
 
     const isExcel = file.name.toLowerCase().endsWith('.xlsx');
@@ -348,8 +344,7 @@ export default function BulkListings() {
 
     const pendingRows = validRows.filter((row) => !draftRows[row.rowNumber]);
     if (!pendingRows.length) {
-      setGatewayOpen(true);
-      return;
+      return activateDrafts(draftRows);
     }
 
     setSubmitting(true);
@@ -357,6 +352,7 @@ export default function BulkListings() {
     setUploadProgress({ completed: 0, total: pendingRows.length });
     const stagedRows = { ...draftRows };
 
+    let allDraftsSaved = false;
     try {
       for (let index = 0; index < pendingRows.length; index += 1) {
         const row = pendingRows[index];
@@ -388,26 +384,29 @@ export default function BulkListings() {
         setDraftRows({ ...stagedRows });
         setUploadProgress({ completed: index + 1, total: pendingRows.length });
       }
-      setSubmissionMessage(`${pendingRows.length} listing${pendingRows.length === 1 ? '' : 's'} saved as drafts. Continue to the payment screen when ready.`);
-      if (validRows.every((row) => stagedRows[row.rowNumber])) setGatewayOpen(true);
+      allDraftsSaved = validRows.every((row) => stagedRows[row.rowNumber]);
+      setSubmissionMessage(allDraftsSaved ? 'Drafts saved. Uploading the test listings…' : `${pendingRows.length} draft${pendingRows.length === 1 ? '' : 's'} saved.`);
     } catch (submitError) {
       const stagedNow = Object.keys(stagedRows).filter((rowNumber) => !draftRows[rowNumber]).length;
       setSubmissionMessage(`${submitError instanceof Error ? submitError.message : 'Upload failed.'} ${stagedNow} draft${stagedNow === 1 ? '' : 's'} saved before the error. You can retry; saved drafts will be skipped.`);
+      return;
     } finally {
       setSubmitting(false);
     }
+
+    if (allDraftsSaved) await activateDrafts(stagedRows);
   }
 
-  async function activateDrafts() {
+  async function activateDrafts(stagedDraftRows = draftRows) {
     const globalKey = sessionStorage.getItem('sobs_global_user_key')?.trim();
     if (!globalKey) {
       setSubmissionMessage('Verified seller login is required before submitting the batch.');
       return;
     }
 
-    const listingIds = validRows.map((row) => draftRows[row.rowNumber]?.id).filter(Boolean);
+    const listingIds = validRows.map((row) => stagedDraftRows[row.rowNumber]?.id).filter(Boolean);
     if (listingIds.length !== validRows.length) {
-      setSubmissionMessage('Some rows are not staged as drafts yet. Close this screen and upload the remaining rows first.');
+      setSubmissionMessage('Some rows are not staged yet. Retry the upload to finish the test batch.');
       return;
     }
 
@@ -428,12 +427,11 @@ export default function BulkListings() {
 
       const activated = {};
       result.listings?.forEach((listing) => {
-        const row = validRows.find((candidate) => draftRows[candidate.rowNumber]?.id === listing.id);
+        const row = validRows.find((candidate) => stagedDraftRows[candidate.rowNumber]?.id === listing.id);
         if (row) activated[row.rowNumber] = listing;
       });
       setActivatedRows((previous) => ({ ...previous, ...activated }));
-      setGatewayOpen(false);
-      setSubmissionMessage(`${listingIds.length} listing${listingIds.length === 1 ? '' : 's'} submitted. The placeholder gateway did not collect payment.`);
+      setSubmissionMessage(`${listingIds.length} test listing${listingIds.length === 1 ? '' : 's'} uploaded. Payment is disabled during testing.`);
     } catch (submitError) {
       setSubmissionMessage(submitError instanceof Error ? submitError.message : 'Batch submission failed.');
     } finally {
@@ -446,6 +444,54 @@ export default function BulkListings() {
   const totalFees = validRows.reduce((sum, row) => sum + row.fee, 0);
   const allDraftsStaged = validRows.length > 0 && validRows.every((row) => draftRows[row.rowNumber]);
   const allListingsActivated = validRows.length > 0 && validRows.every((row) => activatedRows[row.rowNumber]);
+
+  async function handleDownloadBuilder() {
+    setBuilderDownloading(true);
+    setBuilderDownloadError('');
+    setBuilderDownloaded(false);
+
+    try {
+      const response = await fetch(`/downloads/SOBS-BSB.zip?download=${Date.now()}`);
+      if (!response.ok) throw new Error('Builder download failed.');
+      const url = URL.createObjectURL(await response.blob());
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'SOBS-BSB-v2.zip';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 10000);
+      setBuilderDownloaded(true);
+    } catch {
+      setBuilderDownloadError('Could not download BSB v2. Please try again.');
+    } finally {
+      setBuilderDownloading(false);
+    }
+  }
+
+  async function handleDownloadTemplate() {
+    setTemplateDownloading(true);
+    setTemplateDownloadError('');
+    setTemplateDownloaded(false);
+
+    try {
+      const response = await fetch('/downloads/SOBS-BSB-Blank-Template.xlsx');
+      if (!response.ok) throw new Error('Template download failed.');
+      const url = URL.createObjectURL(await response.blob());
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'SOBS-BSB-Blank-Template.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 10000);
+      setTemplateDownloaded(true);
+    } catch {
+      setTemplateDownloadError('Could not download the Excel template. Please try again.');
+    } finally {
+      setTemplateDownloading(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -485,29 +531,30 @@ export default function BulkListings() {
           </h2>
 
           <p className="mt-3 text-sm text-white/75">
-            Download the S.O.B.S. Bulk Upload Builder app to help you with the task, or use the spreadsheet if that's your thing.
+            Download S.O.B.S. BSB v2 to help with the task, or use the spreadsheet if that's your thing.
           </p>
-
-          <a
-            href="/downloads/SOBS-BSB.zip"
-            download="SOBS-BSB.zip"
-            onClick={(event) => {
-              event.currentTarget.href = `/downloads/SOBS-BSB.zip?download=${Date.now()}`;
-            }}
-            className="mt-5 inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-500"
-          >
-            <Download className="h-5 w-5" />
-            Download S.O.B.S. Bulk Spreadsheet Builder
-          </a>
 
           <button
             type="button"
-            onClick={downloadTemplate}
-            className="mt-5 inline-flex items-center gap-2 rounded-full border-2 border-white px-4 py-2.5 font-semibold hover:bg-white hover:text-black"
+            onClick={handleDownloadBuilder}
+            disabled={builderDownloading}
+            className="mt-5 inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-500 active:bg-white active:text-black disabled:opacity-60"
           >
             <Download className="h-5 w-5" />
-            Download Excel Template (.xlsx)
+            {builderDownloaded ? 'Downloaded' : builderDownloading ? 'Downloading…' : 'Download S.O.B.S. BSB v2'}
           </button>
+          {builderDownloadError && <p role="alert" className="mt-3 text-sm text-red-300">{builderDownloadError}</p>}
+
+          <button
+            type="button"
+            onClick={handleDownloadTemplate}
+            disabled={templateDownloading}
+            className="mt-5 inline-flex items-center gap-2 rounded-full border-2 border-white px-4 py-2.5 font-semibold hover:bg-white hover:text-black active:bg-white active:text-black disabled:opacity-60"
+          >
+            <Download className="h-5 w-5" />
+            {templateDownloaded ? 'Downloaded' : templateDownloading ? 'Downloading…' : 'Download Excel Template (.xlsx)'}
+          </button>
+          {templateDownloadError && <p role="alert" className="mt-3 text-sm text-red-300">{templateDownloadError}</p>}
         </section>
 
         <section className="mt-6 rounded-xl border border-white/30 p-5">
@@ -563,7 +610,7 @@ export default function BulkListings() {
             </div>
 
             <p className="mt-4">
-              Estimated listing fees for valid rows:{' '}
+              Estimated fees for valid rows (not collected during testing):{' '}
               <strong>€{totalFees.toFixed(2)}</strong>
             </p>
 
@@ -575,7 +622,7 @@ export default function BulkListings() {
                     <th className="p-3">Title</th>
                     <th className="p-3">Price</th>
                     <th className="p-3">Duration</th>
-                    <th className="p-3">Fee</th>
+                    <th className="p-3">Estimated fee</th>
                     <th className="p-3">Status</th>
                   </tr>
                 </thead>
@@ -593,9 +640,9 @@ export default function BulkListings() {
                       </td>
                       <td className="p-3">
                         {activatedRows[row.rowNumber] ? (
-                          <span className="text-sky-300">Submitted</span>
+                          <span className="text-sky-300">Test listing uploaded</span>
                         ) : draftRows[row.rowNumber] ? (
-                          <span className="text-amber-200">Draft ready for payment</span>
+                          <span className="text-amber-200">Draft ready for test upload</span>
                         ) : row.errors.length === 0 ? (
                           <span className="text-green-300">Valid</span>
                         ) : (
@@ -613,7 +660,7 @@ export default function BulkListings() {
             </div>
 
             <p className="mt-5 rounded-lg border border-white/20 p-4 text-sm text-white/75">
-              Listings stay as drafts until you continue through the payment screen. The current gateway is a placeholder and does not collect payment.
+              Payment is disabled for testing. Uploading this batch will publish the listings without collecting payment.
             </p>
             {submissionMessage && (
               <p role="status" className="mt-4 rounded-lg border border-white/20 p-4 text-sm text-white/90">
@@ -622,11 +669,11 @@ export default function BulkListings() {
             )}
             <button
               type="button"
-              onClick={allDraftsStaged ? () => setGatewayOpen(true) : stageDrafts}
+              onClick={allDraftsStaged ? () => activateDrafts() : stageDrafts}
               disabled={submitting || invalidRows.length > 0 || validRows.length === 0 || allListingsActivated}
               className="mt-5 rounded-full bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {submitting ? 'Saving drafts...' : allListingsActivated ? 'Batch submitted' : allDraftsStaged ? 'Continue to payment' : `Upload ${validRows.filter((row) => !draftRows[row.rowNumber]).length} listings as drafts`}
+              {submitting ? 'Uploading test batch…' : allListingsActivated ? 'Test batch uploaded' : allDraftsStaged ? 'Retry test upload' : `Upload ${validRows.length} test listing${validRows.length === 1 ? '' : 's'}`}
             </button>
           </section>
         )}
@@ -683,19 +730,6 @@ export default function BulkListings() {
             </section>
           </div>
         )}
-        {gatewayOpen && (
-          <PaylinkGateway
-            tier={{ amount: totalFees, label: `${validRows.length} listings` }}
-            currency="EUR"
-            rates={null}
-            busy={submitting}
-            subtitle={`Bulk listing fee for ${validRows.length} listings`}
-            paymentNote="This local placeholder screen does not process or collect payment. Confirming will publish the staged drafts."
-            onConfirm={activateDrafts}
-            onClose={() => setGatewayOpen(false)}
-          />
-        )}
-
       </main>
     </div>
   );

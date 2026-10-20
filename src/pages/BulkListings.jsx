@@ -549,7 +549,7 @@ export default function BulkListings() {
             type="button"
             onClick={handleDownloadTemplate}
             disabled={templateDownloading}
-            className="mt-5 inline-flex items-center gap-2 rounded-full border-2 border-white px-4 py-2.5 font-semibold hover:bg-white hover:text-black active:bg-white active:text-black disabled:opacity-60"
+            className="mt-5 inline-flex items-center gap-2 rounded-full border-2 border-white px-4 py-2.5 font-semibold hover:bg-black hover:text-white active:bg-black active:text-white disabled:opacity-60"
           >
             <Download className="h-5 w-5" />
             {templateDownloaded ? 'Downloaded' : templateDownloading ? 'Downloading…' : 'Download Excel Template (.xlsx)'}

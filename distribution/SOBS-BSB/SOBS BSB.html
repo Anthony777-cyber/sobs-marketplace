@@ -148,6 +148,9 @@
   const sifterFieldLabels = {
     type:'Item type',make:'Brand / maker',model:'Model',year:'Year / date',partNumber:'Part number / reference',material:'Material',dimensions:'Dimensions',colour:'Colour',condition:'Condition',quantity:'Quantity',capacity:'Capacity',specifications:'Specifications',compatibility:'Compatibility',powerSource:'Power source',fault:'Faults / known issues',storage:'Storage capacity',title:'Title / item name',author:'Author',publisher:'Publisher / label',edition:'Edition / issue',format:'Format',artist:'Artist / maker',platform:'Platform',completeness:'Completeness',scale:'Scale / model size',era:'Age / era',origin:'Origin',clothingSize:'Clothing / shoe size',style:'Style',movement:'Movement / mechanism',identifyingMarks:'Identifying marks',ageRange:'Age range',accessories:'Included accessories',sport:'Sport / activity',size:'Size',frameSize:'Frame size',wheelSize:'Wheel size',length:'Length',petType:'Animal / pet type',catalogNumber:'Catalogue number',denomination:'Denomination / issue'
   };
+  const sifterFieldPlaceholders = {
+    type:'Specific item type or name',make:'Manufacturer, brand or maker if known',model:'Model or reference if known',year:'Year or approximate date if known',partNumber:'Part number, product code or reference',material:'Material or construction',dimensions:'Measurements, with units',colour:'Colour if relevant',condition:'New, used, worn, damaged, incomplete, etc.',quantity:'Number available or included',capacity:'Capacity or load rating, with units',specifications:'Important specifications or technical details',compatibility:'Compatible models, systems or uses',powerSource:'Mains, battery, petrol, diesel, manual, etc.',fault:'Known faults or what does not work',storage:'Capacity, e.g. GB or TB',title:'Title or name',informationType:'Event, announcement, public notice, service information, or other',datePeriod:'Event date and time, or the period this information applies to',location:'Venue, local area, service area, or online',informationDetails:'What people should know or what is being advertised',contactDetails:'Website, contact details, booking, or how to take part',author:'Author or creator',publisher:'Publisher, record label or producer',edition:'Edition, issue, pressing or version',format:'Format or media type',artist:'Artist, performer or maker',platform:'Console, system or platform',completeness:'Complete, missing parts, sealed, etc.',scale:'Scale or model size if relevant',era:'Approximate age, period or era',origin:'Country, region or place of origin if known',clothingSize:'Size and sizing system',style:'Style, cut or design',movement:'Movement or mechanism, if relevant',identifyingMarks:'Hallmarks, markings, serial or identifying details',ageRange:'Age range or intended user',accessories:'Included accessories, parts or attachments',sport:'Sport, activity or intended use',size:'Size, with units or sizing system',frameSize:'Frame size and units',wheelSize:'Wheel size, with units',length:'Length and units',petType:'Animal, species or intended pet',catalogNumber:'Catalogue or reference number',denomination:'Denomination, face value or issue details'
+  };
   const sifterCategoryFields = {
     'Home, furniture & interiors':['type','make','material','dimensions','colour','condition'],
     'Garden & outdoor':['type','make','material','dimensions','powerSource','condition'],
@@ -246,19 +249,19 @@
     if (classification.route === 'machine' || classification.route === 'parts') {
       const isVehicle = classification.kind === 'vehicle' || path.some((part) => /vehicle/i.test(part));
       if (isVehicle) return [
-        {key:'model',answerKey:'model',label:'Model'},
-        {key:'year',answerKey:'year',label:'Year'},
-        {key:'variant',answerKey:'variant',label:'Variant / trim'},
-        {key:'partNumber',answerKey:'partNumber',label:'Part number'},
-        {key:'mileage',answerKey:'mileage',label:'Mileage'},
-        {key:'fuelType',answerKey:'fuelType',label:'Fuel type'},
-        {key:'transmission',answerKey:'transmission',label:'Transmission'},
-        {key:'colour',answerKey:'colour',label:'Colour'},
-        {key:'identification',answerKey:'identification',label:'Other identifying details'},
+        {key:'model',answerKey:'model',label:'Model',placeholder:'Enter model if known'},
+        {key:'year',answerKey:'year',label:'Year',placeholder:'Enter year if known'},
+        {key:'variant',answerKey:'variant',label:'Variant / trim',placeholder:'Enter variant / trim if known'},
+        {key:'partNumber',answerKey:'partNumber',label:'Part number',placeholder:'Enter part number if known'},
+        {key:'mileage',answerKey:'mileage',label:'Mileage',placeholder:'Enter mileage if known'},
+        {key:'fuelType',answerKey:'fuelType',label:'Fuel type',placeholder:'Enter fuel type if known'},
+        {key:'transmission',answerKey:'transmission',label:'Transmission',placeholder:'Enter transmission if known'},
+        {key:'colour',answerKey:'colour',label:'Colour',placeholder:'Enter colour if known'},
+        {key:'identification',answerKey:'identification',label:'Other identifying details',placeholder:'Registration / engine / useful identifiers'},
         {key:'runningOperating',answerKey:'runningOperating',label:'Running / operating?'}
       ];
       const keys = machineSifterFields;
-      return keys.filter((key) => key !== 'make').map((key) => ({ key, answerKey: key, label: key === 'identification' ? 'Other identifying details' : key === 'runningOperating' ? 'Running / operating?' : sifterFieldLabels[key] || key }));
+      return keys.filter((key) => key !== 'make').map((key) => ({ key, answerKey: key, label: key === 'machineClass' ? 'Class of machine' : key === 'identification' ? 'Other identifying details' : key === 'runningOperating' ? 'Running / operating?' : key === 'model' ? 'Model' : key === 'year' ? 'Year' : key === 'partNumber' ? 'Part number' : key === 'colour' ? 'Colour' : sifterFieldLabels[key] || key, placeholder: key === 'machineClass' ? 'Farm, industrial, audio? etc' : key === 'identification' ? 'Enter any other identifiers' : key === 'runningOperating' ? '' : `Enter ${key === 'partNumber' ? 'part number' : key === 'model' || key === 'year' || key === 'colour' ? key : (sifterFieldLabels[key] || key).toLowerCase()} if known` }));
     }
     if (classification.category === 'Other / not sure') {
       return [
@@ -277,11 +280,12 @@
         {key:'freeform',answerKey:'freeform',label:'Anything else to add?'}
       ];
     }
-    return (sifterCategoryFields[classification.category] || ['type','make','model','condition']).map((originalKey) => {
+      return (sifterCategoryFields[classification.category] || ['type','make','model','condition']).map((originalKey) => {
       const key = originalKey === 'condition' && machineStatusCategories.has(classification.category) ? 'workingStatus' : originalKey;
       return {
       key, answerKey: key,
-      label: key === 'workingStatus' ? 'Working?' : (sifterFieldLabels[key] || key)
+      label: key === 'workingStatus' ? 'Working?' : (sifterFieldLabels[key] || key),
+      placeholder: sifterFieldPlaceholders[key] || `Enter ${(sifterFieldLabels[key] || key).toLowerCase()} if known`
       };
     });
   }
@@ -368,7 +372,7 @@
       wrap.textContent = label;
       const input = document.createElement(['description','machineDescription','freeform'].includes(answerKey) ? 'textarea' : 'input');
       if (input.tagName === 'INPUT') input.type = 'text';
-      input.placeholder = placeholder || 'Leave blank if unknown';
+      input.placeholder = placeholder || `Enter ${label.toLowerCase()} if known`;
       input.value = initialAnswers[answerKey] || '';
       input.addEventListener('input', () => { answers[answerKey] = input.value; updateReview(); });
       input.addEventListener('change', () => { answers[answerKey] = input.value; updateReview(); });
@@ -455,12 +459,8 @@
     sifter.replaceChildren();
     classification = { ...classification, route: currentRoute === 'parts' ? 'parts' : 'machine', kind };
     const isPart = currentRoute === 'parts';
-    const label = isPart
-      ? (kind === 'vehicle' ? 'What sort of vehicle part is it?' : 'What type of machine part is it?')
-      : (kind === 'vehicle' ? 'What sort of vehicle is it?' : 'What type of machine is it?');
-    const placeholder = isPart
-      ? (kind === 'vehicle' ? 'Car mirror, van door, truck alternator' : 'Washing machine pump, vacuum motor, etc')
-      : (kind === 'vehicle' ? 'Car, Truck, Van, Lorry etc' : 'Tape deck, Generator, Washing Machine');
+    const label = kind === 'vehicle' ? 'What sort of vehicle is it?' : 'What type of machine is it?';
+    const placeholder = kind === 'vehicle' ? 'Car, Truck, Van, Lorry etc' : 'Tape deck, Generator, Washing Machine';
     const specific = field(label, { placeholder });
     specific.input.value = classification.detail || '';
     sifter.append(specific.wrap);

@@ -8,6 +8,7 @@ import PageNotFound from './lib/PageNotFound';
 import ScrollToTop from './components/ScrollToTop';
 // Add page imports here
 import Splash from '@/pages/Splash';
+import Process from '@/pages/Process';
 import Rules from '@/pages/Rules';
 import CreateListing from '@/pages/CreateListing';
 import SellInfo from '@/pages/SellInfo';
@@ -86,6 +87,7 @@ const AuthenticatedApp = () => {
     <Routes>
       {/* Add your page Route elements here */}
       <Route path="/" element={<Splash />} />
+      <Route path="/process" element={<Process />} />
       <Route path="/create" element={<CreateListing />} />
       <Route path="/sifter-mk4" element={<SellerSifterPage />} />
       <Route path="/sell-info" element={<SellInfo />} />

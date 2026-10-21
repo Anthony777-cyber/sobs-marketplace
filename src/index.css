@@ -4,33 +4,91 @@
 @tailwind components;
 @tailwind utilities;
 
-@keyframes splash-details-reveal {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.splash-details-reveal { animation: splash-details-reveal 650ms ease-out both; }
-.splash-intro-video { display: block; width: min(92vw, 760px); height: auto; max-height: 62vh; object-fit: contain; }
-
 .splash-page p { word-spacing: -0.035em; letter-spacing: -0.01em; }
+.splash-page .splash-justified-copy {
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: auto;
+}
+.splash-page .splash-example-copy {
+  letter-spacing: -0.3px;
+  word-spacing: -1px;
+}
+.splash-page .splash-legal-copy {
+  word-spacing: -2px;
+}
 @media (min-width: 640px) {
   .splash-page p { word-spacing: normal; letter-spacing: normal; }
 }
-
-@keyframes splash-word-pop-out {
-  0% { opacity: 0; transform: translateY(65%); }
-  100% { opacity: 1; transform: translateY(0); }
+@media (min-width: 1024px) {
+  .splash-copy-grid {
+    height: 100%;
+    grid-template-rows: minmax(0, 0.7fr) minmax(0, 1fr);
+  }
+  .splash-copy-card {
+    min-height: 0;
+    padding: clamp(0.6rem, 1.25vh, 1rem);
+  }
+  .splash-justified-copy {
+    line-height: 1.35;
+  }
+  .splash-directory-copy {
+    font-size: clamp(1.125rem, 2.1vh, 1.375rem);
+    line-height: 1.45;
+  }
+  .splash-directory-copy p {
+    line-height: inherit;
+  }
+  .splash-directory-emphasis {
+    font-size: 1.05em;
+    font-weight: 700;
+  }
+  .splash-copy-card:not(.splash-directory-copy):not(.splash-offer-card) {
+    font-size: clamp(1.125rem, 2.1vh, 1.375rem);
+    line-height: 1.45;
+  }
+  .splash-offer-card .splash-offer-red {
+    font-size: clamp(1.125rem, 2.2vh, 1.5rem);
+    line-height: 1.35;
+  }
+  .splash-offer-lines {
+    font-size: clamp(1.75rem, 4.5vh, 3rem);
+    line-height: 1.22;
+    transform: translateY(-5%);
+  }
+  .splash-offer-card,
+  .splash-seller-card {
+    container-type: inline-size;
+  }
+  .splash-offer-heading {
+    font-size: clamp(1rem, 6.5cqi, 2rem);
+    letter-spacing: -0.02em;
+  }
+  .splash-zero-friction,
+  .splash-seller-copy {
+    font-size: clamp(1rem, 7.4cqi, 2.125rem);
+    letter-spacing: -0.025em;
+    line-height: 1.25;
+  }
+  .splash-seller-copy {
+    display: inline-block;
+    transform: translateY(-10%);
+  }
+  .splash-zero-friction {
+    transform: translateY(-40%);
+  }
+  .splash-page .splash-actions a {
+    width: 10.25rem;
+    font-size: 1.25rem;
+  }
+  .splash-day-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
 }
-
-.splash-word-pop {
-  transform-origin: center bottom;
-  animation: splash-word-pop-out 1000ms cubic-bezier(.22,.61,.36,1) both;
-}
-
-.splash-word-pop-1 { animation-delay: 0ms; }
-.splash-word-pop-2 { animation-delay: 1000ms; }
-.splash-word-pop-3 { animation-delay: 2000ms; }
-.splash-word-pop-4 { animation-delay: 3000ms; }
 
 @keyframes upload-progress-indeterminate {
   from { transform: translateX(-120%); }
@@ -185,6 +243,21 @@ html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0; height: 0; }
 body :where(.min-h-screen) { background-color: #000 !important; }
 body :where(*) { color: #fff !important; }
 body :where(*)::placeholder { color: #fff !important; }
+body .rules-page,
+body .rules-page * {
+  color: #cccccc !important;
+}
+body .rules-page h1,
+body .rules-page h2 {
+  color: #fff !important;
+}
+body .rules-page .rules-contact-link {
+  color: #fff !important;
+}
+body .rules-page ul.rules-prohibited-list,
+body .rules-page ul.rules-prohibited-list li {
+  color: #bf3636 !important;
+}
 @media (max-width: 639px) {
   .pt-\[15vh\],
   .pt-\[25vh\] {
@@ -260,4 +333,29 @@ body :where(.price-choice-dark-text, .price-choice-dark-text *) { color: #000 !i
 }
 .splash-page .splash-index-word {
   color: #facc15 !important;
+}
+body .splash-page .splash-seller-copy {
+  color: #60a5fa !important;
+}
+body .splash-page .splash-seller-heading {
+  color: #60a5fa !important;
+}
+body .splash-page .splash-seller-offset-line {
+  display: inline-block;
+  color: #60a5fa !important;
+  transform: translateY(0.375rem);
+}
+body .splash-page .splash-seller-next-line {
+  display: inline-block;
+  color: #60a5fa !important;
+  transform: translateY(0.75rem);
+}
+body .splash-page .splash-ebay-e { color: #e53238 !important; }
+body .splash-page .splash-ebay-b { color: #0064d2 !important; }
+body .splash-page .splash-ebay-a { color: #f5af02 !important; }
+body .splash-page .splash-ebay-y { color: #86b817 !important; }
+body .splash-page .splash-seller-final-line {
+  display: inline-block;
+  color: #60a5fa !important;
+  transform: translateY(calc(1.125rem - 5%));
 }

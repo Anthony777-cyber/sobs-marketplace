@@ -4,6 +4,22 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes splash-word-pop-out {
+  0% { opacity: 0; transform: translateY(145%) scale(.58); }
+  62% { opacity: 1; transform: translateY(-18%) scale(1.12); }
+  82% { transform: translateY(6%) scale(.97); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.splash-word-pop {
+  transform-origin: center bottom;
+  animation: splash-word-pop-out 1100ms cubic-bezier(.2,.75,.25,1) both;
+}
+
+.splash-word-pop-1 { animation-delay: 0ms; }
+.splash-word-pop-2 { animation-delay: 1100ms; }
+.splash-word-pop-3 { animation-delay: 2200ms; }
+
 @keyframes upload-progress-indeterminate {
   from { transform: translateX(-120%); }
   to { transform: translateX(350%); }

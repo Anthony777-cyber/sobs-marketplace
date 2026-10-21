@@ -61,9 +61,9 @@ export default function Splash() {
       <section className="mx-auto max-w-5xl px-4 pb-0 pt-1 sm:pt-2">
           <div className="flex items-center gap-8">
             <h1 className="grid w-full max-w-[24rem] grid-cols-3 gap-2 text-center font-display text-2xl leading-tight tracking-tight sm:w-96 sm:max-w-none sm:gap-[2%] sm:text-4xl">
-              <span>List it<span className="hidden sm:inline">, </span></span>
-              <span className="whitespace-nowrap">chat it<span className="hidden sm:inline">, </span></span>
-              <span>sell it<span className="hidden sm:inline">.</span></span>
+              <span className="splash-word-pop splash-word-pop-1">List it<span className="hidden sm:inline">, </span></span>
+              <span className="splash-word-pop splash-word-pop-2 whitespace-nowrap">chat it<span className="hidden sm:inline">, </span></span>
+              <span className="splash-word-pop splash-word-pop-3">sell it<span className="hidden sm:inline">.</span></span>
             </h1>
           </div>
           <div className="mt-4 flex w-full max-w-[24rem] flex-col items-start gap-0 sm:inline-flex sm:w-auto sm:max-w-none">
@@ -114,28 +114,28 @@ export default function Splash() {
             </Link>
             </div>
           </div>
-          <div className="w-full">
-          <p className="mt-5 w-full text-base leading-7 text-white text-justify sm:text-xl sm:leading-relaxed text-pretty">
+          <div className="w-full space-y-0.5 sm:space-y-0">
+          <p className="mt-2 w-full text-base leading-[1.15] text-white text-justify sm:mt-4 sm:text-lg sm:leading-5 md:leading-[0.7] text-pretty">
             S∙O∙B∙S∙ is the ultra-searchable directory of <strong className="text-xl font-bold sm:text-2xl">EVERYTHING</strong>.
           </p>
 
-          <p className="w-full text-base leading-7 text-white text-justify sm:text-xl sm:leading-relaxed text-pretty">
+          <p className="w-full text-base leading-[1.15] text-white text-justify sm:text-lg sm:leading-5 md:leading-[0.7] text-pretty">
             Junk, spares or repair machines or cars, or good ones too, rare parts, collectables, art, Pokemon cards, your precious collection of Coca-Cola bottle tops. So long as it's legal, we don't discriminate. Anything that you think is worth the listing fee. For instance, you're in a band and want to advertise your next three months' gigs for a buck, cool.<br /> This is a repository of information as well as things.
           </p>
 
-          <p className="w-full text-base leading-7 text-white text-justify sm:text-xl sm:leading-relaxed text-pretty">
+          <p className="w-full text-base leading-[1.15] text-white text-justify sm:text-lg sm:leading-5 md:leading-[0.7] text-pretty">
             We don't do <em className="font-serif font-semibold">free ads</em>. As if it's not worth the few bucks it costs to list it, then we're quite happy to let Gumtree or Facebook bottom-feed off it.
           </p>
 
-          <p className="splash-offer-red w-full text-base leading-7 text-white text-justify sm:text-xl sm:leading-relaxed text-pretty">
+          <p className="splash-offer-red w-full text-base leading-[1.15] text-white text-justify sm:text-lg sm:leading-5 md:leading-[0.7] text-pretty">
             <span className="text-yellow-400">To browsers and buyers, we offer</span><br /> <strong className="font-extrabold"><span className="text-yellow-400">ZERO-FRICTION ENTRY</span><br /><span className="text-red-500">NO sign-up, NO passwords, NO cookies, NO ads.</span></strong>
           </p>
 
-          <p className="w-full text-base leading-7 text-white text-justify sm:text-xl sm:leading-relaxed text-pretty">
+          <p className="w-full text-base leading-[1.15] text-white text-justify sm:text-lg sm:leading-5 md:leading-[0.7] text-pretty">
             Just click on <span className="splash-listings-word">LISTINGS</span> above and have a look at what's on offer,<br /> or search the <span className="splash-index-word">INDEX</span> for your heart's desire.<br /> Or endlessly scroll through bad photos of people's tat.
           </p>
 
-          <p className="w-full text-base leading-7 text-white text-justify sm:text-xl sm:leading-relaxed text-pretty">
+          <p className="w-full text-base leading-[1.15] text-white text-justify sm:text-lg sm:leading-5 md:leading-[0.7] text-pretty">
             To sellers, we offer worldwide advertising dirt cheap,<br /> bulk uploads for the pros, and best of all, unlike eBay,<br /> we don't take a cut of your profit.
           </p>
           </div>

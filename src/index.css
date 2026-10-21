@@ -4,21 +4,33 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes splash-details-reveal {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.splash-details-reveal { animation: splash-details-reveal 650ms ease-out both; }
+.splash-intro-video { display: block; width: min(92vw, 760px); height: auto; max-height: 62vh; object-fit: contain; }
+
+.splash-page p { word-spacing: -0.035em; letter-spacing: -0.01em; }
+@media (min-width: 640px) {
+  .splash-page p { word-spacing: normal; letter-spacing: normal; }
+}
+
 @keyframes splash-word-pop-out {
-  0% { opacity: 0; transform: translateY(145%) scale(.58); }
-  62% { opacity: 1; transform: translateY(-18%) scale(1.12); }
-  82% { transform: translateY(6%) scale(.97); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
+  0% { opacity: 0; transform: translateY(65%); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
 .splash-word-pop {
   transform-origin: center bottom;
-  animation: splash-word-pop-out 1100ms cubic-bezier(.2,.75,.25,1) both;
+  animation: splash-word-pop-out 1000ms cubic-bezier(.22,.61,.36,1) both;
 }
 
 .splash-word-pop-1 { animation-delay: 0ms; }
-.splash-word-pop-2 { animation-delay: 1100ms; }
-.splash-word-pop-3 { animation-delay: 2200ms; }
+.splash-word-pop-2 { animation-delay: 1000ms; }
+.splash-word-pop-3 { animation-delay: 2000ms; }
+.splash-word-pop-4 { animation-delay: 3000ms; }
 
 @keyframes upload-progress-indeterminate {
   from { transform: translateX(-120%); }
@@ -239,6 +251,9 @@ body :where(.price-choice-dark-text, .price-choice-dark-text *) { color: #000 !i
 .splash-page .splash-offer-red,
 .splash-page .splash-offer-red * {
   color: #ef4444 !important;
+}
+.splash-page .splash-offer-red .text-white {
+  color: #fff !important;
 }
 .splash-page .splash-listings-word {
   color: #f97316 !important;

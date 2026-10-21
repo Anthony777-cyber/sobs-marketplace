@@ -74,7 +74,9 @@ if (typeof window !== 'undefined') {
   }
 
   if (import.meta.env.DEV) {
-    sessionStorage.setItem('sobs_global_user_key', '0000000000000000');
+    if (sessionStorage.getItem('sobs_seller_session_token') === 'local-dev-session') {
+      sessionStorage.setItem('sobs_global_user_key', '0000000000000000');
+    }
     sessionStorage.setItem('sobs_management_unlocked', 'true');
   }
 }

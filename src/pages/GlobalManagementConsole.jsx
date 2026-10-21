@@ -12,7 +12,14 @@ export default function GlobalManagementConsole() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (import.meta.env.DEV) return;
+    if (import.meta.env.DEV) {
+      if (!sessionStorage.getItem('sobs_global_user_key')) {
+        sessionStorage.setItem('sobs_global_user_key', '0000000000000000');
+      }
+      sessionStorage.setItem('sobs_management_unlocked', 'true');
+      navigate('/manage/console', { replace: true });
+      return;
+    }
 
     const sellerSession = sessionStorage.getItem('sobs_seller_session_token');
     if (!sellerSession) {

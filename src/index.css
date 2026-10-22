@@ -4,6 +4,32 @@
 @tailwind components;
 @tailwind utilities;
 
+@property --splash-gear-turn {
+  syntax: "<angle>";
+  inherits: true;
+  initial-value: 0deg;
+}
+@keyframes splash-gear-drive {
+  to { --splash-gear-turn: 360deg; }
+}
+.splash-gear-train {
+  --splash-gear-turn: 0deg;
+  animation: splash-gear-drive 8s linear infinite;
+}
+.splash-gear-main,
+.splash-gear-small {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.splash-gear-main {
+  transform: rotate(var(--splash-gear-turn));
+}
+.splash-gear-small {
+  transform: rotate(calc(0deg - var(--splash-gear-turn) - var(--splash-gear-turn) - var(--splash-gear-turn)));
+}
+.splash-gear-small-driven {
+  transform: rotate(calc(var(--splash-gear-turn) + var(--splash-gear-turn) + var(--splash-gear-turn)));
+}
 .splash-page p { word-spacing: -0.035em; letter-spacing: -0.01em; }
 .splash-page .splash-justified-copy {
   text-align: justify;

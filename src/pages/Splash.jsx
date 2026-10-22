@@ -1,11 +1,73 @@
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
+
+function gearPath(teeth, scale = 1, toothPhase = 0) {
+  const points = Array.from({ length: 144 }, (_, index) => {
+    const angle = (index / 144) * Math.PI * 2 - Math.PI / 2;
+    const radius = (9.7 + 0.65 * Math.cos(angle * teeth + toothPhase)) * scale;
+    const x = 12 + radius * Math.cos(angle);
+    const y = 12 + radius * Math.sin(angle);
+    return `${x.toFixed(3)} ${y.toFixed(3)}`;
+  });
+  const outer = `M${points.join(' L')} Z`;
+  const holeRadius = 4.6 * scale;
+  const hole = `M12 ${12 - holeRadius} A${holeRadius} ${holeRadius} 0 1 0 12 ${12 + holeRadius} A${holeRadius} ${holeRadius} 0 1 0 12 ${12 - holeRadius} Z`;
+  return `${outer} ${hole}`;
+}
+
+function GearAssembly() {
+  const mainGear = gearPath(24);
+  const smallGear = gearPath(8, 1 / 3, Math.PI);
+  return (
+    <span className="inline-flex h-[0.8em] w-[1.265em] items-center justify-center align-[-0.02em]">
+      <svg aria-hidden="true" viewBox="-4.608 1.5 33.216 21" className="h-[0.8em] w-[1.265em] overflow-visible">
+        <g className="splash-gear-main">
+          <path d={mainGear} fill="currentColor" fillRule="evenodd" />
+          <circle cx="12" cy="12" r="4.15" fill="none" stroke="currentColor" strokeWidth="0.45" />
+          <g stroke="currentColor" strokeWidth="0.7">
+            <line x1="12" y1="10.75" x2="12" y2="7.9" />
+            <line x1="13.08" y1="12.62" x2="15.55" y2="14.05" />
+            <line x1="10.92" y1="12.62" x2="8.45" y2="14.05" />
+          </g>
+          <circle cx="12" cy="12" r="1.15" fill="currentColor" />
+        </g>
+        <g transform="translate(-11.2 6.466)">
+          <g className="splash-gear-small">
+            <path d={smallGear} fill="currentColor" fillRule="evenodd" />
+          </g>
+          <circle cx="12" cy="12" r="0.45" fill="currentColor" />
+        </g>
+        <g transform="translate(11.2 6.466)">
+          <g className="splash-gear-small">
+            <path d={smallGear} fill="currentColor" fillRule="evenodd" />
+          </g>
+          <circle cx="12" cy="12" r="0.45" fill="currentColor" />
+        </g>
+      </svg>
+    </span>
+  );
+}
+
+function PeriodGear() {
+  const gear = gearPath(8, 1, Math.PI);
+  return (
+    <span className="inline-flex h-[0.72em] w-[0.28em] items-center justify-center align-[-0.02em]">
+      <svg aria-hidden="true" viewBox="1.5 1.5 21 21" className="h-[0.267em] w-[0.267em] overflow-visible">
+        <g className="splash-gear-small">
+          <path d={gear} fill="currentColor" fillRule="evenodd" />
+        </g>
+        <circle cx="12" cy="12" r="1.4" fill="currentColor" />
+      </svg>
+    </span>
+  );
+}
 
 function BrandMark({ size = 'text-7xl sm:text-8xl' }) {
   return (
     <div className="relative -top-5 [transform:translateY(15%)] flex flex-col items-center leading-none">
-      <span className={`font-display tracking-tight ${size} lg:text-[8.5rem]`}>
-        S<span className="font-sans font-bold">.</span>O<span className="font-sans font-bold">.</span>B<span className="font-sans font-bold">.</span>S
+      <span className={`splash-gear-train whitespace-nowrap font-display tracking-tight ${size} lg:text-[8.5rem]`}>
+        S<GearAssembly />B<PeriodGear />S
       </span>
       <span className="mt-[0.2rem] grid w-full grid-cols-4 items-center text-xs font-bold sm:text-sm lg:text-xl">
         <span className="relative -left-[12%] [transform:scaleX(0.792)] rounded-full border-[3px] border-white bg-black px-0.5 py-0.5 text-center text-white">SELL</span>
@@ -52,7 +114,7 @@ function SplashActions() {
 
 function SplashCopy({ desktop = false }) {
   return (
-    <div className={`mx-auto grid w-full gap-4 ${desktop ? 'splash-copy-grid hidden lg:grid lg:grid-cols-2 lg:gap-3' : 'sm:grid-cols-2 lg:grid-cols-4'}`}>
+    <div className={`mx-auto grid w-full gap-4 ${desktop ? 'splash-copy-grid hidden lg:grid lg:grid-cols-2 lg:gap-3' : 'grid-cols-1 sm:grid-cols-2 lg:hidden'}`}>
       <div className="splash-copy-card splash-directory-copy rounded-2xl border border-white/10 bg-neutral-900 p-5 text-sm leading-relaxed text-white">
         <p><br />The ultra-searchable directory of <strong className="splash-directory-emphasis">EVERYTHING</strong>.</p>
         <p className="splash-justified-copy splash-example-copy mt-2">List junk, spares, machines or cars—whether they need repair or are in good condition.</p>
@@ -83,6 +145,45 @@ function SplashCopy({ desktop = false }) {
 }
 
 export default function Splash() {
+  const [showIntro, setShowIntro] = useState(true);
+  const [needsPlay, setNeedsPlay] = useState(false);
+  const introVideoRef = useRef(null);
+
+  const startIntro = () => {
+    const playback = introVideoRef.current?.play();
+    playback?.then(() => setNeedsPlay(false)).catch(() => setNeedsPlay(true));
+  };
+
+  if (showIntro) {
+    return (
+      <div className="splash-page flex min-h-screen items-center justify-center overflow-hidden bg-neutral-950 px-4 text-white">
+        <video
+          ref={introVideoRef}
+          autoPlay
+          muted
+          playsInline
+          preload="auto"
+          aria-label="S.O.B.S. intro animation"
+          onCanPlay={startIntro}
+          onEnded={() => setShowIntro(false)}
+          onError={() => setShowIntro(false)}
+          style={{ width: 'min(92vw, 760px)', height: 'auto', maxHeight: '62vh', objectFit: 'contain' }}
+        >
+          <source src="/splash-intro.mp4" type="video/mp4" />
+        </video>
+        {needsPlay && (
+          <button
+            type="button"
+            onClick={startIntro}
+            className="absolute bottom-8 rounded-full border-2 border-white bg-black px-6 py-3 font-bold"
+          >
+            Tap to play intro
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="splash-page min-h-screen bg-neutral-950 text-white lg:h-dvh lg:overflow-hidden">
       <main className="mx-auto grid max-w-[1536px] gap-8 px-4 pb-12 pt-5 lg:h-full lg:grid-cols-[minmax(25rem,0.85fr)_minmax(0,1.5fr)] lg:items-stretch lg:gap-4 lg:overflow-hidden lg:py-3">
@@ -101,6 +202,7 @@ export default function Splash() {
           </section>
         </div>
         <aside className="pt-5 lg:flex lg:min-h-0 lg:items-stretch lg:pt-0">
+          <SplashCopy />
           <SplashCopy desktop />
         </aside>
       </main>

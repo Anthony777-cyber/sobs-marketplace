@@ -168,7 +168,7 @@ export default function ListingDetail() {
             role="dialog"
             aria-modal="true"
             aria-label="Chat"
-            className="relative w-full max-w-lg rounded-xl bg-card p-4 shadow-2xl"
+            className="relative w-full max-w-lg rounded-xl border-[3px] border-white bg-card p-4 shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             <button

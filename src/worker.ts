@@ -429,6 +429,15 @@ export default {
       ).bind(listingId).first() as { id: string; seller_id: string; title: string } | null;
       if (!listing) return json({ error: 'Listing not found.' }, 404);
       const tokenHash = await hashTicket(token);
+      const block = await env.sobs_marketplace.prepare(`
+        SELECT id FROM chat_blocks
+        WHERE blocker_type = 'seller' AND blocker_id = ?
+          AND blocked_type = 'buyer' AND blocked_id = ?
+        LIMIT 1
+      `).bind(listing.seller_id, tokenHash).first();
+      if (block && request.method === 'POST') {
+        return json({ error: 'You have been blocked by the seller.', blocked: true }, 403);
+      }
       if (request.method === 'POST') {
         const messageText = String(body.message || '').trim();
         if (!messageText || messageText.length > 4000) return json({ error: 'Message must be between 1 and 4000 characters.' }, 400);
@@ -454,7 +463,7 @@ export default {
       const messages = conversation ? await env.sobs_marketplace.prepare(
         'SELECT id, sender_role AS sender, message_text AS message, created_at FROM chat_messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT 500'
       ).bind(conversation.id).all() : { results: [] };
-      return json({ listing: { id: listing.id, title: listing.title }, messages: messages.results || [] });
+      return json({ listing: { id: listing.id, title: listing.title }, messages: messages.results || [], blocked: Boolean(block) });
     }
 
     const sellerChatCollection = url.pathname === '/api/seller/chats';
@@ -467,7 +476,12 @@ export default {
           SELECT c.id AS conversation_id, c.listing_id, l.title AS listing_title,
                  c.buyer_name, c.created_at, c.updated_at,
                  (SELECT m.message_text FROM chat_messages m WHERE m.conversation_id = c.id ORDER BY m.created_at DESC LIMIT 1) AS last_message,
-                 (SELECT m.sender_role FROM chat_messages m WHERE m.conversation_id = c.id ORDER BY m.created_at DESC LIMIT 1) AS last_sender
+                 (SELECT m.sender_role FROM chat_messages m WHERE m.conversation_id = c.id ORDER BY m.created_at DESC LIMIT 1) AS last_sender,
+                 EXISTS (
+                   SELECT 1 FROM chat_blocks b
+                   WHERE b.blocker_type = 'seller' AND b.blocker_id = c.seller_id
+                     AND b.blocked_type = 'buyer' AND b.blocked_id = c.buyer_token_hash
+                 ) AS is_blocked
           FROM chat_conversations c JOIN listings l ON l.id = c.listing_id
           WHERE c.seller_id = ? ORDER BY c.updated_at DESC LIMIT 200
         `).bind(seller.id).all();
@@ -475,12 +489,28 @@ export default {
       }
       const conversationId = decodeURIComponent((sellerChatDetail as RegExpMatchArray)[1]);
       const conversation = await env.sobs_marketplace.prepare(
-        'SELECT id, listing_id FROM chat_conversations WHERE id = ? AND seller_id = ? LIMIT 1'
-      ).bind(conversationId, seller.id).first() as { id: string; listing_id: string } | null;
+        'SELECT id, listing_id, buyer_token_hash FROM chat_conversations WHERE id = ? AND seller_id = ? LIMIT 1'
+      ).bind(conversationId, seller.id).first() as { id: string; listing_id: string; buyer_token_hash: string } | null;
       if (!conversation) return json({ error: 'Conversation not found.' }, 404);
       if (request.method === 'POST') {
         let body: any;
         try { body = await request.json(); } catch { return json({ error: 'Invalid JSON.' }, 400); }
+        if (body.action === 'block') {
+          await env.sobs_marketplace.prepare(`
+            INSERT OR IGNORE INTO chat_blocks
+              (id, blocker_type, blocker_id, blocked_type, blocked_id, created_at)
+            VALUES (?, 'seller', ?, 'buyer', ?, ?)
+          `).bind(crypto.randomUUID(), seller.id, conversation.buyer_token_hash, new Date().toISOString()).run();
+          return json({ blocked: true });
+        }
+        if (body.action === 'unblock') {
+          await env.sobs_marketplace.prepare(`
+            DELETE FROM chat_blocks
+            WHERE blocker_type = 'seller' AND blocker_id = ?
+              AND blocked_type = 'buyer' AND blocked_id = ?
+          `).bind(seller.id, conversation.buyer_token_hash).run();
+          return json({ blocked: false });
+        }
         const messageText = String(body.message || '').trim();
         if (!messageText || messageText.length > 4000) return json({ error: 'Message must be between 1 and 4000 characters.' }, 400);
         const now = new Date().toISOString();

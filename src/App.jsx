@@ -23,6 +23,7 @@ import Directory from '@/pages/Directory';
 import Confirmed from '@/pages/Confirmed';
 import Manage from '@/pages/Manage';
 import ManagementConsole from '@/pages/ManagementConsole';
+import MutedChatsPage from '@/pages/MutedChatsPage';
 import BulkListings from '@/pages/BulkListings';
 import GlobalManagementConsole from '@/pages/GlobalManagementConsole';
 import SelectEditListing from '@/pages/SelectEditListing';
@@ -114,6 +115,7 @@ const AuthenticatedApp = () => {
       <Route path="/manage" element={<Manage />} />
       <Route path="/manage-listings" element={<GlobalManagementConsole />} />
       <Route path="/manage/console" element={<ManagementConsole />} />
+      <Route path="/manage/muted-chats" element={<MutedChatsPage />} />
       <Route path="/manage/bulk-upload" element={<BulkListings />} />
       <Route path="/manage/edit-listings" element={<SelectEditListing />} />
       <Route path="/manage/edit-key" element={<EditListingKey />} />

@@ -4,7 +4,7 @@ import NavBar from '@/components/NavBar';
 import { formatUkDate } from '@/lib/format';
 import { getManageListing, getGlobalManageListing } from '@/lib/api';
 import { setHead } from '@/lib/head';
-import { Loader2, Pencil, RefreshCw, ExternalLink, LogOut, MessageCircle, Upload } from 'lucide-react';
+import { Loader2, Pencil, RefreshCw, ExternalLink, LogOut, MessageCircle, Upload, Check, X } from 'lucide-react';
 import ListingCode from '@/components/ListingCode';
 import { getListingManagementCode, PRIVATE_LISTING_CODE_LABEL } from '@/lib/listing-codes';
 
@@ -15,9 +15,41 @@ export default function ManagementConsole() {
   const navigate = useNavigate();
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
 
   const key = sessionStorage.getItem(KEY_STORAGE);
   const globalKey = sessionStorage.getItem(GLOBAL_KEY_STORAGE);
+
+  useEffect(() => {
+    let active = true;
+    const refreshUnread = async () => {
+      try {
+        const response = await fetch('/api/seller/chats', {
+          headers: {
+            'X-SOBS-Global-Key': sessionStorage.getItem(GLOBAL_KEY_STORAGE) || localStorage.getItem(GLOBAL_KEY_STORAGE) || '',
+            'X-SOBS-Seller-Session': sessionStorage.getItem('sobs_seller_session_token') || localStorage.getItem('sobs_seller_session_token') || '',
+          },
+        });
+        if (!response.ok) throw new Error('Could not load inbox');
+        const data = await response.json();
+        const dismissed = JSON.parse(localStorage.getItem('sobs_dismissed_chat_notifications') || '{}');
+        const muted = JSON.parse(localStorage.getItem('sobs_muted_chat_conversations') || '{}');
+        const conversations = data.conversations || [];
+        const unread = conversations.some((conversation) =>
+          conversation.last_sender === 'buyer' &&
+          dismissed[conversation.conversation_id] !== conversation.updated_at &&
+          !muted[conversation.conversation_id] &&
+          !conversation.is_blocked
+        );
+        if (active) setHasUnreadMessages(unread);
+      } catch {
+        if (active) setHasUnreadMessages(false);
+      }
+    };
+    refreshUnread();
+    const timer = window.setInterval(refreshUnread, 5000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, []);
 
   useEffect(() => {
     setHead(
@@ -144,13 +176,18 @@ export default function ManagementConsole() {
               Management Console
             </h1>
 
-            <button
-              onClick={logout}
-              className="inline-flex shrink-0 items-center gap-1 rounded-full bg-red-600 px-3 py-1 text-sm font-medium text-black hover:bg-red-500"
-            >
-              <LogOut className="management-exit-icon h-3.5 w-3.5" />
-              Exit
-            </button>
+            <div className="flex shrink-0 items-center gap-2">
+              <button type="button" onClick={() => navigate('/manage/muted-chats')} className="rounded-full bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700">
+                Muted
+              </button>
+              <button
+                onClick={logout}
+                className="inline-flex items-center gap-1 rounded-full bg-red-600 px-3 py-1 text-sm font-medium text-white hover:bg-red-500"
+              >
+                <LogOut className="management-exit-icon h-3.5 w-3.5" />
+                Exit
+              </button>
+            </div>
           </div>
 
           <div className="mt-10 grid gap-3 sm:grid-cols-2">
@@ -197,7 +234,17 @@ export default function ManagementConsole() {
               onClick={() => navigate('/manage/chats')}
               className="relative flex items-center justify-center rounded-xl border-4 border-white p-5 text-center hover:border-white"
             >
-              <MessageCircle className="absolute left-8 h-10 w-10" />
+              <MessageCircle
+                className="absolute left-8 h-10 w-10"
+                fill={hasUnreadMessages ? '#ef4444' : '#000000'}
+                stroke={hasUnreadMessages ? '#ef4444' : '#ffffff'}
+                strokeWidth={2}
+              />
+              <span className="absolute left-8 flex h-10 w-10 items-center justify-center text-white">
+                {hasUnreadMessages
+                  ? <Check aria-hidden="true" className="h-5 w-5" strokeWidth={3} />
+                  : <X aria-hidden="true" className="h-5 w-5" strokeWidth={3} />}
+              </span>
               <span className="relative left-6 w-full">
                 <span className="block font-semibold">Chat</span>
                 <span className="mt-1 block text-sm text-white">
@@ -235,13 +282,18 @@ export default function ManagementConsole() {
             Management Console
           </h1>
 
-          <button
-            onClick={logout}
-            className="inline-flex shrink-0 items-center gap-1 rounded-full bg-red-600 px-3 py-1 text-sm font-medium text-black hover:bg-red-500"
-          >
-            <LogOut className="management-exit-icon h-3.5 w-3.5" />
-            Exit
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <button type="button" onClick={() => navigate('/manage/muted-chats')} className="rounded-full bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700">
+              Muted
+            </button>
+            <button
+              onClick={logout}
+              className="inline-flex items-center gap-1 rounded-full bg-red-600 px-3 py-1 text-sm font-medium text-white hover:bg-red-500"
+            >
+              <LogOut className="management-exit-icon h-3.5 w-3.5" />
+              Exit
+            </button>
+          </div>
         </div>
 
         <div className="mt-8 rounded-xl border-4 border-white p-5 text-center">
